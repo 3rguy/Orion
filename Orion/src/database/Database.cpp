@@ -70,7 +70,7 @@ void Database::readDatabase(string& databaseName, vector<string>& paramNameVec,
 		istringstream ss(line);
 		while (ss) {
 			string s;
-			if (!getline(ss, s, ';'))
+			if (!getline(ss, s, ','))
 				break;
 			paramNameVec.push_back(s);
 		}
@@ -90,8 +90,12 @@ void Database::readDatabase(string& databaseName, vector<string>& paramNameVec,
 		double nParameters = paramNameVec.size();
 
 		while (myfile.good()) {
+
 			if (!getline(myfile, line))
 				break;
+
+			if(line[0] == '#')
+				continue;
 
 			resizeArray(paramMatrix, paramMatrix.size() + 1, nParameters);
 			fileNameVec.resize(fileNameVec.size() + 1);
@@ -101,7 +105,7 @@ void Database::readDatabase(string& databaseName, vector<string>& paramNameVec,
 			int counter = 0;
 			while (ss) {
 				string s;
-				if (!getline(ss, s, ';')) // Break line using a specific delimiter
+				if (!getline(ss, s, ',')) // Break line using a specific delimiter
 					break;
 
 				if (counter < nParameters) {

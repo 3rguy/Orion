@@ -533,8 +533,10 @@ intMatrix FEMGeometryExt::decompTetraToTrianElems(intVector& volNodes,
 
 	using namespace std;
 
+#ifdef _FEdebugMode_PointInPoly_
 	logFile << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" <<endl;
 	printVector(volNodes,"Using volume nodes:",logFile);
+#endif
 
 	//! Number of surfaces defining tetrahedra = 4
 	//! Number nodes of quadrilateral = 3
@@ -550,8 +552,11 @@ intMatrix FEMGeometryExt::decompTetraToTrianElems(intVector& volNodes,
 				surfaceElems[counter][0]=Node1;
 				surfaceElems[counter][1]=Node2;
 				surfaceElems[counter][2]=volNodes[k];
-				logFile<<"Plane formed: "<< Node1 <<" "<< Node2 <<" "<< volNodes[k] <<endl;
 				counter++;
+
+#ifdef _FEdebugMode_PointInPoly_
+				logFile<<"Plane formed: "<< Node1 <<" "<< Node2 <<" "<< volNodes[k] <<endl;
+#endif
 				}
 				else
 					break;
@@ -822,6 +827,21 @@ int FEMGeometryExt::findPointInGeometry(dbVector& pointCoord,
 	int volumeElem = -1;
 	bool isInside = false;
 
+	int minNumInsideSurf = 0;
+	int selectVolumeElem = -1;
+
+	oPType tolCheck = InputData->getValue("pointInPolyTolerance");
+	oPType minDistanceFromSurface = tolCheck;
+
+#ifdef _FEdebugMode_PointInPoly_
+	logFile << "##################################################" << endl;
+	logFile << "Initial Values:" << endl;
+	logFile << "minDistanceFromSurface: " << minDistanceFromSurface << endl;
+	logFile << "minNumInsideSurf: " << minNumInsideSurf << endl;
+	logFile << "volumeElem: " << volumeElem << endl;
+#endif
+
+	dbMatrix infoList;
 	//! Loop over all volumes element
 	for (int i = 0; i < nodesElements.size(); i++) {
 
@@ -849,15 +869,67 @@ int FEMGeometryExt::findPointInGeometry(dbVector& pointCoord,
 #endif
 
 		// find if pointCoord is found in volume element:nodesElements[i]
+		dbVector info;
 		isInside = findPointInVolumeElem(pointCoord,
 				nodesElements[i].getSurfaceElems(), nodesElements[i].getNodes(),
-				InputData, modelData, logFile);
+				info, InputData, modelData, logFile);
+
+#ifdef _FEdebugMode_PointInPoly_
+		logFile << "isInside: " << isInside << endl;
+#endif
 
 		if(isInside == true){
 			volumeElem = i;
 			break;
 		}
+		else {
+
+#ifdef _FEdebugMode_PointInPoly_
+			logFile << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+					<< endl;
+			logFile << "Analysing:" << endl;
+			logFile << "volumeElem: " << i << endl;
+			logFile << "info[1] < minDistanceFromSurface: " << info[1] << " < " << minDistanceFromSurface
+					<< endl;
+			logFile << "info[1] < tolCheck: " << info[1] << " < " << tolCheck << endl;
+			logFile << "info[0] >= minNumInsideSurf: " << info[0] << " > " << minNumInsideSurf << endl;
+#endif
+
+			if ((info[1] < minDistanceFromSurface && info[1] < tolCheck)
+					&& (info[0] >= minNumInsideSurf)) {
+				minDistanceFromSurface = info[1];
+				minNumInsideSurf = info[0];
+
+				volumeElem = i;
+
+#ifdef _FEdebugMode_PointInPoly_
+				logFile << "--------------------------------------------------"
+						<< endl;
+				logFile << "Changed!!" << endl;
+				logFile << "volumeElem: " << volumeElem << endl;
+				logFile << "minDistanceFromSurface: " << minDistanceFromSurface
+						<< endl;
+				logFile << "minNumInsideSurf: " << minNumInsideSurf << endl;
+#endif
+
+			}
+		}
 	}
+
+#ifdef _FEdebugMode_PointInPoly_
+	if(volumeElem != -1){
+		logFile << "Point(" << pointCoord[0] << " " << pointCoord[1] << " "
+				<< pointCoord[2] << ") is found in volume element: "
+				<< volumeElem << endl;
+		logFile << "with nodes: " << endl;
+		intVector vNodes = nodesElements[volumeElem].getNodes();
+		for(int i = 0 ; i < vNodes.size(); i++){
+			dbVector vnCoords = particles[vNodes[i]-1].getCoords();
+			logFile << vNodes[i]-1 << ": " << vnCoords[0] << " "
+					<< vnCoords[1] << " " << vnCoords[2] << endl;
+		}
+	}
+#endif
 
 	return volumeElem;
 
@@ -867,7 +939,7 @@ int FEMGeometryExt::findPointInGeometry(dbVector& pointCoord,
 /*!****************************************************************************/
 //! Find if a point belongs to a volume.
 bool FEMGeometryExt::findPointInVolumeElem(dbVector& pointCoord,
-		intVector& surfaceElems, intVector& volumeNodes,
+		intVector& surfaceElems, intVector& volumeNodes, dbVector& info,
 		InputFileData* InputData, std::map<std::string, double>& modelData,
 		std::ofstream& logFile) {
 
@@ -888,7 +960,7 @@ bool FEMGeometryExt::findPointInVolumeElem(dbVector& pointCoord,
 	dbVector projPointCoord;
 
 	int counter = 0;
-
+	info.resize(2,0);
 	// int axisCheck = 0	// For x-axis
 	// int axisCheck = 1	// For y-axis
 	int axisCheck = 2;		// For z-axis
@@ -1044,14 +1116,14 @@ bool FEMGeometryExt::findPointInVolumeElem(dbVector& pointCoord,
 		//! Check if the sign of the 3rd axis(Normal to surface) is the same
 		//! for both refNode and pointCoord
 		int temp = projRefNodeCoord[axisCheck];
-//		if ((projRefNodeCoord[axisCheck] > 0 && projPointCoord[axisCheck] > 0) ||
-//				(projRefNodeCoord[axisCheck] < 0 && projPointCoord[axisCheck] < 0) ||
-//				projPointCoord[axisCheck] == 0){
+		if ((projRefNodeCoord[axisCheck] > 0 && projPointCoord[axisCheck] > 0) ||
+				(projRefNodeCoord[axisCheck] < 0 && projPointCoord[axisCheck] < 0) ||
+				projPointCoord[axisCheck] == 0){
 
-		if ((projRefNodeCoord[axisCheck] > 0 && projPointCoord[axisCheck] > -tolCheck)
-				|| (projRefNodeCoord[axisCheck] < 0
-						&& projPointCoord[axisCheck] < tolCheck)
-				|| projPointCoord[axisCheck] == 0) {
+//		if ((projRefNodeCoord[axisCheck] > 0 && projPointCoord[axisCheck] > -tolCheck)
+//				|| (projRefNodeCoord[axisCheck] < 0
+//						&& projPointCoord[axisCheck] < tolCheck)
+//				|| projPointCoord[axisCheck] == 0) {
 
 			counter++;
 
@@ -1059,9 +1131,12 @@ bool FEMGeometryExt::findPointInVolumeElem(dbVector& pointCoord,
 			logFile << " --> Point maybe inside <--" << endl;
 			logFile << "Counter Value: " << counter << endl;
 #endif
-		}else
-			break;
-		// MPI_Abort(MPI_COMM_WORLD, 1);
+		}else{
+#ifdef _FEdebugMode_PointInPoly_
+			logFile << "Distance off surface: " << abs(projPointCoord[axisCheck]) << endl;
+#endif
+			info[1] += abs(projPointCoord[axisCheck]);
+		}
 	}
 
 	if (counter == surfaceElems.size()) {
@@ -1071,6 +1146,9 @@ bool FEMGeometryExt::findPointInVolumeElem(dbVector& pointCoord,
 		logFile << "--->>> Point is inside !! <<<---" << endl;
 #endif
 
+	}
+	else{
+		info[0] = counter;
 	}
 
 	return isInside;
@@ -1347,6 +1425,9 @@ void FEMGeometryExt::writeMeshFile(InputFileData* InputData,
 		}
 }
 
+/*!****************************************************************************/
+/*!****************************************************************************/
+//!
 void FEMGeometryExt::printVolumePtclsDetails(InputFileData* InputData,
 			std::ofstream& logFile){
 
@@ -1367,5 +1448,310 @@ void FEMGeometryExt::printVolumePtclsDetails(InputFileData* InputData,
 		}
 		logFile << endl;
 	}
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//!
+intVector FEMGeometryExt::findSupportingPtcls(dbVector pCoords, intVector& sVolElems,
+		InputFileData* InputData, std::ofstream& logFile) {
+
+	using namespace std;
+
+//	saveToMeshDatFile(InputData,logFile);
+
+	std::map<std::string, oPType> modelData; // To satisfy findPointInGeometry input argument
+	int volumeElem = findPointInGeometry(pCoords, InputData, modelData,
+			logFile);
+	logFile << "Point belongs to Volume element : " << volumeElem << endl;
+
+	intVector sNodesList;
+	if (volumeElem != -1) {
+
+		int sNodesLimit = InputData->getValue("particleSupportLimit") ;
+//		logFile << "particleSupportLimit: " << sNodesLimit << endl;
+
+		intVector volNodesVec = nodesElements[volumeElem].getNodes();
+		for(int i = 0 ; i < volNodesVec.size(); i++)
+			volNodesVec[i]--;
+
+
+//		logFile << "The point lies in volume element " << volumeElem
+//				<< " with nodes: ";
+		for (int i = 0; i < volNodesVec.size(); i++) {
+			dbVector& coords = particles[volNodesVec[i]].getCoords();
+//			logFile << volNodesVec[i] << "(" << coords[0] << "," << coords[1] << "," << coords[2] << ") ";  ;
+		}
+//		logFile << endl;
+
+		sNodesList = volNodesVec;
+		intVector tempNodesList;
+
+//		printVector(sNodesList,"sNodesList",logFile);
+//		printVector(volNodesVec,"volNodesVec",logFile);
+//		printVector(tempNodesList,"tempNodesList",logFile);
+
+		int round = 0;
+		while (volNodesVec.size() < sNodesLimit) {
+//			logFile << "********** In while loop [" << round++ << "] **********" << endl;
+
+			for (int i = 0; i < volNodesVec.size(); i++) {
+				intVector dummyVol;
+				intVector dummy = findNeighboursOfPtcls(volNodesVec[i],dummyVol,
+						InputData, logFile);
+//				printVector(dummy,"dummy",logFile);
+//				printVector(dummyVol,"dummyVol",logFile);
+
+				tempNodesList.insert(tempNodesList.end(), dummy.begin(),
+						dummy.end());
+//				printVector(tempNodesList,"tempNodesList",logFile);
+
+				sVolElems.insert(sVolElems.end(),dummyVol.begin(),dummyVol.end());
+//				printVector(tempNodesList,"tempNodesList",logFile);
+			}
+
+			sort(tempNodesList.begin(), tempNodesList.end());
+//			printVector(tempNodesList,"tempNodesList",logFile);
+
+			sort(sVolElems.begin(), sVolElems.end());
+//			printVector(sVolElems,"sVolElems",logFile);
+
+			tempNodesList.erase(
+					unique(tempNodesList.begin(), tempNodesList.end()),
+					tempNodesList.end());
+//			printVector(tempNodesList,"tempNodesList",logFile);
+
+//			printVector(volNodesVec,"volNodesVec to be erased in tempNodesList",logFile);
+			for (int j = 0; j < volNodesVec.size(); j++) {
+				int location;
+				for (int k = 0; k < tempNodesList.size(); k++) {
+					if (volNodesVec[j] == tempNodesList[k]) {
+						location = k;
+					}
+				}
+				tempNodesList.erase(tempNodesList.begin() + location);
+			}
+
+//			printVector(tempNodesList,"tempNodesList",logFile);
+
+//			printVector(sNodesList,"sNodes(before)",logFile);
+			sNodesList.insert(sNodesList.end(), tempNodesList.begin(),
+					tempNodesList.end());
+//			printVector(sNodesList,"sNodes(after)",logFile);
+
+			volNodesVec = tempNodesList;
+//			printVector(volNodesVec,"volNodesVec(new)",logFile);
+
+			intVector().swap(tempNodesList);
+
+		}
+
+//		logFile << "--------------------------------------------------" << endl;
+		sort(sNodesList.begin(), sNodesList.end());
+		sNodesList.erase(unique(sNodesList.begin(), sNodesList.end()),
+							sNodesList.end());
+//		printVector(sNodesList,"sNodesList(sorted)",logFile);
+
+		sVolElems.erase(
+				unique(sVolElems.begin(), sVolElems.end()),
+				sVolElems.end());
+//			printVector(sVolElems,"sVolElems",logFile);
+
+	}
+
+
+	return sNodesList;
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//!
+intVector FEMGeometryExt::findNeighboursOfPtcls(int ptcle, intVector& neighVolElems,
+		InputFileData* InputData,std::ofstream& logFile){
+
+	using namespace std;
+
+//	logFile << "======================================================" << endl;
+
+//	logFile << "ptcle[" << ptcle << "] > particles.size()[" <<  particles.size() << "]" << endl;
+	if (ptcle > particles.size()){
+		cout << " In FEMGeometryExt::findNeighboursOfPtcls, "
+				"ptcle > particles.size()" << endl;
+		logFile <<  " In FEMGeometryExt::findNeighboursOfPtcls, "
+				"ptcle > particles.size()" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	neighVolElems = particles[ptcle].getElems();
+//	printVector(neighVolElems,"neighVolElems",logFile);
+	intVector ptclList;
+	for(int i = 0; i < neighVolElems.size(); i++){
+		intVector dummy = nodesElements[neighVolElems[i]].getNodes();
+//		printVector(dummy,"dummy",logFile);
+		ptclList.insert(ptclList.end(),dummy.begin(),dummy.end());
+//		printVector(ptclList,"ptclList",logFile);
+	}
+
+//	printVector(ptclList,"ptclList",logFile);
+	// Sort vector
+	sort( ptclList.begin(), ptclList.end() );
+//	printVector(ptclList,"ptclList(sorted)",logFile);
+
+	// erase duplicate elements
+	ptclList.erase( unique( ptclList.begin(), ptclList.end() ), ptclList.end() );
+//	printVector(ptclList,"ptclList(erased)",logFile);
+
+	// readjust particles number
+	int eraseLoc = 0;
+	for(int i = 0; i < ptclList.size(); i++){
+		ptclList[i] = ptclList[i] - 1;
+		if(ptclList[i] == ptcle)
+			eraseLoc = i;
+	}
+//	printVector(ptclList,"ptclList(-1)",logFile);
+
+	ptclList.erase(ptclList.begin()+eraseLoc);
+//	printVector(ptclList,"ptclList(del ptcle)",logFile);
+
+//	logFile << "======================================================" << endl;
+
+	return ptclList;
+
+
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//!
+void FEMGeometryExt::saveToMeshDatFile(InputFileData* InputData,
+		std::ofstream& logFile) {
+
+	using namespace std;
+
+	ofstream meshFile("new_mesh.dat", std::ofstream::out);
+	meshFile.precision(15);
+
+	meshFile << "COORDINATES" << endl;
+	meshFile << particles.size() << endl;
+
+	for(int i = 0; i < particles.size(); i++){
+		dbVector& coords = particles[i].getCoords();
+		meshFile << i <<" : " << coords[0] << " " << coords[1] << " " << coords[2] << endl;
+	}
+
+	meshFile << "VOLUME_ELEMENTS" << endl;
+	meshFile << nodesElements.size() << endl;
+
+	for(int i = 0; i < nodesElements.size(); i++){
+		intVector& eNodes = nodesElements[i].getNodes();
+		meshFile << i << " : ";
+		for(int j = 0; j < eNodes.size(); j++){
+			meshFile << eNodes[j] << " ";
+		}
+		meshFile << endl;
+	}
+
+	meshFile.close();
+
+}
+
+///*!****************************************************************************/
+///*!****************************************************************************/
+////!
+void FEMGeometryExt::saveToGidMeshFile(std::string& fileName, InputFileData* InputData,
+		std::ofstream& logFile) {
+
+	using namespace std;
+
+	string fullName = fileName + ".msh";
+	ofstream meshFile(fullName, std::ofstream::out);
+	meshFile.precision(15);
+
+	int dims = InputData->getValue("usedDimensions");
+	string hearderLine = "MESH dimension 3 ElemType ";
+
+	if(nodesElements[0].getNodes().size() == 4)
+		hearderLine = hearderLine + "Tetrahedra Nnode 4";
+	else
+		hearderLine = hearderLine + "Hexahedra Nnode 8";
+
+	meshFile << hearderLine << endl;
+
+	meshFile << "Coordinates" << endl;
+	for(int i = 0; i < particles.size(); i++){
+		dbVector& coords = particles[i].getCoords();
+		meshFile << i+1 <<" " << coords[0] << " " << coords[1] << " " << coords[2] << endl;
+	}
+	meshFile << "end coordinates" << endl;
+
+	meshFile << endl;
+
+	meshFile << "Elements" << endl;
+	for(int i = 0; i < nodesElements.size(); i++){
+		intVector& eNodes = nodesElements[i].getNodes();
+		meshFile << i+1 << " ";
+		for(int j = 0; j < eNodes.size(); j++){
+			meshFile << eNodes[j] << " ";
+		}
+		meshFile << "0" << endl;
+	}
+	meshFile << "end elements" << endl;
+
+	meshFile.close();
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Calculate the cavities volume
+double FEMGeometryExt::calcCavityVolume(InputFileData* InputData,
+		std::ofstream& logFile) {
+
+	using namespace std;
+
+	dbMatrix& allLoadMat = FEMInputData->getSurfacePressureLoads();
+	printMatrix(allLoadMat, "allLoadMat", logFile);
+
+	dbMatrix loadMat;
+
+	int choice = 1;	// calculate volume of left ventricle only
+	if (choice == 0) {
+		for (int i = 0; i < allLoadMat.size(); i++) {
+			if (allLoadMat[i][4] == (double) 1.0) {
+				loadMat.push_back(allLoadMat[i]);
+			}
+		}
+	} else {
+		loadMat = allLoadMat;
+	}
+
+	printMatrix(loadMat, "loadMat", logFile);
+
+	int numOfFaces = loadMat.size();
+
+	std::vector<Particle> ptcls = FEMGeoData->getNodesVec();
+
+	double volume = 0;
+
+	int x = 0;
+	int y = 1;
+	int z = 2;
+
+	for (int m = 0; m < numOfFaces; m++) {
+
+		dbVector& v1 = ptcls[loadMat[m][1] - 1].getCoords();
+		dbVector& v3 = ptcls[loadMat[m][2] - 1].getCoords();
+		dbVector& v2 = ptcls[loadMat[m][3] - 1].getCoords();
+
+		volume += ((v2[y] - v1[y]) * (v3[z] - v1[z])
+				- (v2[z] - v1[z]) * (v3[y] - v1[y])) * (v1[x] + v2[x] + v3[x]);
+	}
+
+	cout << "Geometry volume = " << (volume / 6.0) << endl;
+
+	return (volume / 6.0);
 
 }

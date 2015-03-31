@@ -43,28 +43,52 @@ public:
 
 	/*!************************************************************************/
 	//! Calculate the Moving Least Square interpolants
-	dbVector MLSCalc(dbVector& iPoint,dbMatrix& coords,dbVector& radiusVec,
+	dbVector MLSCalc(dbVector iPoint,dbMatrix coords,dbVector radiusVec,
 			InputFileData* InputData,ofstream& logFile);
+
+	/*!************************************************************************/
+	void shiftedBasisCalc(dbVector& iPoint, dbMatrix& coords,
+			dbVector& radiusVec, InputFileData* InputData, ofstream& logFile);
 
 	/*!************************************************************************/
 	//! Function to setup the Pascal polynomial's basis
 	dbVector PascalBasisCalc(dbVector& coord,int& orderPoly,ofstream& logFile);
 
 	/*!************************************************************************/
+	//! Choice of weight function
+	dbVector weightCalc(dbVector& iPoint, intVector& neighbours,
+			dbMatrix& coords, dbVector& radiusVec, InputFileData* InputData,
+			ofstream& logFile);
+
 	//! Calculate the Cubic Spline Weight function
 	double cubicSplineWgtCalc(dbVector& coordOne,dbVector& coordTwo,
 			dbVector& radii,ofstream& logFile);
+
+	//! Calculate the Gaussian Weight function
+	double gaussianWgtCalc(dbVector& coordOne, dbVector& coordTwo,
+			dbVector& radii, ofstream& logFile);
+
+	//! Calculate the regularized Weight function
+	double regularizedWgtCalc(dbVector& coordOne, dbVector& coordTwo,
+			dbVector& radii, ofstream& logFile);
+
+	double regularizedWgtCalc_mod(dbVector& coordOne, dbVector& coordTwo,
+				dbVector& radii,int dim, ofstream& logFile);
 
 	/*!************************************************************************/
 	//! Find the neighbours of a particular point
 	intVector findNeighbours(dbVector& iPoint,
 				dbMatrix& coords,dbVector& radiusVec,ofstream& logFile);
 
+	/*!************************************************************************/
+	void removeRedundantDim(dbVector& iPoint, dbMatrix& coords,
+			dbVector& radiusVec, InputFileData* InputData, ofstream& logFile);
+
 
 	/*!************************************************************************/
 	/*!************************************************************************/
 	//! Debugging Functions
-	void MLSUnitTest(ofstream& logFile);
+	void MLSUnitTest(InputFileData* InputData,ofstream& logFile);
 	void MLSUnitTest_meshMultiDim(double& length,double& nodal_dist,
 			int& ndim,dbMatrix& x,int& numCoords, intVector SBM_dim,
 			dbVector SBM_coeff, ofstream& logFile);

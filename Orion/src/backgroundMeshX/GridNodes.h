@@ -80,12 +80,20 @@ public:
 	void setSupportingParticles(Data& iData, InputFileData* InputData,
 			ofstream& logFile);
 
+	void setSupportingParticles_two(FEMGeometryExt* FEMDataExt,
+			std::vector<Node>& nodesVec, InputFileData* InputData,
+			ofstream& logFile);
+
 	void setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 			std::vector<Node>& nodesVec, InputFileData* InputData,
 			ofstream& logFile);
 
 	void findSupportingParticles(std::map<std::string, oPType>& modelData,
 			InputFileData* InputData, ofstream& logFile);
+
+	void filterSupportingParticles(std::vector<Node>& nodesVec,
+			vector<Particle>& ptclList, InputFileData* InputData,
+			ofstream& logFile);
 
 	void setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* InputData,
 			ofstream& logFile);

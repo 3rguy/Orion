@@ -111,7 +111,7 @@ class FEMGeometryExt {
 			std::map<std::string, double>& modelData, std::ofstream& logFile);
 
 	bool findPointInVolumeElem(dbVector& pointCoord, intVector& surfaceElems,
-			intVector& volumeNodes, InputFileData* InputData,
+			intVector& volumeNodes, dbVector& info, InputFileData* InputData,
 			std::map<std::string, double>& modelData, std::ofstream& logFile);
 
 	int findPtcleIDInPtcleList(int& ptcleID, std::ofstream& logFile);
@@ -135,6 +135,20 @@ class FEMGeometryExt {
 	void writeMeshFile(InputFileData* InputData, std::ofstream& logFile);
 
 	void printVolumePtclsDetails(InputFileData* InputData, std::ofstream& logFile);
+
+	intVector findSupportingPtcls(dbVector pCoords, intVector& sVolElems,
+			InputFileData* InputData, std::ofstream& logFile);
+
+	intVector findNeighboursOfPtcls(int ptcle, intVector& neighVolElems,
+			InputFileData* InputData, std::ofstream& logFile);
+
+	void saveToMeshDatFile(InputFileData* InputData,std::ofstream& logFile);
+	void saveToGidMeshFile(std::string& fileName,InputFileData* InputData,
+			std::ofstream& logFile);
+
+	/*!************************************************************************/
+
+	double calcCavityVolume(InputFileData* InputData,std::ofstream& logFile);
 
   private:
 

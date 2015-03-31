@@ -29,26 +29,53 @@ public:
 	DataContainer();
 	DataContainer(std::ofstream& logFile);
 
+	void setValue(const char* name,int val);
+	bool findInt(const char* name);
+	int& getInt(const char* name);
+	void deleteInt(const char* name);
+
+	void setValue(const char* name,double val);
+	bool findDouble(const char* name);
+	double& getDouble(const char* name);
+	void deleteDouble(const char* name);
+
 	void setValue(const char* name,intVector vec);
-	bool findIntVectorList(const char* name);
+	bool findIntVector(const char* name);
 	intVector& getIntVector(const char* name);
+	void deleteIntVector(const char* name);
 
 	void setValue(const char* name,dbVector vec);
-	bool findDbVectorList(const char* name);
+	bool findDbVector(const char* name);
 	dbVector& getDbVector(const char* name);
-
-	void setValue(const char* name,dbMatrix mat);
-	bool findDbMatrixList(const char* name);
-	dbMatrix& getDbMatrix(const char* name);
-
-	void setValue(const char* name,vector<dbMatrix> mat);
-	bool findDbMatrixVecList(const char* name);
-	vector<dbMatrix>& getDbMatrixVec(const char* name);
+	void deleteDbVector(const char* name);
 
 	void setValue(const char* name,intMatrix mat);
-	bool findIntMatrixList(const char* name);
+	bool findIntMatrix(const char* name);
 	intMatrix& getIntMatrix(const char* name);
+	void deleteIntMatrix(const char* name);
 
+	void setValue(const char* name,dbMatrix mat);
+	bool findDbMatrix(const char* name);
+	dbMatrix& getDbMatrix(const char* name);
+	void deleteDbMatrix(const char* name);
+
+	void setValue(const char* name,vector<dbMatrix> mat);
+	bool findDbMatrixVec(const char* name);
+	vector<dbMatrix>& getDbMatrixVec(const char* name);
+	void deleteDbMatrixVec(const char* name);
+
+	void setValue(const char* name,string val);
+	bool findString(const char* name);
+	string& getString(const char* name);
+	void deleteString(const char* name);
+
+	void setValue(const char* name,vector<string> val);
+	bool findStringVec(const char* name);
+	vector<string>& getStringVec(const char* name);
+	void deleteStringVec(const char* name);
+
+	map<string,int> intList;
+	map<string,double> doubleList;
 
 	map<string,intVector> intVectorList;
 	map<string,dbVector> dbVectorList;
@@ -57,6 +84,9 @@ public:
 	map<string,dbMatrix> dbMatrixList;
 
 	map<string,vector<dbMatrix> > dbMatrixVecList;
+
+	map<string,string> stringList;
+	map<string,vector<string>> stringVectorList;
 
 };
 

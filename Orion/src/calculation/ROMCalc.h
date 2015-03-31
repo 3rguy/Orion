@@ -48,12 +48,18 @@ public:
 	void extractParameters(DataContainer* problemData,Database& myDatabase,
 			InputFileData* InputData,ofstream& logFile);
 
+	void test_MLSInterpolantsCalc(DataContainer* problemData,Database& myDatabase,
+			InputFileData* InputData, ofstream& logFile);
+
 	/*!************************************************************************/
 	/*!************************************************************************/
 	//! Search for the influencing particle in the database for the
 	//! interpolation process
 	void searchDatabase(DataContainer* problemData, Database& myDatabase,
 			InputFileData* InputData, ofstream& logFile);
+
+	void searchDatabase_two(DataContainer* problemData, Database& myDatabase,
+				InputFileData* InputData, ofstream& logFile);
 
 	/*!************************************************************************/
 	/*!************************************************************************/
@@ -107,6 +113,12 @@ public:
 	/*!************************************************************************/
 	void postProcessing(DataContainer* problemData,Database& myDatabase,
 			InputFileData* InputData, ofstream& logFile);
+
+	/*!************************************************************************/
+	/*!************************************************************************/
+	void saveResultInGridNodesFormat(DataContainer* problemData,
+			std::vector<Data*>& dataList, InputFileData* InputData,
+			ofstream& logFile);
 
 private:
 	Data myData;

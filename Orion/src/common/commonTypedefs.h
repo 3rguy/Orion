@@ -28,8 +28,8 @@ typedef std::valarray<std::valarray<long double> > ldbMatrix;
 
 
 // =============================================================================
-// Orion Precision Type definitions (Allows to switch between single and double
-// precision
+// Orion Precision Type definitions
+// (Allows to switch between single and double precision)
 
 typedef double oPType;
 //typedef float oPType;

@@ -20,7 +20,7 @@
 #ifndef _ROMCalcDebugMode_
 #define _ROMCalcDebugMode_
 #endif
-//#undef _ROMCalcDebugMode_
+#undef _ROMCalcDebugMode_
 
 // ----------------------------------------------------------------------------
 // Database debug statements
@@ -51,26 +51,26 @@
 #ifndef _PODCalcDebugMode_
 #define _PODCalcDebugMode_
 #endif
-//#undef _PODCalcDebugMode_
+#undef _PODCalcDebugMode_
 
 // POD calculation checks
 #ifndef _PODCalcCheckMode_
 #define _PODCalcCheckMode_
 #endif
-//#undef _PODCalcCheckMode_
+#undef _PODCalcCheckMode_
 
 // ----------------------------------------------------------------------------
 // PODI calculation
 #ifndef _PODICalcDebugMode_
 #define _PODICalcDebugMode_
 #endif
-//#undef _PODICalcDebugMode_
+#undef _PODICalcDebugMode_
 
 // PODI calculation checks
 #ifndef _PODICalcCheckMode_
 #define _PODICalcCheckMode_
 #endif
-//#undef _PODICalcCheckMode_
+#undef _PODICalcCheckMode_
 
 // ----------------------------------------------------------------------------
 // MLS debug mode

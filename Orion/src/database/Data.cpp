@@ -11,6 +11,7 @@ Data::Data() {
 
 
 	allResultsNameList.resize(11, vector<string>(2));
+
 	allResultsNameList[0][0] = "displacement";
 	allResultsNameList[0][1] = "Vector";
 
@@ -58,6 +59,7 @@ Data::Data(dbVector paramVec) {
 	anchorPoint = -1;
 
 	allResultsNameList.resize(11, vector<string>(2));
+
 	allResultsNameList[0][0] = "displacement";
 	allResultsNameList[0][1] = "Vector";
 
@@ -108,6 +110,23 @@ void Data::readMeshDataFile(InputFileData* InputData, ofstream& logFile) {
 														inputFileName,logFile);
 
 }
+
+void Data::delMeshData(){
+
+	using namespace std;
+
+	if(meshData != NULL){
+		delete meshData;
+	}
+}
+
+//void Data::deleteMeshDataFile(InputFileData* InputData, ofstream& logFile) {
+//
+//	using namespace std;
+//
+//	delete meshData;
+//
+//}
 
 /*!****************************************************************************/
 /*!****************************************************************************/
@@ -168,7 +187,9 @@ void Data::readResultFile(InputFileData* InputData, ofstream& logFile) {
 /*!****************************************************************************/
 /*!****************************************************************************/
 //! Read and Extract results from a simple text file format
-void Data::readResultFile_resFormat(string& inputFileName, ofstream& logFile) {
+void Data::readResultFile_resFormat_resultwise(string& inputFileName, ofstream& logFile) {
+
+	int numResultFound = 0;
 
 	for (int i = 0; i < allResultsNameList.size(); i++) {
 
@@ -176,17 +197,16 @@ void Data::readResultFile_resFormat(string& inputFileName, ofstream& logFile) {
 		dbVector resultStepVector;
 		int numDofs;
 
-		cout << "Reading result: " << allResultsNameList[i][0] << endl;
-		logFile << "Reading result: " << allResultsNameList[i][0] << endl;
+		cout << "Reading result: " << allResultsNameList[i][0] << " .... ";
+		logFile << "Reading result: " << allResultsNameList[i][0] << " .... ";
 
 		bool isResultFound = readResultFile_resFormat_specificResult(
 				inputFileName, allResultsNameList[i][0], resultMatrix, numDofs,
 				resultStepVector, logFile);
 
 		if (isResultFound == true) {
-			resultNameList.push_back(allResultsNameList[i][0]);
-			setResult(allResultsNameList[i][0].c_str(), resultMatrix);
-			setResultDOF(allResultsNameList[i][0].c_str(), numDofs);
+
+			bool isStepValueVecSimilar = true;
 
 			// Record the first series of step values
 			if (step_value_vec.size() == 0) {
@@ -196,44 +216,430 @@ void Data::readResultFile_resFormat(string& inputFileName, ofstream& logFile) {
 			// recorded ones
 			else {
 
-				bool isStepValueVecSimilar = true;
+				// Carrying out check
 				if (step_value_vec.size() == resultStepVector.size()) {
 					for (int i = 0; i < step_value_vec.size(); i++) {
-						if (step_value_vec[i] != resultStepVector[i]) {
+						logFile << "Step[" << i <<"]: Comparing (" << resultStepVector[i] << ") Default(" << step_value_vec[i] << ")" << endl;
+						if (fabs(step_value_vec[i] - resultStepVector[i]) > 1e-10) {
 							isStepValueVecSimilar = false;
 							break;
 						}
 					}
 				} else {
 					isStepValueVecSimilar = false;
+					logFile << "WARNING: Default step size is not the same with the actual one" << endl;
 				}
 
+				// Discard result if step values are incompatible
 				if (isStepValueVecSimilar == false) {
-					cout << "ERROR: The step values of '"
-							<< allResultsNameList[i][0] << "' in '"
-							<< inputFileName
-							<< "' is not the same compared to the other"
-									" result types" << endl;
 
-					logFile << "ERROR: The step values of '"
+					cout << "Skipped(Check logFile for details)" << endl;
+					logFile << "Skipped(Check logFile for details)" << endl;
+
+					logFile << "WARNING: The step values of '"
 							<< allResultsNameList[i][0] << "' in '"
 							<< inputFileName
 							<< "' are not the same compared to the other"
-									" result types" << endl;
+									" result types" << endl << endl ;
 
-					MPI_Abort(MPI_COMM_WORLD, 1);
 				}
 
 			}
+
+			// Record result if step values are compatible
+		if(isStepValueVecSimilar == true) {
+
+			numResultFound++;
+
+			cout << "Found" << endl;
+			logFile << "Found" << endl;
+
+			resultNameList.push_back(allResultsNameList[i][0]);
+			setResult(allResultsNameList[i][0].c_str(), resultMatrix);
+			setResultDOF(allResultsNameList[i][0].c_str(), numDofs);
+
+		}
 
 #ifdef _DataDebugMode_
 		printMatrix(resultMatrix, allResultsNameList[i][0].c_str(), logFile);
 #endif
 
 		}
+		else{
+			cout << "Not found" << endl;
+			logFile << "Not found" << endl;
+		}
 
 	}
 
+	if(numResultFound == 0){
+		cout << "ERROR: No result has been found" << endl;
+		logFile << "ERROR: No result has been found" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read and Extract results from a simple text file format
+void Data::readResultFile_resFormat(string& inputFileName, ofstream& logFile) {
+
+	dbMatrix resultMatrix;
+	dbVector resultStepVector;
+	map<double, map<string, dbMatrix> > resultsData;
+
+	readResultFile_resFormat_allResult(inputFileName, resultNameList,
+			resultsData, logFile);
+
+	intVector totalDOFVec(resultNameList.size());
+
+	// extract the number of degrees of freedom
+	map<string, dbMatrix>::iterator it_result;
+	for (int i = 0; i < resultNameList.size(); i++) {
+
+		it_result = resultsData.begin()->second.find(resultNameList[i]);
+
+		int nCol = it_result->second[0].size();
+		int nRow = it_result->second.size();
+
+		// Record num of DOFs per node
+		setResultDOF(resultNameList[i].c_str(), nCol);
+
+		// Record total number of DOFs
+		totalDOFVec[i] = nCol * nRow;
+
+	}
+
+	int numSteps = resultsData.size();
+	map<double, map<string, dbMatrix> >::iterator it_step, it_step_begin,
+			it_step_end;
+	it_step_begin = resultsData.begin();
+	it_step_end = resultsData.end();
+
+	// Save the result matrices
+	for (int i = 0; i < resultNameList.size(); i++) {
+		dbMatrix resultMatrix(totalDOFVec[i], dbVector(numSteps));
+
+		int stepCounter = 0;
+		for (it_step = it_step_begin; it_step != it_step_end; it_step++) {
+
+			it_result = it_step->second.find(resultNameList[i]);
+			dbMatrix& resultMatTemp = it_result->second;
+
+			int dofCounter = 0;
+			for (int r = 0; r < resultMatTemp.size(); r++) {
+				for (int c = 0; c < resultMatTemp[r].size(); c++) {
+					resultMatrix[dofCounter][stepCounter] = resultMatTemp[r][c];
+					dofCounter++;
+				}
+			}
+
+			stepCounter++;
+
+			it_step->second.erase(it_result);
+
+		}
+
+		setResult(resultNameList[i].c_str(), resultMatrix);
+	}
+
+	// Save the step values
+	dbVector stepVector;
+	for (it_step = it_step_begin; it_step != it_step_end; it_step++) {
+		stepVector.push_back(it_step->first);
+	}
+	setStepValueVec(stepVector);
+
+//	printVector(this->getStepValueVec(), "StepValueVec", logFile);
+//
+//	vector<string> resultNameVec = this->getResultNameList();
+//
+//	for (int i = 0; i < resultNameVec.size(); i++) {
+//		logFile << "--------------------------------------------------" << endl;
+//		logFile << "Result: " << resultNameVec[i] << "\t nDOF: "
+//				<< this->getResultDOF(resultNameVec[i].c_str()) << endl;
+//		logFile << "--------------------------------------------------" << endl;
+//
+//		printMatrix(this->getResult(resultNameVec[i].c_str()), "", logFile);
+//	}
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read and Extract results from a simple text file format
+void Data::readResultFile_resFormat_allResult(string& inputFileName,
+		vector<string>& resultNameList,
+		map<double, map<string, dbMatrix> >& resultsData, ofstream& logFile) {
+
+	resultNameList.clear();
+
+	ifstream readFemRes(inputFileName.c_str());
+	string line, result_name, analysis_name, my_result_type, my_location;
+	double step_value;
+
+	bool resultNameFound = false;
+
+	if (!readFemRes) {
+		logFile << "File " << inputFileName << " does not exist or is empty"
+				<< endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	// Read file
+	getline(readFemRes, line);
+	while (readFemRes.good()) {
+
+#ifdef _DataDebugMode_
+		logFile << "Reading line => " << line << endl;
+#endif
+
+		//logFile << line << endl;
+		istringstream is_line(line);
+		string is_line_str;
+		getline(is_line, is_line_str, '"');
+
+#ifdef _DataDebugMode_
+		logFile << "is_line_str: " << is_line_str << endl;
+#endif
+
+		if (is_line_str == "Result ") {
+			getline(is_line, result_name, '"');
+
+			// Extract analysis_name
+			getline(is_line, analysis_name, '"');
+
+			// Skip blank space
+			getline(is_line, is_line_str, '"');
+
+			// Extract line containing step_value, my_result_type
+			// and my_location;
+			getline(is_line, is_line_str, '"');
+			istringstream is_line_ws(is_line_str);
+			is_line_ws >> step_value >> my_result_type >> my_location;
+
+#ifdef _DataDebugMode_
+			logFile << "result_name: " << result_name << endl;
+			logFile << "analysis_name: " << analysis_name << endl;
+			logFile << "step_value: " << step_value << endl;
+			logFile << "my_result_type: " << my_result_type << endl;
+			logFile << "my_location: " << my_location << endl;
+#endif
+
+			// Find result name in resultNameList
+			for (int i = 0; i < allResultsNameList.size(); i++) {
+				if (result_name == allResultsNameList[i][0]) {
+
+//					if (resultsData.begin() == resultsData.end()) {
+//						resultNameList.push_back(result_name);
+//						resultNameFound = true;
+//						break;
+//					} else {
+//						for (int j = 0; j < resultNameList.size(); j++) {
+//							if (result_name == resultNameList[j]) {
+								resultNameFound = true;
+//								break;
+//							}
+//						}
+//					}
+
+				}
+			}
+
+			// If the result name has been found in list, read the result field
+			if (resultNameFound == true) {
+
+				// --------------------------------------------------------
+				// Read result field
+				getline(readFemRes, line); // skip component names
+				getline(readFemRes, line); // skip "values"
+
+				// Read result field
+				dbMatrix resultFieldMatrix;
+				getline(readFemRes, line);
+				while (line != "End Values") {
+
+#ifdef _DataDebugMode_
+					logFile << "Reading: " << line << " ";
+#endif
+
+					istringstream is(line);
+
+					double nodeId;
+					is >> nodeId;
+
+					double result_field_value;
+					dbVector resultFieldVector;
+
+#ifdef _DataDebugMode_
+					logFile << "Recording: " << nodeId << " ";
+#endif
+					while (is >> result_field_value) {
+						resultFieldVector.push_back(result_field_value);
+#ifdef _DataDebugMode_
+						logFile << result_field_value << " ";
+#endif
+					}
+#ifdef _DataDebugMode_
+					logFile << endl;
+#endif
+
+					resultFieldMatrix.push_back(resultFieldVector);
+
+					getline(readFemRes, line);
+
+				}
+
+				// --------------------------------------------------------
+				// Save result field + stepvalue + result Name
+				map<double, map<string, dbMatrix> >::iterator it_step;
+				it_step = resultsData.find(step_value);
+
+#ifdef _DataDebugMode_
+				logFile << "Saving: " << result_name << " Timestep: " << step_value
+						<< endl;
+#endif
+
+				if (it_step == resultsData.end()) {
+					// add to resultsData
+					map<string, dbMatrix> temp;
+					temp[result_name] = resultFieldMatrix;
+					resultsData[step_value] = temp;
+				} else {
+					// Look for result name
+					map<string, dbMatrix>::iterator it_resultName;
+					it_resultName = it_step->second.find(result_name);
+
+					if (it_resultName == it_step->second.end()) {
+						it_step->second[result_name] = resultFieldMatrix;
+					} else {
+						cout << "In " << inputFileName << ", result: '"
+								<< result_name << "' has two result field"
+										" of the same step value: '"
+								<< step_value << endl;
+						logFile << "In " << inputFileName << ", result: '"
+								<< result_name << "' has two result field"
+										" of the same step value: '"
+								<< step_value << endl;
+						MPI_Abort(MPI_COMM_WORLD, 1);
+					}
+				}
+
+			}
+			resultNameFound = false;
+
+		}
+		getline(readFemRes, line);
+	}
+
+	//
+
+	map<double, map<string, dbMatrix> >::iterator it_stepVal,it_stepVal_beg,it_stepVal_end;
+	it_stepVal_beg = resultsData.begin();
+	it_stepVal_end = resultsData.end();
+	map<string, dbMatrix>::iterator it_result,it_result_beg,it_result_end;
+
+	vector<string> nameToDeleteList;
+	intVector nameToDeleteListID;
+	for (it_stepVal = it_stepVal_beg; it_stepVal != it_stepVal_end;
+			it_stepVal++) {
+
+		if (it_stepVal == it_stepVal_beg) {
+			it_result_beg = it_stepVal->second.begin();
+			it_result_end = it_stepVal->second.end();
+			logFile << "------------------------------------------" << endl;
+			logFile << "Step: " << it_stepVal->first;
+			for (it_result = it_result_beg; it_result != it_result_end;
+					it_result++) {
+				logFile << it_result->first << endl;
+				resultNameList.push_back(it_result->first);
+			}
+		} else {
+			logFile << "------------------------------------------" << endl;
+			logFile << "Step: " << it_stepVal->first << endl;;
+			for (it_result = it_result_beg; it_result != it_result_end;
+								it_result++) {
+				logFile << it_result->first << endl;
+			}
+			for(int i=0; i < resultNameList.size(); i++){
+				it_result_beg = it_stepVal->second.begin();
+				it_result_end = it_stepVal->second.end();
+
+				logFile << "looking for: " << resultNameList[i] << endl;
+				if(it_stepVal->second.find(resultNameList[i])
+						== it_stepVal->second.end()){
+					logFile << "Not found !!" << endl;
+					nameToDeleteList.push_back(resultNameList[i]);
+					nameToDeleteListID.push_back(i);
+				}
+			}
+
+		}
+	}
+
+	cout << "deleting incompatible result names" << endl;
+
+	// Delete incompatible result names
+	logFile << "size of nameToDeleteList: " << nameToDeleteList.size() << endl;
+	for(int i = nameToDeleteListID.size() ; i != 0; i--){
+
+		logFile << "resultNameList" << endl;
+		for(int j = 0; j < resultNameList.size(); j++){
+			logFile << "[" << j << "]" << resultNameList[j] << endl;
+		}
+
+		logFile << "deleting entry: " << nameToDeleteListID[i] << endl;
+		resultNameList.erase(resultNameList.begin()+nameToDeleteListID[i]);
+
+		logFile << "resultNameList" << endl;
+		for(int j = 0; j < resultNameList.size(); j++){
+			logFile << "[" << j << "]" << resultNameList[j] << endl;
+		}
+	}
+
+	logFile << "Deleting elements in result map " << endl;
+	for (it_stepVal = it_stepVal_beg; it_stepVal != it_stepVal_end;
+				it_stepVal++) {
+
+		it_result_beg = it_stepVal->second.begin();
+		it_result_end = it_stepVal->second.end();
+
+		for(int i=0; i < nameToDeleteList.size(); i++){
+			logFile << "Here" << endl;
+			it_result = it_stepVal->second.find(nameToDeleteList[i]);
+
+			if(it_result != it_result_end){
+				logFile << "Result excluded: " << it_result->first;
+				cout << "Result excluded: " << it_result->first;
+				it_stepVal->second.erase(it_result);
+			}
+		}
+
+
+		it_result = it_result_end;
+		it_result--;
+		for(; it_result != it_result_beg; it_result--){
+			bool isFound = false;
+			for(int i = 0 ; i < resultNameList.size(); i++){
+				logFile << "Comparing resultNameList[i]: " << resultNameList[i]
+				        << " with it_result->first: " << it_result->first << endl;
+				if(resultNameList[i] == it_result->first){
+					logFile << "Found !!" << endl;
+					isFound = true;
+					break;
+				}
+			}
+
+			if(isFound == false){
+				logFile << "Step[" << it_stepVal->first << "] Deleting result:" << it_result->first << endl;
+				it_stepVal->second.erase(it_result);
+			}
+		}
+	}
+
+	// Close .res file
+	readFemRes.close();
 }
 
 /*!****************************************************************************/
@@ -323,6 +729,114 @@ void Data::readResultFile_txtFormat(ofstream& logFile) {
 	logFile << "Displacement not assigned to Data" << endl;
 	cout << "Displacement not assigned to Data" << endl;
 	MPI_Abort(MPI_COMM_WORLD, 1);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read and Extract results from a simple text file format
+void Data::readGraphResultFile(InputFileData* InputData, ofstream& logFile){
+
+	std::string fileName = folderName + "defVolLoad1.grf";
+	dbMatrix defVolLoadMat;
+	readGraphFile_grfFormat(fileName, defVolLoadMat, logFile);
+	graphResultList.push_back(defVolLoadMat[1]); // discard volumes
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read and Extract results from a simple text file format
+void Data::readGraphFile_grfFormat(std::string& fileName, dbMatrix& grfMatrix,
+		ofstream& logFile) {
+
+	ifstream readGraphFile(fileName.c_str());
+	string line;
+
+	dbMatrix resMat;
+	string blank_line = "";
+
+	int counter = 0;
+	if (readGraphFile.is_open()) {
+		while (readGraphFile.good()) {
+			getline(readGraphFile,line);
+			string trimLine = line;
+			trimLine.erase(remove(trimLine.begin(), trimLine.end(), '\t'), trimLine.end());
+			trimLine.erase(remove(trimLine.begin(), trimLine.end(), ' '), trimLine.end());
+			if (trimLine.compare(0,1,"#") != 0 && trimLine.compare(blank_line) != 1) {
+				logFile << "----------------------------------" << endl;
+				logFile << "Line: " << line << endl;
+				istringstream ss(line);
+				dbVector resultLine;
+				for (;;) {
+					string s;
+					if (!getline(ss, s, ' '))
+						break;
+					else {
+//						cout << "reading:" << atof(s.c_str()) << endl;
+						resultLine.push_back(atof(s.c_str()));
+					}
+				}
+				if(resultLine.size() > 0)
+					resMat.push_back(resultLine);
+
+			}
+		}
+		readGraphFile.close();
+	} else {
+		cout << "Unable to open " << fileName << " file:" << endl;
+		logFile << "Unable to open " << fileName << " file:" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	logFile << "Data::readGraphFile_grfFormat" << endl;
+	printMatrix(resMat,"",logFile);
+
+	// Transpose resMat
+	grfMatrix.resize(resMat[0].size(),dbVector(resMat.size(),0));
+	for(int i = 0; i < resMat.size(); i++){
+		for(int j = 0; j < resMat[0].size(); j++){
+			grfMatrix[j][i] = resMat[i][j];
+		}
+	}
+
+#ifdef _DataDebugMode_
+		logFile << "Data::readGraphFile_grfFormat" << endl;
+		printMatrix(grfMatrix,"",logFile);
+#endif
+
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::saveGraphResultsToFile(ofstream& logFile){
+
+	std::string outputFileName = "defVolLoad1.grf";
+	saveGraphResultsToFile_grf_format(outputFileName,graphResultList[0],
+			graphResultList[1],logFile);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::saveGraphResultsToFile_grf_format(std::string outputFileName,
+		dbVector& graphVecOne,dbVector& graphVecTwo,ofstream& logFile){
+
+	if(graphVecOne.size() != graphVecTwo.size()){
+		cout << "In Data::saveGraphResultsToFile_grf_format, graphVecOne and"
+						" graphVecTwo are not of the same size" << endl;
+		logFile << "In Data::saveGraphResultsToFile_grf_format, graphVecOne and"
+				" graphVecTwo are not of the same size" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	ofstream writeGraphRes(outputFileName);
+
+	for(int i = 0 ; i < graphVecOne.size(); i++){
+			writeGraphRes << graphVecOne[i] << " " << graphVecTwo[i] << endl;
+	}
+
+	writeGraphRes.close();
 
 }
 
@@ -1232,7 +1746,7 @@ void Data::setResult(const char* resultName, dbMatrix result) {
 		resultList[str] = result ;
 	else{
 		cout << "ERROR: In Data::setResult, '" << resultName
-		<< "' already exists in resultList" << endl;
+				<< "' already exists in resultList" << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 }
@@ -1249,7 +1763,7 @@ dbMatrix& Data::getResult(const char* resultName) {
 		return it->second;
 	else {
 		cout << "ERROR: In Data::getResult, '" << resultName
-				<< "' already exists in resultList" << endl;
+				<< "' does not exist in resultList" << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
@@ -1303,7 +1817,7 @@ int& Data::getResultDOF(const char* resultName) {
 		return it->second;
 	else {
 		cout << "ERROR: In Data::getResultDOF, '" << resultName
-				<< "' already exists in resultDofList" << endl;
+				<< "' does not exist in resultDofList" << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
@@ -1325,5 +1839,122 @@ void Data::deleteResultDOF(const char* resultName){
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::calcCavityVolumes(InputFileData* InputData,ofstream& logFile){
+
+	using namespace std;
+
+	cout << "Calculating the cavities volumes" << endl;
+	logFile << "Calculating the cavities volumes" << endl;
+
+	dbMatrix& resultMatrix = this->getResult("displacement");
+	printMatrix(resultMatrix,"displacement Matrix",logFile);
+
+	vector<dbMatrix> resultMatList(resultMatrix[0].size(),dbMatrix(resultMatrix.size()/3, dbVector(3)));
+
+
+	for(int i = 0 ; i < resultMatrix[0].size(); i++){
+		dbMatrix& mat = resultMatList[i];
+
+		int row = 0; int col = 0;
+		for(int j = 0 ; j < resultMatrix.size() ; j++){
+
+			mat[row][col] = resultMatrix[j][i];
+			col++;
+
+			if(col>2){
+				col = 0;
+				row++;
+			}
+		}
+
+	}
+
+
+	FEMGeometry* myData_MeshData =  this->getMeshData()->getFEMGeoData();
+	InputFileData* myData_InputData =  this->getMeshData()->getFEMInputData();
+
+	dbMatrix& allLoadMat = myData_InputData->getSurfacePressureLoads();
+	printMatrix(allLoadMat,"allLoadMat",logFile);
+
+	dbMatrix loadMat;
+
+	int choice = 1;
+	if (choice == 0) {
+		for (int i = 0; i < allLoadMat.size(); i++) {
+			if (allLoadMat[i][4] == (double) 1.0) {
+				loadMat.push_back(allLoadMat[i]);
+			}
+		}
+	} else {
+		loadMat = allLoadMat;
+	}
+
+	printMatrix(loadMat,"loadMat",logFile);
+
+	dbMatrix& lineLoadMat = myData_InputData->getLineDispBoundConds();
+	printMatrix(lineLoadMat,"lineLoadMat",logFile);
+
+	int numOfFaces = loadMat.size();
+
+	int numOfSteps = resultMatList.size();
+	dbVector volumeVec(numOfSteps,0);
+
+	for(int i = 0 ; i < numOfSteps; i++){
+
+		dbMatrix& rMatrix = resultMatList[i];
+
+		vector<Particle> ptcls = myData_MeshData->getNodesVec();
+		// Update the coordinates
+		for(int j = 0 ; j < ptcls.size(); j++){
+			for(int k = 0 ; k < 3; k++){
+				ptcls[j].getCoord(k) += rMatrix[j][k];
+			}
+		}
+
+		double volume = 0 ;
+
+		int x = 0;
+		int y = 1;
+		int z = 2;
+
+		for(int m = 0 ; m < numOfFaces; m++){
+
+			dbVector& v1 = ptcls[loadMat[m][1]-1].getCoords();
+			dbVector& v2 = ptcls[loadMat[m][2]-1].getCoords();
+			dbVector& v3 = ptcls[loadMat[m][3]-1].getCoords();
+
+			volume += ((v2[y] - v1[y])*(v3[z] - v1[z]) -
+					   (v2[z] - v1[z])*(v3[y] - v1[y]))*
+					   (v1[x] + v2[x] + v3[x] );
+		}
+
+		volumeVec[i] = abs(volume / 6.0);
+
+		logFile << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
+	}
+
+//	dbMatrix& graphResult = this->getGraphResultList();
+//	printMatrix(graphResult,"graphResult", logFile);
+
+	string graphFileName = folderName + "defVolLoad_myAlgo.grf";
+
+	ofstream writeGraph(graphFileName);
+	writeGraph.precision(15);
+
+	if(writeGraph.good()){
+		//for(int i = 0 ; i < graphResult[0].size(); i++){
+			//writeGraph << volumeVec[i] << " " << graphResult[0][i] << endl;
+		//}
+
+		for(int i = 0 ; i < step_value_vec.size(); i++){
+			writeGraph << volumeVec[i] << " " << step_value_vec[i] << endl;
+		}
+	}
+
+	writeGraph.close();
 }
 

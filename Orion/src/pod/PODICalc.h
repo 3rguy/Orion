@@ -19,6 +19,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <cmath>
+#include <numeric>
+
+#include <sys/stat.h>
 
 #include "commonTypedefs.h"
 #include "commonFunctions.h"
@@ -38,13 +41,16 @@ public:
 
 	PODICalc(InputFileData* InputData, ofstream& logFile);
 
+	dbVector& getPODInterpolants(){return PODInterpolants;};
+	void setPODInterpolants(dbVector interpolants){PODInterpolants = interpolants;};
+
 	/*!************************************************************************/
 	/*!************************************************************************/
 	PODICalc(dbVector& myParameters, dbVector& parameterRadii,
 			intVector& supportDataID, dbMatrix& dataParametersList,
 			vector<dbMatrix>& displacementList,
-			dbMatrix& resultingDisplacementMatrix, InputFileData* InputData,
-			ofstream& logFile);
+			dbMatrix& resultingDisplacementMatrix, DataContainer* problemData,
+			InputFileData* InputData, ofstream& logFile);
 
 	/*!************************************************************************/
 	/*!************************************************************************/
@@ -62,29 +68,33 @@ public:
 	/*!************************************************************************/
 	void PODInterpolation(vector<dbMatrix>& rearrangedisplacementList,
 			dbVector& interpolants, dbMatrix& resultingDisplacementMatrix,
-			InputFileData* InputData, ofstream& logFile);
+			DataContainer* problemData, InputFileData* InputData,
+			ofstream& logFile);
 
 	/*!************************************************************************/
 	/*!************************************************************************/
 	void PODInterpolationEnhanced(vector<dbMatrix>& rearrangedisplacementList,
 			dbVector& interpolants, dbMatrix& resultingDisplacementMatrix,
-			InputFileData* InputData, ofstream& logFile);
+			DataContainer* problemData, InputFileData* InputData,
+			ofstream& logFile);
+
+	/*!************************************************************************/
+	/*!************************************************************************/
+	void savePOMsToFile_ResFormat(dbMatrix& POMs, int stepValueID,
+			DataContainer* problemData,	InputFileData* InputData,
+			ofstream& logFile);
+
+	/*!************************************************************************/
+	/*!************************************************************************/
+	void savePOVsToFile_ResFormat(dbVector& POVs, int stepValueID,
+			DataContainer* problemData, InputFileData* InputData,
+			ofstream& logFile);
+
+
 
 private:
 
-/*
-  	dbMatrix dataMat;
-
-    double energyLevel;
-    double energyConserv;
-
-    dbVector POVs;
-    dbMatrix POMs;
-
-    int numOfPOVsConserv;
-
-	double dummy;
-*/
+	dbVector PODInterpolants;
 
 };
 

@@ -34,6 +34,7 @@ void PODCalc::SVDCalc(ofstream& logFile) {
 	// Carry out the SVD of matrix "dataMat"
 	dbMatrix V;
 	dbVector singularValues;
+
 	SVD(dataMat,POMs,V,singularValues,logFile);
 
 	POVs.resize(singularValues.size());
@@ -75,6 +76,12 @@ void PODCalc::KLDCalc(ofstream& logFile) {
 //! Calculate the POVs and POMs using the method of snapshots
 void PODCalc::snapshotCalc(ofstream& logFile) {
 
+	/* Algorithm adapted from:
+		N.J. Falkiewicz and E.S. Cesnik, Proper Orthogonal Decomposition for
+		Reduction-Order Thermal Solution in Hypersonic Aerothermoelastic
+		Simulations. AIAA Journal, 994:1009(Vol.49,No.5), May 2011
+	*/
+
 	// Calculate (A^T)A
 	dbMatrix snapshotMat;
 	innerTensorProduct(dataMat, dataMat, snapshotMat, true, false, logFile);
@@ -87,16 +94,16 @@ void PODCalc::snapshotCalc(ofstream& logFile) {
 		}
 	}
 
-	printMatrix(snapshotMat,"snapshotMat",logFile);
+//	printMatrix(snapshotMat,"snapshotMat",logFile);
 
 	// Carry out the SVD of the snapshot matrix
 	dbMatrix U, V;
 	dbVector S;
 	SVD(snapshotMat, U, V, S, logFile);
 
-	printMatrix(U,"U",logFile);
-	printVector(S,"S",logFile);
-	printMatrix(V,"V",logFile);
+//	printMatrix(U,"U",logFile);
+//	printVector(S,"S",logFile);
+//	printMatrix(V,"V",logFile);
 
 	// Calculate the POM
 	POMs.resize(dataMat.size(), dbVector(S.size(), 0));
@@ -120,6 +127,7 @@ void PODCalc::snapshotCalc(ofstream& logFile) {
 			POMs[l][i] = POMs_i[l];
 	}
 
+	// Assign the POVs
 	POVs = S;
 }
 
@@ -151,8 +159,6 @@ void PODCalc::setPOVsandPOMs(InputFileData* InputData,ofstream& logFile){
 
 	case 3:
 		snapshotCalc(logFile);
-		printMatrix(POMs,"Snaptshot_POMs",logFile);
-		printVector(POVs,"Snaptshot_POVs",logFile);
 		break;
 
 	default:
@@ -201,6 +207,8 @@ dbVector& PODCalc::getPOVsConserved(ofstream& logFile){
 void PODCalc::energyConservCalc(ofstream& logFile){
 
 	double totEnergy = 0;
+
+	printVector(POVs,"POVs",logFile);
 
 	//Calculate the total amount of energy
 	for(int i=0;i<POVs.size();i++){
@@ -410,7 +418,9 @@ void PODCalc::expandVector(dbVector& reducedVector,dbVector& fullVector,
 
 	logFile << "Full Vector" << endl;
 	logFile << "-----------" << endl;
-	printVector(fullVector,"",logFile);
+	for(int i=0;i < fullVector.size(); i++){
+		logFile << fullVector[i] << endl;
+	}
 #endif
 
 }

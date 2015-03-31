@@ -54,13 +54,11 @@ GridNodes::GridNodes(Data& iData, InputFileData* InputData, ofstream& logFile)
 	logFile << "***** Setting up Sample Nodes *****" << endl << endl;
 	setGridNodes(InputData, logFile);
 
-	logFile << "GridNodes::GridNodes is not ready yet !!" << endl;
-	cout << "GridNodes::GridNodes is not ready yet !!" << endl;
+	logFile << "GridNodes::GridNodes(Data& iData, InputFileData* InputData, ofstream& logFile);"
+			":gridGeometry(NULL),MeshlessData(NULL) is not ready yet !!" << endl;
+	cout << "GridNodes::GridNodes(Data& iData, InputFileData* InputData, ofstream& logFile):"
+			"gridGeometry(NULL),MeshlessData(NULL) is not ready yet !!" << endl;
 	MPI_Abort(MPI_COMM_WORLD, 1);
-
-//	for (int i = 0; i < nodalList.size(); i++) {
-//
-//	}
 
 }
 
@@ -512,7 +510,7 @@ void GridNodes::initCalcResultOnParticles(Data& iData,
 
 	importGridNodes(InputData,logFile);
 
-	setSupportingParticles_(gFEMGeometry,nodalList,InputData,logFile);
+	setSupportingParticles_two(gFEMGeometry,nodalList,InputData,logFile);
 
 	setInterpolantsOnNodes(gFEMGeometry, InputData, logFile);
 
@@ -536,8 +534,8 @@ dbMatrix GridNodes::calcResultOnParticles(Data& iData, dbMatrix& interpolantsLis
 void GridNodes::interpolantSetup(Data& iData, InputFileData* InputData,
 		ofstream& logFile) {
 
-//	setSupportingParticles(iData, InputData, logFile);
-	setSupportingParticles_(iData.getMeshData(),nodalList,InputData,logFile);
+
+	setSupportingParticles_two(iData.getMeshData(),nodalList,InputData,logFile);
 
 	setInterpolantsOnNodes(iData.getMeshData(), InputData, logFile);
 
@@ -622,9 +620,82 @@ void GridNodes::setSupportingParticles(Data& iData, InputFileData* InputData,
 
 /*!****************************************************************************/
 /*!****************************************************************************/
+void GridNodes::setSupportingParticles_two(FEMGeometryExt* FEMDataExt,
+		std::vector<Node>& nodesVec, InputFileData* InputData,
+		ofstream& logFile) {
+
+#ifdef _GridNodesDebugMode_
+	logFile << "GridNodes::setSupportingParticles_two" << endl;
+	FEMDataExt->printVolumePtclsDetails(InputData, logFile);
+#endif
+
+	intVector nodesOutsideGeo, nodesInsideGeo;
+
+//	std::string fileName = "mesh_N" +
+//			convertIntToString(FEMDataExt->getFEMGeoData()->getNodesVec().size());
+//	FEMDataExt->saveToGidMeshFile(fileName,InputData,logFile);
+
+	logFile << "Total number of grid nodes: " << nodalList.size() << endl;
+	for (int i = 0; i < nodesVec.size(); i++) {
+		dbVector& nodeCoord = nodesVec[i].getCoords();
+
+		intVector sVols;
+		intVector sPtcls = FEMDataExt->findSupportingPtcls(nodeCoord, sVols,
+				InputData, logFile);
+
+#ifdef _GridNodesDebugMode_
+		logFile << "-----------------------------------------" << endl;
+		logFile << "For point[" << i << "]: " << nodeCoord[0] << " "
+		<< nodeCoord[1] << " " << nodeCoord[2] << " " << endl;
+
+		printVector(sPtcls,"sPtcls",logFile);
+		printVector(sVols,"sVols",logFile);
+		for(int j = 0; j < sVols.size(); j++) sVols[j]++;
+		printVector(sVols,"sVols",logFile);
+#endif
+
+		if (sPtcls.size() == 0) {
+			nodesOutsideGeo.push_back(i);
+//			printVector(nodesOutsideGeo,"nodesOutsideGeo",logFile);
+		} else {
+			nodesInsideGeo.push_back(i);
+//			nodesVec[nodesInsideGeo[i]].getSPtlcs() = sPtcls;
+			nodesVec[i].getSPtlcs() = sPtcls;
+		}
+	}
+
+	int activateFilter = InputData->getValue("filterSupportingParticles");
+	if (activateFilter == 1) {
+		cout << "Particle Filter activated" << endl;
+		logFile << "Particle Filter activated" << endl;
+		vector<Particle>& ptclList = FEMDataExt->getFEMGeoData()->getNodesVec();
+		filterSupportingParticles(nodesVec, ptclList, InputData, logFile);
+	}
+
+#ifdef _GridNodesDebugMode_
+	logFile << "********** Supporting List **********" << endl;
+	for(int i = 0; i < nodesVec.size(); i++) {
+		logFile << "Node[" << i << "]: ";
+		intVector& suppPtcls = nodesVec[i].getSPtlcs();
+		for(int j = 0; j < suppPtcls.size(); j++) {
+			logFile << suppPtcls[j] << " ";
+		}
+		logFile << endl;
+	}
+
+	logFile << "Total nodes outside the geometry: " << nodesOutsideGeo.size() << endl;
+	printVector(nodesOutsideGeo,"nodesOutsideGeo",logFile);
+#endif
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
 void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 		std::vector<Node>& nodesVec, InputFileData* InputData,
 		ofstream& logFile) {
+
+	logFile << "GridNodes::setSupportingParticles_" << endl;
 
 	std::map<std::string, oPType> modelData; // To satisfy findPointInGeometry input argument
 	modelData["integrationMethod"] = 1; // Gauss integration scheme.
@@ -670,6 +741,8 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 
 			intVector volumeNodes =
 					FEMDataExt->getNodesElemsVec()[volumeElem].getNodes();
+
+#ifdef _GridNodesDebugMode_
 			logFile << "GaussPoint[" << gPoint.getGlobalID()
 					<< "](ID:" << i << "|";
 			for(int j = 0; j < gPoint.getCoords().size(); j++){
@@ -681,6 +754,7 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 				logFile << " " << volumeNodes[j] << ",";
 			}
 			logFile << endl;
+#endif
 
 		} else {
 			nodesOutsideGeo.push_back(i);
@@ -689,21 +763,22 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 
 	saveSelectedNodesToFile(nodesInsideGeo,logFile);
 
-	cout << "Num of Gauss Points created: " << gaussPointsVec.size() << endl;
-	cout << "Num of Gauss Points to be replaced: " << FEMData->getGaussPointsVec().size() << endl;
+	logFile << "Num of Gauss Points created: " << gaussPointsVec.size() << endl;
+	logFile << "Num of Gauss Points to be replaced: " << FEMData->getGaussPointsVec().size() << endl;
 
 	FEMData->getGaussPointsVec() = gaussPointsVec;
-	cout << "GaussPoint list overwritten in FEMData " << endl;
+	logFile << "GaussPoint list overwritten in FEMData " << endl;
 
-	//---------------------------------------------------------------------
+	//--------------------------------------------------------------------------
+	//--------------------------------------------------------------------------
 	// Set up the meshfree approximation data.
 
-
 	std::map<std::string, double> calcData;
-
 	PetscViewer viewerMPI, viewerSEQ;
-	MeshlessData = new MeshlessApproximation(FEMData, FEMDataExt->getFEMInputData(), calcData,
-			modelData, logFile, viewerMPI, viewerSEQ);
+
+	MeshlessData = new MeshlessApproximation(FEMData,
+			FEMDataExt->getFEMInputData(), calcData, modelData, logFile,
+			viewerMPI, viewerSEQ);
 
 	findSupportingParticles(modelData, FEMDataExt->getFEMInputData(), logFile);
 
@@ -715,6 +790,19 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 
 //	vector<ParticleExt>& ptclList = FEMDataExt->getNodesVec();
 	vector<Particle>& ptclList = MeshlessData->getParticlesVec();
+
+	logFile << "In each particle, elems store:" << endl;
+	for(int i = 0; i < ptclList.size(); i++){
+
+		intVector elems = ptclList[i].getElems();
+		logFile << i << ")[" << elems.size() << "]:";
+		for(int j = 0 ; j < elems.size(); j++){
+			logFile << elems[j] << ", ";
+		}
+		logFile << endl;
+	}
+
+
 //	for (int i = 0; i < nodesInsideGeo.size(); i++) {
 //
 //		dbVector& nCoord = nodesVec[nodesInsideGeo[i]].getCoords();
@@ -737,7 +825,7 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 //
 //		nodesVec[nodesInsideGeo[i]].getSPtlcs() = supPtcls;
 //	}
-
+#ifdef _GridNodesDebugMode_
 	logFile <<"In GridNodes::setSupportingParticles_, particle list is:" << endl;
 	for(int i = 0; i < ptclList.size(); i++){
 		logFile << "Particle[" << i << "]: ";
@@ -746,35 +834,45 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 		}
 		logFile << endl;
 	}
+#endif
 
 	for (int i = 0; i < nodesInsideGeo.size(); i++) {
 
 		dbVector& nCoord = nodesVec[nodesInsideGeo[i]].getCoords();
 		intVector& supPtcls = gaussPointsVecMeshless[i].getSupportPtcls();
 
-		logFile << " ----------------------------------" << endl;
-		printVector(gaussPointsVecMeshless[i].getSupportPtcls(),
-				"gaussPointsVecMeshless[i].getSupportPtcls()", logFile);
-		printVector(nCoord, "nCoord", logFile);
+		// Delete supporting nodes that coincides with gridNodes (Disabled temporarily
+		// TODO: Investiage if algorithm below makes a big difference on the results
+		//		logFile << " ----------------------------------" << endl;
+//		printVector(gaussPointsVecMeshless[i].getSupportPtcls(),
+//				"gaussPointsVecMeshless[i].getSupportPtcls()", logFile);
+//		printVector(nCoord, "nCoord", logFile);
 
-		for (int j = 0; j < supPtcls.size();) {
-			logFile << "Considering particle: " << supPtcls[j] << endl;
-			printVector(ptclList[supPtcls[j]].getCoords(),
-					"supPtcls[j]].getCoords()", logFile);
+//		for (int j = 0; j < supPtcls.size();) {
+//			logFile << "Considering particle: " << supPtcls[j] << endl;
+//			printVector(ptclList[supPtcls[j]].getCoords(),
+//					"supPtcls[j]].getCoords()", logFile);
+//
+//			if (nCoord == ptclList[supPtcls[j]].getCoords()) {
+//				logFile << "Particle [" << supPtcls[j] << "|"
+//						<< &*(supPtcls.begin() + j) << "] removed" << endl;
+//				supPtcls.erase(supPtcls.begin() + j);
+//			} else {
+//				j++;
+//			}
+//		}
 
-			if (nCoord == ptclList[supPtcls[j]].getCoords()) {
-				logFile << "Particle [" << supPtcls[j] << "|"
-						<< &*(supPtcls.begin() + j) << "] removed" << endl;
-				supPtcls.erase(supPtcls.begin() + j);
-			} else {
-				j++;
-			}
-		}
-
-		printVector(gaussPointsVecMeshless[i].getSupportPtcls(),
-				"gaussPointsVecMeshless[i].getSupportPtcls()", logFile);
+//		printVector(gaussPointsVecMeshless[i].getSupportPtcls(),
+//				"gaussPointsVecMeshless[i].getSupportPtcls()", logFile);
 
 		nodesVec[nodesInsideGeo[i]].getSPtlcs() = supPtcls;
+	}
+
+	int activateFilter = InputData->getValue("filterSupportingParticles");
+	if(activateFilter == 1){
+		cout << "Particle Filter activated" << endl;
+		logFile << "Particle Filter activated" << endl;
+		filterSupportingParticles(nodesVec,ptclList,InputData,logFile);
 	}
 
 #ifdef _GridNodesDebugMode_
@@ -801,15 +899,69 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 
 /*!****************************************************************************/
 /*!****************************************************************************/
-void GridNodes::findSupportingParticles(std::map<std::string, oPType>& modelData,
-		InputFileData* InputData, ofstream& logFile){
+void GridNodes::findSupportingParticles(
+		std::map<std::string, oPType>& modelData, InputFileData* InputData,
+		ofstream& logFile) {
 
-		logFile << "-------- Starting Gauss point support search --------" << endl;
+	logFile << "-------- Starting Gauss point support search --------" << endl;
 
-		InputData->setValue("supportComputationMode", 2);
+	InputData->setValue("supportComputationMode", 2);
 
-		MeshlessData->BackgroundMesh::setGaussPtcleConn(InputData, modelData,
-				logFile);
+	MeshlessData->BackgroundMesh::setGaussPtcleConn(InputData, modelData,
+			logFile);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void GridNodes::filterSupportingParticles(std::vector<Node>& nodesVec,
+		vector<Particle>& ptclList, InputFileData* InputData,
+		ofstream& logFile) {
+
+	logFile << "-------- GridNodes::filterSupportingParticles --------" << endl;
+
+	int allowedSupPtcls = InputData->getValue("filterSupportingParticlesLimit");
+
+	for (int i = 0; i < nodesVec.size(); i++) {
+
+//		logFile << "----------------------" << endl;
+//		logFile << "For node[" << i << "]:" << endl;
+
+		dbVector& nCoords = nodesVec[i].getCoords();
+		intVector sPtcls = nodesVec[i].getSPtlcs();
+//		printVector(sPtcls,"sPtcls",logFile);
+		if (allowedSupPtcls < sPtcls.size()) {
+			// find sPtcls distances to nCoords
+			dbVector distVec(sPtcls.size(), 0);
+			for (int j = 0; j < sPtcls.size(); j++) {
+				dbVector& sCoords = ptclList[sPtcls[j]].getCoords();
+
+				double sum = 0;
+				for (int k = 0; k < sCoords.size(); k++) {
+					sum += pow(nCoords[k] - sCoords[k], 2);
+				}
+				distVec[j] = sqrt(sum);
+			}
+//			printVector(distVec,"distVec",logFile);
+
+			while(sPtcls.size() > allowedSupPtcls){
+				vector<double>::iterator it = max_element(distVec.begin(),distVec.end());
+				int location = it - distVec.begin();
+
+//				logFile << "Max Value found: " << *it << endl;
+
+				distVec.erase(distVec.begin()+location);
+				sPtcls.erase(sPtcls.begin()+location);
+//				printVector(distVec,"distVec(updated)",logFile);
+//				printVector(sPtcls,"sPtcls(updated)",logFile);
+
+			}
+
+			// Select the specified amount of smallest distance
+		}
+		nodesVec[i].getSPtlcs() = sPtcls;
+//		printVector(nodesVec[i].getSPtlcs(),"nodesVec[i].getSPtlcs()",logFile);
+	}
 
 }
 
@@ -934,6 +1086,7 @@ void GridNodes::setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* I
 			}
 
 			nodalList[i].setInterpolants(sPtclsInterpolants);
+			printVector(sPtclsInterpolants,"sPtclsInterpolants",logFile);
 		}
 	}
 }
@@ -1436,17 +1589,17 @@ dbMatrix GridNodes::assembleNodalResultMatrix(Data& iData, InputFileData* InputD
 		}
 	}
 
-	dbMatrix dispField(nodalList.size()*numDof,dbVector(numSteps,0));
+	dbMatrix resultField(nodalList.size()*numDof,dbVector(numSteps,0));
 
 	for (int j = 0; j < nodalList.size(); j++) {
 		if (nodalList[j].getStepDOFMat().size() > 0) {
 			for (int k = 0; k < numDof; k++) {
-				dispField[(j*numDof)+k] = nodalList[j].getStepDOFMat()[k];
+				resultField[(j*numDof)+k] = nodalList[j].getStepDOFMat()[k];
 			}
 		}
 	}
 
-	return dispField;
+	return resultField;
 }
 
 /*!****************************************************************************/
@@ -1508,8 +1661,6 @@ void GridNodes::saveNodesToFile(ofstream& logFile){
 /*!****************************************************************************/
 /*!****************************************************************************/
 void GridNodes::saveSelectedNodesToFile(intVector& nodesVec,ofstream& logFile){
-
-//	string outputFileName = "selectedGridNodes.dat";
 
 	string outputFileName;
 

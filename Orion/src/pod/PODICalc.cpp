@@ -17,14 +17,16 @@ PODICalc::PODICalc(InputFileData* InputData,ofstream& logFile){
 PODICalc::PODICalc(dbVector& myParameters, dbVector& parameterRadii,
 		intVector& supportDataID, dbMatrix& dataParametersList,
 		vector<dbMatrix>& displacementList,
-		dbMatrix& resultingDisplacementMatrix,InputFileData* InputData,
+		dbMatrix& resultingDisplacementMatrix,DataContainer* problemData,
+		InputFileData* InputData,
 		ofstream& logFile){
 
 	// Calculate the interpolants used during the interpolation process
-	dbVector interpolants;
 	interpolantsCalc(myParameters,dataParametersList,parameterRadii,
-			interpolants,InputData,logFile);
+			PODInterpolants,InputData,logFile);
 
+
+	// Rearrange displacement matrix
 	vector<dbMatrix> rearrangedDisplacementList;
 	if(InputData->getValue("dispMatrixRearrange") == 1 )
 		rearrangeDisplacementMatrix(displacementList,rearrangedDisplacementList,
@@ -32,15 +34,17 @@ PODICalc::PODICalc(dbVector& myParameters, dbVector& parameterRadii,
 	else
 		rearrangedDisplacementList = displacementList;
 
+
+	// Carry out the PODI calculation
 	int choice = InputData->getValue("PODICalculationType");
 	switch(choice){
 	case 1:
-		PODInterpolation(rearrangedDisplacementList,interpolants,
-				resultingDisplacementMatrix,InputData,logFile);
+		PODInterpolation(rearrangedDisplacementList,PODInterpolants,
+				resultingDisplacementMatrix,problemData,InputData,logFile);
 		break;
 	case 2:
-		PODInterpolationEnhanced(rearrangedDisplacementList,interpolants,
-				resultingDisplacementMatrix,InputData,logFile);
+		PODInterpolationEnhanced(rearrangedDisplacementList,PODInterpolants,
+				resultingDisplacementMatrix,problemData,InputData,logFile);
 		break;
 	default:
 		logFile << "PODICalculationType: " << choice << " does not exist.\n"
@@ -56,24 +60,26 @@ PODICalc::PODICalc(dbVector& myParameters, dbVector& parameterRadii,
 /*!****************************************************************************/
 /*!****************************************************************************/
 void PODICalc::interpolantsCalc(dbVector& myParameters,
-		dbMatrix& dataParametersList,dbVector& parametersRadii,
-		dbVector& interpolants,	InputFileData* InputData,ofstream& logFile){
+		dbMatrix& dataParametersList, dbVector& parametersRadii,
+		dbVector& interpolants, InputFileData* InputData, ofstream& logFile) {
 
 	int choice = InputData->getValue("interpolantionType");
 	//Interpolation* interpolationSpace;
 
-	switch(choice){
+	switch (choice) {
 
 	case 1:
 
 		// Constant Interpolation function
-		cout << "ERROR: Constant Interpolation not yet implemented" << endl;
-		MPI_Abort(MPI_COMM_WORLD,1);
+		cout << "ERROR: Constant Interpolation has not yet been implemented"
+				<< endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
 		break;
 
 	case 2:
 
 	{
+
 		Interpolation* MLSInterpolate = new Interpolation(myParameters,
 				dataParametersList, parametersRadii, interpolants, InputData,
 				logFile);
@@ -85,10 +91,17 @@ void PODICalc::interpolantsCalc(dbVector& myParameters,
 
 	default:
 		cout << "ERROR: Interpolation Type not implemented" << endl;
-		MPI_Abort(MPI_COMM_WORLD,1);
+		MPI_Abort(MPI_COMM_WORLD, 1);
 		break;
 
 	}
+
+	printVector(interpolants,"****** Interpolants ******",logFile);
+	oPType intpolantSum = 0;
+	for(int i=0; i<interpolants.size();i++) intpolantSum += interpolants[i];
+	logFile << "Sum of interpolants: " << intpolantSum << endl;
+	cout <<  "Sum of interpolants: " << intpolantSum << endl;
+
 }
 
 /*!****************************************************************************/
@@ -136,7 +149,8 @@ void PODICalc::rearrangeDisplacementMatrix(vector<dbMatrix>& displacementList,
 /*!****************************************************************************/
 void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 		dbVector& interpolants, dbMatrix& resultingDisplacementMatrix,
-		InputFileData* InputData, ofstream& logFile) {
+		DataContainer* problemData,InputFileData* InputData, ofstream& logFile)
+{
 
 
 #ifdef _PODICalcCheckMode_
@@ -152,6 +166,8 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 		}
 	}
 #endif
+
+	int PlotPOMs_choice = InputData->getValue("PlotPOMsAndPOVs");
 
 	int interpolation_choice = InputData->getValue("directInterpolation");
 	if (interpolation_choice == 1) {
@@ -210,6 +226,14 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 			//! Convert vector to high dimensional space
 			PODSpace->expandVector(interpolatedReducedDispVec,
 					fullInterpolatedDispVec, InputData, logFile);
+
+			// Save POMs to file
+			if (PlotPOMs_choice == 1) {
+				cout << "Saving POMs to file" << endl;
+				logFile << "Saving POMs to file" << endl;
+				savePOMsToFile_ResFormat(PODSpace->getPOMs(), i, problemData,
+						InputData, logFile);
+			}
 
 			delete PODSpace;
 
@@ -298,7 +322,8 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 /*!****************************************************************************/
 void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementList,
 		dbVector& interpolants, dbMatrix& resultingDisplacementMatrix,
-		InputFileData* InputData, ofstream& logFile) {
+		DataContainer* problemData, InputFileData* InputData, ofstream& logFile)
+{
 
 	logFile << "PODInterpolationEnhanced Algorithm used" << endl;
 
@@ -326,11 +351,13 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 				" INTEPOLATION HAS BEEN ACTIVATED" << endl;
 	}
 
+
 #ifdef _PODICalcDebugMode_
 	logFile << "********* PODICalc::PODInterpolation *********" << endl;
 	logFile << "---------- Result Matrix List ----------" << endl;
 	for(int i = 0; i < rearrangeDisplacementList.size(); i++) {
 		logFile << "Matrix No: " << i << endl;
+		logFile << "Size: " << rearrangeDisplacementList[0].size() << " x " << rearrangeDisplacementList[0][0].size() << endl;
 		for(int j = 0; j < rearrangeDisplacementList[i].size(); j++) {
 			for(int k = 0; k < rearrangeDisplacementList[i][j].size(); k++) {
 				logFile << rearrangeDisplacementList[i][j][k] << " ";
@@ -340,6 +367,7 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 	}
 #endif
 
+	int PlotPOMs_choice = InputData->getValue("PlotPOMsAndPOVs");
 
 	resultingDisplacementMatrix.resize(rearrangeDisplacementList[0].size(),
 			dbVector());
@@ -371,16 +399,14 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 		//Erase the zeroes entries
 		logFile << "Number of zero rows found = " << zeroEntriesVec.size() << endl;
 
-		printMatrix(fullDispMat,"fullDispMat -> Full",logFile);
+//		printMatrix(fullDispMat,"fullDispMat -> Full",logFile);
 
-		for(int j=zeroEntriesVec.size()-1; j>0 ; j--){
-//			logFile << "j: " << j << endl;
-//			logFile << zeroEntriesVec[j] << ", ";
+		for(int j=zeroEntriesVec.size()-1; j>-1 ; j--){
 			fullDispMat.erase(fullDispMat.begin()+zeroEntriesVec[j]);
 		}
 		logFile << endl;
 
-		printMatrix(fullDispMat,"fullDispMat -> Reduced",logFile);
+//		printMatrix(fullDispMat,"fullDispMat -> Reduced",logFile);
 
 		dbMatrix reduceDisplacementMatrix;
 		dbVector interpolatedReducedDispVec, fullInterpolatedDispVec;
@@ -411,7 +437,7 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 			logFile << "Number of POVs conserved: "
 					<< PODSpace->getNumPOVConserved() << endl;
 
-			logFile << "Number of POVs conserved: "
+			logFile << "Energy conserved: "
 					<< PODSpace->getEnergyConserved() << endl;
 
 			totalPOVsConserved += PODSpace->getNumPOVConserved();
@@ -420,6 +446,14 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 			//! Convert vector to high dimensional space
 			PODSpace->expandVector(interpolatedReducedDispVec,
 					fullInterpolatedDispVec, InputData, logFile);
+
+			// Save POMs to file
+			if (PlotPOMs_choice == 1) {
+				savePOMsToFile_ResFormat(PODSpace->getPOMs(), i, problemData,
+						InputData, logFile);
+				savePOVsToFile_ResFormat(PODSpace->getPOVs(), i, problemData,
+						InputData, logFile);
+			}
 
 			delete PODSpace;
 
@@ -449,13 +483,16 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 
 		}
 
-		// Restore the zeroes vector
-//		for (int j = 0; j < zeroEntriesVec.size(); j++) {
-//			fullDispMat.insert(fullDispMat.begin()+zeroEntriesVec[j],dbVector(fullDispMat[0].size(),0));
-//		}
+//		logFile << "---------- Before adding zero row ----------" << endl;
+//		printVector(fullInterpolatedDispVec,"fullInterpolatedDispVec",logFile);
+
+		//! Restore the zero rows
 		for (int j = 0; j<zeroEntriesVec.size(); j++){
 			fullInterpolatedDispVec.insert(fullInterpolatedDispVec.begin()+zeroEntriesVec[j],0);
 		}
+
+//		logFile << "---------- After adding zero row ----------" << endl;
+//		printVector(fullInterpolatedDispVec,"fullInterpolatedDispVec",logFile);
 
 		//! Store the full interpolated displacement vector
 		for (int j = 0; j < resultingDisplacementMatrix.size(); j++) {
@@ -495,6 +532,163 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 	}
 #endif
 
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void PODICalc::savePOMsToFile_ResFormat(dbMatrix& POMs, int stepValueID,
+		DataContainer* problemData, InputFileData* InputData,
+		ofstream& logFile) {
+
+	string& resultName = problemData->getString("PODIResultName");
+	int& nDOFPerNode = problemData->getInt("PODIDofPerNode");
+
+	string fileName = "POMs_" + resultName + ".res";
+
+	bool fileExist = true;
+
+	struct stat buffer;
+	if (stat(fileName.c_str(), &buffer) != 0) { // File exists
+		fileExist = false;
+	}
+
+	ofstream writeToFile(fileName, ios::app);
+
+	if (fileExist == false) {
+		writeToFile << "GiD Post Results File 1.0" << endl;
+	}
+
+	string analysis_name = " ";
+	string my_location = "onNodes";
+
+	string DofType;
+	if (nDOFPerNode == 1)
+		DofType = "scalar";
+	else if (nDOFPerNode > 1)
+		DofType = "vector";
+	else {
+		cout << "In PODICalc::savePOMsToFile_ResFormat, nDOFPerNode is invalid"
+				<< endl;
+		logFile
+				<< "In PODICalc::savePOMsToFile_ResFormat, nDOFPerNode is invalid"
+				<< endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	string componentNames = "ComponentNames ";
+	for (int i = 0; i < nDOFPerNode; i++) {
+
+		ostringstream convert;   // stream used for the conversion
+		convert << i + 1;
+
+		componentNames = componentNames + "\"DOF_" + convert.str() + "\", ";
+	}
+
+	int numDOFs = POMs.size();
+	int numPOMs = POMs[0].size();
+
+	logFile << "------------------------------------------------------" << endl;
+	printMatrix(POMs,"POMs",logFile);
+
+	for (int i = 0; i < numPOMs; i++) {
+		writeToFile << "Result " << "\"" << "POM_" << i << "\" \""
+				<< analysis_name << "\" " << stepValueID << " " << DofType
+				<< " " << my_location << endl;
+
+		writeToFile << componentNames << endl;
+		writeToFile << "Values" << endl;
+
+		int DOFCounter = 0;
+		int nodeCounter = 1;
+		while(DOFCounter< numDOFs) {
+
+			logFile << "writeToFile[nodeCounter] " << nodeCounter << endl;
+			writeToFile << nodeCounter << " ";
+
+			for (int k = 0; k < nDOFPerNode; k++) {
+				logFile << "Accessing: " << DOFCounter << ", " << i << endl;
+				writeToFile << POMs[DOFCounter][i] << " ";
+				DOFCounter++;
+			}
+			writeToFile << endl;
+			nodeCounter++;
+		}
+
+		writeToFile << "End Values" << endl;
+	}
+
+//	for (int i = 0; i < stepValueVec.size(); i++) {
+//		for (int j = 0; j < numPOMs; j++) {
+//			writeToFile << "Result " << "\"" << "POM_" << j << "\" \""
+//					<< analysis_name << "\" " << stepValueVec[i] << " "
+//					<< DofType << " " << my_location << endl;
+//
+//			writeToFile << componentNames << endl;
+//			writeToFile << "Values" << endl;
+//
+//			int DOFCounter = 0;
+//			int nodeCounter = 1;
+//			while (DOFCounter < numDOFs) {
+//
+//				logFile << "writeToFile[nodeCounter] " << nodeCounter << endl;
+//				writeToFile << nodeCounter << " ";
+//
+//				for (int k = 0; k < nDOFPerNode; k++) {
+//					logFile << "Accessing: " << DOFCounter << ", " << j << endl;
+//					writeToFile << POMs[DOFCounter][j] << " ";
+//					DOFCounter++;
+//				}
+//				writeToFile << endl;
+//				nodeCounter++;
+//			}
+//
+//			writeToFile << "End Values" << endl;
+//		}
+//	}
+
+	//MPI_Abort(MPI_COMM_WORLD,1);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void PODICalc::savePOVsToFile_ResFormat(dbVector& POVs, int stepValueID,
+		DataContainer* problemData, InputFileData* InputData,
+		ofstream& logFile){
+
+	string& resultName = problemData->getString("PODIResultName");
+	int& nDOFPerNode = problemData->getInt("PODIDofPerNode");
+
+	string fileName = "POVs_" + resultName + ".grf";
+	string fileNamePer = "POVs_Perctage_" + resultName + ".grf";
+
+	bool fileExist = true;
+
+	struct stat buffer;
+	if (stat(fileName.c_str(), &buffer) != 0) { // File exists
+		fileExist = false;
+	}
+
+	ofstream writeToFile(fileName, ios::app);
+	ofstream writeToFilePer(fileNamePer, ios::app);
+
+	if (fileExist == false) {
+		writeToFile << "#POV_id POV_value" << endl;
+	}
+
+	double sumPOVs = 0 ;
+	for(int i=0; i < POVs.size(); i++){
+		sumPOVs += POVs[i];
+	}
+
+
+	for(int i=0; i < POVs.size(); i++){
+		writeToFile << i << "\t" << POVs[i] << endl;
+		writeToFilePer << i << "\t" << (POVs[i]/sumPOVs)*100 << endl;
+	}
+
+	writeToFile.close();
+	writeToFilePer.close();
 }
 
 

@@ -34,7 +34,8 @@ class Data
 public:
 	Data();
     Data(dbVector paramVec);
-    ~Data(){delMeshData();};
+//    ~Data(){delMeshData();};
+    ~Data(){};
 
     void setNdofs(int val){nDofs=val;};
     int& getNdofs(void){return nDofs;};
@@ -58,26 +59,43 @@ public:
     dbVector& getStepValueVec(){return step_value_vec;};
 
 
-    void delMeshData(void){delete meshData;};
+    void delMeshData(void);
     FEMGeometryExt* getMeshData(){return meshData;};
     void setMeshData(FEMGeometryExt* p){meshData = p;};
+
+    void setGraphResultList(dbMatrix graphMatList){graphResultList = graphMatList;};
+    dbMatrix& getGraphResultList(){return graphResultList;};
 
 //    void printDispMatrix(ofstream& logFile);
 //    void plotNode(int dof,ofstream& logFile);
 
 
     void readMeshDataFile(InputFileData* InputData, ofstream& logFile);
+    //void deleteMeshDataFile(InputFileData* InputData, ofstream& logFile);
 
     // Reading displacement matrix from files
     void readResultFile(InputFileData* InputData,ofstream& logFile);
     void readResultFile_txtFormat(ofstream& logFile);
 //    void readResultFile_resFormat(ofstream& logFile);
-    void readResultFile_resFormat(string& inputFileName,ofstream& logFile);
-	bool readResultFile_resFormat_specificResult(string& inputFileName, string& result_name,
-			dbMatrix& resultMatrix, int& numDofs, dbVector& resultStepVector,
-			ofstream& logFile);
+    void readResultFile_resFormat_resultwise(string& inputFileName,ofstream& logFile);
+	bool readResultFile_resFormat_specificResult(string& inputFileName,
+			string& result_name, dbMatrix& resultMatrix, int& numDofs,
+			dbVector& resultStepVector, ofstream& logFile);
 	vector<vector<string> > readResultFile_resFormat_HeadersOnly(
 			string& inputFileName, ofstream& logFile);
+
+	void readResultFile_resFormat(string& inputFileName,ofstream& logFile);
+	void readResultFile_resFormat_allResult(string& inputFileName,
+			vector<string>& resultNameList,
+			map<double, map<string,dbMatrix> >& resultsData,
+			ofstream& logFile);
+
+	void readGraphResultFile(InputFileData* InputData, ofstream& logFile);
+	void readGraphFile_grfFormat(std::string& fileName, dbMatrix& grfMatrix,
+			ofstream& logFile);
+	void saveGraphResultsToFile(ofstream& logFile);
+	void saveGraphResultsToFile_grf_format(std::string outputFileName,
+			dbVector& graphVecOne,dbVector& graphVecTwo,ofstream& logFile);
 
     // Writing generated displacement matrix to files
 //    void saveDispFile(ofstream& logFile);
@@ -101,14 +119,18 @@ public:
 
     void setResult(const char* resultName,dbMatrix result);
     dbMatrix& getResult(const char* resultName);
+    map<string,dbMatrix>& getResultList(){return resultList;};
     void deleteResult(const char* resultName);
 
     void setResultDOF(const char* resultName,int& dof);
     int& getResultDOF(const char* resultName);
+    map<string,int>& getResultDOFList(){return resultDofList;};
     void deleteResultDOF(const char* resultName);
 
     vector<string>& getResultNameList(){return resultNameList;};
     void setResultNameList(vector<string> nameList){resultNameList = nameList;};
+
+    void calcCavityVolumes(InputFileData* InputData,ofstream& logFile);
 
 
 private:
@@ -132,8 +154,7 @@ private:
     map<string,dbMatrix> resultList;
     map<string,int> resultDofList;
 
-    // To be removed in future
-//    dbMatrix dispMatrixList;
+    dbMatrix graphResultList;
 
     // DOFStandardisation stuff
     FEMGeometryExt* meshData;

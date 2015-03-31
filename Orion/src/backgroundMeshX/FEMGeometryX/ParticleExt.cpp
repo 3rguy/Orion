@@ -15,7 +15,6 @@ ParticleExt::ParticleExt(Particle ptcle) : Particle(ptcle){
 }
 
 
-
 ParticleExt::~ParticleExt() {}
 
 void ParticleExt::dummyFunction(){

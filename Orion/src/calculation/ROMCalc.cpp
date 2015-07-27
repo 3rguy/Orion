@@ -19,8 +19,14 @@ ROMCalc::ROMCalc(InputFileData* InputData, ofstream& logFile) :
 	problemData->setValue("calcGraphResultList",dbMatrix());
 	problemData->setValue("standardSteps",dbVector());
 
-	myData.readMeshDataFile(InputData, logFile);
-	system("cp -f fem.msh fem_orion.msh && rm -f fem.msh");
+	if (InputData->getValue("standardiseDOF") == 1){
+		myData.readTransformedMeshDataFile(InputData,logFile);
+		myData.getMeshData()->writeMeshFile("fem_orion_map.msh",InputData,logFile);
+	}
+	else{
+		myData.readMeshDataFile(InputData, logFile);
+		myData.getMeshData()->writeMeshFile("fem_orion.msh",InputData,logFile);
+	}
 
 	//! Carry out preprocessing
 	preProcessing(problemData, myDatabase,InputData, logFile);
@@ -49,7 +55,7 @@ void ROMCalc::preProcessing(DataContainer* problemData,Database& myDatabase,
 	extractParameters(problemData, myDatabase, InputData, logFile);
 
 	// Searching supports for main parameters from database
-	searchDatabase_two(problemData, myDatabase, InputData, logFile);
+	searchDatabase_three(problemData, myDatabase, InputData, logFile);
 
 	// Load-up all geometry and displacement data files
 	logFile << "Number of datasets selected: " << supportDataID.size() << endl;
@@ -86,7 +92,7 @@ void ROMCalc::preProcessing(DataContainer* problemData,Database& myDatabase,
 
 	dbVector& myParameters = problemData->getDbVector("myParameters");
 	myData.setParamValuesVec(myParameters);
-	myData.readMeshDataFile(InputData, logFile);
+	//myData.readMeshDataFile(InputData, logFile);
 	myData.setAnchorPoint(InputData->getValue("anchorPoint"));
 
 	standardisationProcess(problemData, myDatabase, InputData, logFile);
@@ -370,6 +376,141 @@ void ROMCalc::searchDatabase_two(DataContainer* problemData, Database& myDatabas
 	}
 
 
+	double extFactor = InputData->getValue("dbInfluenceRadExtFactor");
+	parameterRadii = dbVector(parameterRadii.size(),0);
+
+	for (int i = 0; i < supportDataID.size(); i++) {
+		for (int j = 0; j < dataList.size(); j++) {
+			if (supportDataID[i] == dataList[j].getId()) {
+				dbVector& params = dataList[j].getParamValuesVec();
+
+				oPType dist = 0;
+				for (int l = 0; l < params.size(); l++) {
+					dist = abs(params[l] - myParameters[l]) * extFactor;
+
+					if(dist > parameterRadii[l]){
+						parameterRadii[l] = dist;
+					}
+				}
+
+			}
+		}
+	}
+
+	printVector(parameterRadii,"parameterRadii",logFile);
+
+	// List all the supporting data that has been selected
+	logFile << "******* Supporting Data *******" << endl;
+	for (int j = 0; j < supportDataID.size(); j++) {
+		logFile << j << "). ID = " << supportDataID[j] << ", " << myDatabase.getDataId(supportDataID[j]).getFolderName() << endl;
+	}
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Search for the influencing particle in the database for the interpolation
+//! process
+void ROMCalc::searchDatabase_three(DataContainer* problemData, Database& myDatabase,
+		InputFileData* InputData, ofstream& logFile) {
+
+	cout << "Searching database" << endl;
+	logFile << "Searching database" << endl;
+
+	dbVector& myParameters = problemData->getDbVector("myParameters");
+	logFile << "myParameters: " <<myParameters.size() << endl;
+	intVector& supportDataID = problemData->getIntVector("supportDataID");
+	logFile << "supportDataID: " <<supportDataID.size() << endl;
+	dbVector& parameterRadii = problemData->getDbVector("parameterRadii");
+	logFile << "parameterRadii: " <<parameterRadii.size() << endl;
+
+	// Read influence factors from input file
+	string inputParam_start = "dbInfluenceRangeFactor";
+	dbVector radiusFactorVec(myParameters.size(),0);
+	for(int i=0; i < myParameters.size(); i ++){
+
+		ostringstream convert;   // stream used for the conversion
+		convert << i;
+		string inputParam = inputParam_start + convert.str();
+
+		radiusFactorVec[i] = InputData->getValue(inputParam.c_str());
+
+		logFile << "In searchDatabase_two, inputParam = " << inputParam
+				<< " -> " << radiusFactorVec[i] << endl;
+	}
+
+
+	// Determine the max and min value of each parameter(i.e Range) and store
+	// them in the matrix "myParamaterInfluenceRange"
+	int counter = 0;
+	dbMatrix myParamaterInfluenceRange(myParameters.size(), dbVector(2));
+	parameterRadii.resize(myParameters.size());
+	for (int i = 0; i < myParameters.size(); i++) {
+
+		// record the limits of the selected parameters
+		myParamaterInfluenceRange[counter][0] = myParameters[i]
+				- (myParameters[i] * radiusFactorVec[i]); 	// Min value
+		myParamaterInfluenceRange[counter][1] = myParameters[i]
+				+ (myParameters[i] * radiusFactorVec[i]);	// Max value
+
+		// record the influence radii
+		parameterRadii[counter] = myParameters[i] * radiusFactorVec[i];
+
+		logFile << "Range: " << myParamaterInfluenceRange[counter][0]
+				<< " < Parameter[" << i << "]: " << myParameters[i] << " < "
+				<< myParamaterInfluenceRange[counter][1] << endl;
+
+		counter++;
+	}
+
+	// Extract the list of data
+	vector<Data> dataList = myDatabase.getDataList();
+
+	// Determine if the data parameters are within the influence range
+	dbVector dataParametersVec;
+	int parameterInsideCounter = 0;
+	for (int i = 0; i < myDatabase.size(); i++) {
+
+		// Extract parameters of of a particular data
+		dataParametersVec = dataList[i].getParamValuesVec();
+
+		// Loop over each parameter and check if they are within the range
+		// specified. If one of them is not, the rest of the parameters are
+		// skipped.
+		parameterInsideCounter = 0;
+		for (int j = 0; j < myParamaterInfluenceRange.size(); j++) {
+			logFile << "Considering: " << endl;
+			logFile << endl << myParamaterInfluenceRange[j][0] << " <= "
+					<< dataParametersVec[j] << " <= "
+					<< myParamaterInfluenceRange[j][1] << endl;
+
+			if (myParamaterInfluenceRange[j][0] <= dataParametersVec[j]
+					&& dataParametersVec[j] <= myParamaterInfluenceRange[j][1])
+				parameterInsideCounter++;
+			else
+				// No need to continue the comparison process if one of the
+				// parameters is out of range
+				break;
+		}
+
+		// If all parameters are inside the influence range, record ID of
+		// Data
+		if (parameterInsideCounter == myParamaterInfluenceRange.size()) {
+			supportDataID.resize(supportDataID.size() + 1);
+			supportDataID[supportDataID.size() - 1] = dataList[i].getId();
+			logFile << "----> Taken" << endl;
+		}
+	}
+
+	if(supportDataID.size() < 2){
+		logFile << "Number of selected data is less than 2.\n"
+				"Influence radius is probably too small." << endl;
+		cout << "Number of selected data is less than 2.\n"
+				"Influence radius is probably too small." << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+
 	//
 	oPType maxRad = 0;
 	int maxRadId;
@@ -398,6 +539,8 @@ void ROMCalc::searchDatabase_two(DataContainer* problemData, Database& myDatabas
 	for (int m = 0; m < params.size(); m++) {
 		parameterRadii[m] = abs(params[m] - myParameters[m]) * extFactor;
 	}
+
+	printVector(parameterRadii,"parameterRadii",logFile);
 
 	// List all the supporting data that has been selected
 	logFile << "******* Supporting Data *******" << endl;
@@ -436,15 +579,15 @@ void ROMCalc::test_MLSInterpolantsCalc(DataContainer* problemData,Database& myDa
 	dbVector interpolants;
 
 	InputData->setValue("interpolantionType",
-					InputData->getValue("dbInterpolantionType"));
-			InputData->setValue("MLSCalculationType",
-					InputData->getValue("dbMLSCalculationType"));
-			InputData->setValue("MLSPolynomialDegree",
-					InputData->getValue("dbMLSPolynomialDegree"));
-			InputData->setValue("MLSWeightFunc",
-					InputData->getValue("dbMLSWeightFunc"));
-			InputData->setValue("parameterPolynomialDegree",
-					InputData->getValue("dbparameterPolynomialDegree"));
+			InputData->getValue("dbInterpolantionType"));
+	InputData->setValue("MLSCalculationType",
+			InputData->getValue("dbMLSCalculationType"));
+	InputData->setValue("MLSPolynomialDegree",
+			InputData->getValue("dbMLSPolynomialDegree"));
+	InputData->setValue("MLSWeightFunc",
+			InputData->getValue("dbMLSWeightFunc"));
+	InputData->setValue("parameterPolynomialDegree",
+			InputData->getValue("dbparameterPolynomialDegree"));
 
 	Interpolation* MLSInterpolate = new Interpolation(myParameters,
 					dataParametersList, parameterRadii, interpolants, InputData,
@@ -802,7 +945,23 @@ void ROMCalc::postProcessing(DataContainer* problemData, Database& myDatabase,
 
 		myData.getFolderName() = oldFolderName;
 
+		// -------------------------------------------------------------------------
+		// Loading input parameters for the interpolation calculation
+		InputData->setValue("interpolantionType",
+				InputData->getValue("gInterpolantionType"));
+		InputData->setValue("influenceRangeFactor",
+				InputData->getValue("gInfluenceRangeFactor"));
+		InputData->setValue("MLSCalculationType",
+				InputData->getValue("gMLSCalculationType"));
+		InputData->setValue("MLSPolynomialDegree",
+				InputData->getValue("gMLSPolynomialDegree"));
+		InputData->setValue("MLSWeightFunc",
+				InputData->getValue("gMLSWeightFunc"));
+		InputData->setValue("parameterPolynomialDegree",
+				InputData->getValue("gparameterPolynomialDegree"));
 		myGrid->initCalcResultOnParticles(myData, InputData, logFile);
+
+
 		myData.setMeshData(gridFEMGeo);
 
 		vector<string>& resultNameList = myData.getResultNameList();
@@ -823,12 +982,19 @@ void ROMCalc::postProcessing(DataContainer* problemData, Database& myDatabase,
 
 		myData.setMeshData(myGrid->getGridGeometry(logFile));
 		myGrid->setGridGeometry(gridFEMGeo);
+
+		myData.saveResultsToFile(logFile);
+		system("cp -f fem_orion.res fem_orion_map.res");
+//
+		myData.delMeshData();
+		myData.readMeshDataFile(InputData, logFile);
+		myData.getMeshData()->writeMeshFile("fem_orion.msh",InputData,logFile);
 	}
 
 //	myData.setGraphResultList(problemData->getDbMatrix("calcGraphResultList"));
 //	myData.saveGraphResultsToFile(logFile);
 	myData.saveResultsToFile(logFile);
-	myData.calcCavityVolumes(InputData,logFile);
+	myData.calcLeftAndRightCavityVolumes(InputData,logFile);
 
 }
 
@@ -956,7 +1122,7 @@ void ROMCalc::standardisationProcess(DataContainer* problemData,
 		graphResultList.push_back(mainData.getGraphResultList());
 
 		// Re-calculate the cavity volumes and write to graph file
-		mainData.calcCavityVolumes(InputData, logFile);
+		mainData.calcLeftAndRightCavityVolumes(InputData, logFile);
 
 		//! Free memory
 		mainData.delMeshData();
@@ -970,39 +1136,61 @@ void ROMCalc::standardisationProcess(DataContainer* problemData,
 			logFile << "Starting DOF standardisation of Data "
 					<< supportDataID[i] << endl;
 
+			// Read the mapped goemetry(used by point-in-polygon algorithm)
+			mainData.readTransformedMeshDataFile(InputData, logFile);
+
+			// Output results in map nodes format
+			string mapResFileName = mainData.getFolderName() + "fem_map.res";
+			mainData.saveAllResultsToFile_res_format(mapResFileName.c_str(),logFile);
+
+			string mapMshFileName = mainData.getFolderName() + "fem_map.msh";
+			mainData.getMeshData()->writeMeshFile(mapMshFileName.c_str(),InputData,logFile);
+
+			// -----------------------------------------------------------------
 			std::chrono::time_point<std::chrono::system_clock> start, end;
 			start = std::chrono::system_clock::now();
 
-
+			// Standardise all results
 			standardiseResultDOF(problemData,mainData,InputData,logFile);
-
-			string inputFileName = mainData.getFolderName()
-							+ "fem_standardDOF.res";
-			mainData.saveAllResultsToFile_res_format(inputFileName.c_str(),logFile);
-
 
 			end = std::chrono::system_clock::now();
 			std::chrono::duration<double> elapsed_seconds = end - start;
 
 			cout << "DOF standardisation of Data completed in: "
-				<< elapsed_seconds.count() << " sec" << endl;
+				 << elapsed_seconds.count() << " sec" << endl;
 			logFile << "DOF standardisation of Data completed in: "
 					<< elapsed_seconds.count() << " sec" << endl;
+			// -----------------------------------------------------------------
+
+			// Output results in grid nodes format
+			string gridResFileName = mainData.getFolderName() + "fem_grid.res";
+			mainData.saveAllResultsToFile_res_format(gridResFileName.c_str(),logFile);
+
+			string gridMshFileName = mainData.getFolderName() + "fem_grid.msh";
+			myGrid->getGridGeometry(logFile)->
+					writeMeshFile(gridMshFileName.c_str(),InputData,logFile);
+
 		}
+
+//		cout << "CONTROLLED ENDING" << endl;
+//		logFile << "CONTROLLED ENDING" << endl;
+//		MPI_Abort(MPI_COMM_WORLD, 1);
 
 	}
 
 	cout << endl;
 
-	vector<Data*> dataList(supportDataID.size());
-	for(int i = 0; i < supportDataID.size(); i++){
-		dataList.at(i) = &myDatabase.getDataId(supportDataID[i]);
-	}
-
-	if (InputData->getValue("standardiseDOF") == 1 &&
-			InputData->getValue("gridNodesResultPlot") == 1) {
-		saveResultInGridNodesFormat(problemData, dataList, InputData, logFile);
-	}
+	// Save results in GridNodes format (superseeded by fem_grid outputs)
+//	if (InputData->getValue("standardiseDOF") == 1
+//			&& InputData->getValue("gridNodesResultPlot") == 1) {
+//
+//		vector<Data*> dataList(supportDataID.size());
+//		for (int i = 0; i < supportDataID.size(); i++) {
+//			dataList.at(i) = &myDatabase.getDataId(supportDataID[i]);
+//		}
+//
+//		saveResultInGridNodesFormat(problemData, dataList, InputData, logFile);
+//	}
 
 }
 
@@ -1187,7 +1375,7 @@ void ROMCalc::initDOFStandardisation(DataContainer* problemData,
 			coordinateSetup(myDatabase.getDataId(supportDataID[i]),
 					maxCoordRange, InputData, logFile);
 			myDatabase.getDataId(supportDataID[i]).getMeshData()->writeMeshFile(
-					InputData, logFile);
+					"fem2.res",InputData, logFile);
 
 		}
 
@@ -1263,13 +1451,8 @@ void ROMCalc::initDOFStandardisation(DataContainer* problemData,
 void ROMCalc::standardiseResultDOF(DataContainer* problemData, Data& mainData,
 		InputFileData* InputData, ofstream& logFile) {
 
-	intVector& supportDataID = problemData->getIntVector("supportDataID");
-
-	//! Interpolate each displacement field on the reference grid
-	dbMatrix standardResult;
-	string choice;
-
-	// Loading input parameters
+	// -------------------------------------------------------------------------
+	// Loading input parameters for the interpolation calculation
 	InputData->setValue("interpolantionType",
 			InputData->getValue("gInterpolantionType"));
 	InputData->setValue("influenceRangeFactor",
@@ -1283,25 +1466,27 @@ void ROMCalc::standardiseResultDOF(DataContainer* problemData, Data& mainData,
 	InputData->setValue("parameterPolynomialDegree",
 			InputData->getValue("gparameterPolynomialDegree"));
 
-	vector<string>& resultNameList = mainData.getResultNameList();
-
+	// Setting up the interpolants
 	myGrid->interpolantSetup(mainData, InputData, logFile);
+	// -------------------------------------------------------------------------
 
+	// Interpolating all results + deleting previous ones + saving the new ones
+	vector<string>& resultNameList = mainData.getResultNameList();
 	for (int i = 0; i < resultNameList.size(); i++) {
 
 		// assign displacement field to particles
 		mainData.assignResultToParticles(resultNameList[i].c_str(), InputData,
 				logFile);
 
-		standardResult = myGrid->interpolateResultOnGridPoint(mainData,
+		// Interpolate result on gridNodes
+		dbMatrix standardResult = myGrid->interpolateResultOnGridPoint(mainData,
 				InputData, logFile);
 
+		// Reset all dofs in myGrid
 		myGrid->resetNodesStepDOFMat();
 
-		mainData.getMeshData()->writeMeshFile(InputData, logFile); // why is this done ?
-
+		// Delete previous results and save the new one
 		mainData.deleteResult(resultNameList[i].c_str());
-
 		mainData.setResult(resultNameList[i].c_str(), standardResult);
 	}
 
@@ -1368,7 +1553,7 @@ void ROMCalc::saveResultInGridNodesFormat(DataContainer* problemData,
 	//gridData->setFileName(string("gridNodes/"));
 	int old_choice = (int) InputData->getValue("FEMGeometrySetupType");
 	InputData->setValue("FEMGeometrySetupType",1);
-	gridData->setFileName(string("gridNodes/"));
+	gridData->setFolderName(string("gridNodes/"));
 	gridData->readMeshDataFile(InputData,logFile);
 	InputData->setValue("FEMGeometrySetupType",old_choice);
 

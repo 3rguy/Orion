@@ -12,12 +12,12 @@
 // *****************************************************************************
 void testFunctions(InputFileData* InputData, ofstream& logFile) {
 
-	int choice =  InputData->getValue("orionTestMode");
+	int choice = InputData->getValue("orionTestMode");
 	cout << "TESTING FUNCTION MODE: ";
 	logFile << "TESTING FUNCTION MODE: ";
 	switch (choice) {
 	case 0: {
-		//*************************************************************************
+		//**********************************************************************
 		// Point-In-Polygon test
 		cout << "Find-Point-In-Polygon test" << endl;
 		findPointInPolygonTest(InputData, logFile);
@@ -26,7 +26,7 @@ void testFunctions(InputFileData* InputData, ofstream& logFile) {
 	}
 
 	case 1: {
-		//*************************************************************************
+		//**********************************************************************
 		// snapshot method test
 		cout << "POD-Calculation test" << endl;
 		PODCalcTest(InputData, logFile);
@@ -34,7 +34,7 @@ void testFunctions(InputFileData* InputData, ofstream& logFile) {
 	}
 
 	case 2: {
-		//*************************************************************************
+		//**********************************************************************
 		// extracting result from FEM.res file
 		cout << "read-result-file test" << endl;
 		readResultFileTest(InputData, logFile);
@@ -42,7 +42,7 @@ void testFunctions(InputFileData* InputData, ofstream& logFile) {
 	}
 
 	case 3: {
-		//*************************************************************************
+		//**********************************************************************
 		// Find supporting particles of a node in a geometry
 		cout << "supporting-particles test" << endl;
 		supportingPtclsTest(InputData, logFile);
@@ -50,7 +50,7 @@ void testFunctions(InputFileData* InputData, ofstream& logFile) {
 	}
 
 	case 4: {
-		//*************************************************************************
+		//**********************************************************************
 		// extracting result from FEM.res file
 		cout << "Volume-calculation" << endl;
 //		calcVolume(InputData, logFile);
@@ -59,7 +59,7 @@ void testFunctions(InputFileData* InputData, ofstream& logFile) {
 	}
 
 	case 5: {
-		//*************************************************************************
+		//**********************************************************************
 		// extracting result from FEM.res file
 		cout << "MLS Interpolation test" << endl;
 //			mlsTest(InputData, logFile);
@@ -67,23 +67,26 @@ void testFunctions(InputFileData* InputData, ofstream& logFile) {
 	}
 
 	case 6: {
-		//*************************************************************************
+		//**********************************************************************
 		// Printing the POMs extracted from result matrix over time
 		cout << "Printing snapshot POMs test" << endl;
 		printSnapshotPOMs(InputData, logFile);
 		break;
 	}
+
 	case 7: {
-			//*************************************************************************
-			// Printing the POMs extracted from result matrix over time
-			cout << "pcl test" << endl;
-//			pcl_test(InputData, logFile);
-			break;
-		}
+		//**********************************************************************
+		// Printing the POMs extracted from result matrix over time
+		cout << "Grid Nodes test" << endl;
+		GridNodesTest* GNTest = new GridNodesTest(InputData, logFile);
+		delete GNTest;
+		break;
+	}
 	default:
-		cout << "ERROR: In testFunctions.cpp::testFunctions, choice is not valid" << endl;
-		logFile << "ERROR: In testFunctions.cpp::testFunctions, choice is not valid"
-				<< endl;
+		cout << "ERROR: In testFunctions.cpp::testFunctions,"
+				" choice is not valid" << endl;
+		logFile << "ERROR: In testFunctions.cpp::testFunctions,"
+				" choice is not valid" << endl;
 
 	}
 
@@ -107,12 +110,12 @@ void findPointInPolygonTest(InputFileData* InputData, ofstream& logFile) {
 	// Create an instance of Data called myData
 	Data myData(paramVec);
 
-	string meshFileName = "216/";
-	myData.setFileName(meshFileName);
+	string meshFolderName = "216/";
+	myData.setFolderName(meshFolderName);
 
 	myData.readMeshDataFile(InputData, logFile);
 
-	myData.setFileName(meshFileName);
+	myData.setFolderName(meshFolderName);
 	std::map<std::string, double> modelData;
 
 	//==========================================================================
@@ -140,7 +143,7 @@ void findPointInPolygonTest(InputFileData* InputData, ofstream& logFile) {
 			ptcls[i].getCoord(j) = ptcls[i].getCoord(j) - anchorPoint[j];
 		}
 	}
-	FEMData->writeMeshFile(InputData, logFile);
+	FEMData->writeMeshFile("fem.msh",InputData, logFile);
 	// -------------------------------------------------------------------------
 
 	// -------------------------------------------------------------------------
@@ -643,7 +646,11 @@ void calcVolume(InputFileData* InputData,ofstream& logFile){
 //	dbMatrix& loadMat = InputData->getSurfacePressureLoads();
 //	printMatrix(loadMat,"Load Matrix",logFile);
 
+#ifdef _InputFileType_
 	dbMatrix& allLoadMat = InputData->getSurfacePressureLoads();
+#else
+	dbMatrix allLoadMat;
+#endif
 	printMatrix(allLoadMat,"allLoadMat",logFile);
 
 	dbMatrix loadMat;
@@ -743,7 +750,12 @@ void calcVolumeTwo(InputFileData* InputData,ofstream& logFile){
 	FEMGeometry* myData_MeshData =  myData.getMeshData()->getFEMGeoData();
 	InputFileData* myData_InputData =  myData.getMeshData()->getFEMInputData();
 
+#ifdef _InputFileType_
 	dbMatrix& allLoadMat = myData_InputData->getSurfacePressureLoads();
+#else
+	dbMatrix allLoadMat;
+#endif
+
 	printMatrix(allLoadMat,"allLoadMat",logFile);
 
 	dbMatrix loadMat;
@@ -772,7 +784,12 @@ void calcVolumeTwo(InputFileData* InputData,ofstream& logFile){
 
 	printMatrix(loadMat,"loadMat",logFile);
 
+#ifdef _InputFileType_
 	dbMatrix& lineLoadMat = myData_InputData->getLineDispBoundConds();
+#else
+	dbMatrix lineLoadMat;
+#endif
+
 	printMatrix(lineLoadMat,"lineLoadMat",logFile);
 
 	int numOfFaces = loadMat.size();

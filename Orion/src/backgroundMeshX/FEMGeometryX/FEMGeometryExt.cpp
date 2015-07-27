@@ -766,8 +766,6 @@ void FEMGeometryExt::FEMGeoDataSetup(InputFileData* InputData,
 	FEMGeoData = new FEMGeometry(FEMInputData, modelData, meshFile, logFile,
 			viewerMPI, viewerSEQ);
 
-//	delete FEMInputData;
-
 	vector<Particle>& ptcls = FEMGeoData->getNodesVec();
 	vector<FEMElement>& volElems = FEMGeoData->getNodesElemsVec();
 	vector<FEMElement>& surfElems = FEMGeoData->getSurfaceNodesElemsVec();
@@ -777,23 +775,15 @@ void FEMGeometryExt::FEMGeoDataSetup(InputFileData* InputData,
 		particles[i] = ParticleExt(ptcls[i]);
 		particles[i].setID(i + 1);
 	}
-//	ptcls.clear();
 
 	nodesElements.resize(volElems.size(), FEMElementExt(modelData["usedDOF"]));
 	for (int i = 0; i < volElems.size(); i++) {
 		nodesElements[i] = FEMElementExt(volElems[i]);
 	}
-//	volElems.clear();
 
-//	surfaceNodesElems.resize(volElems.size(),FEMElementExt(modelData["usedDOF"]));
 	for (int i = 0; i < surfElems.size(); i++) {
-//		FEMElementExt myElem(modelData["usedDOF"]) =
-//		surfaceNodesElems[i] = FEMElementExt(surfElems[i]);
-
 		surfaceNodesElems.resize(volElems.size(), FEMElementExt(surfElems[i]));
-
 	}
-//	surfElems.clear();
 
 	for (int i = 0; i < nodesElements.size(); i++) {
 
@@ -806,6 +796,9 @@ void FEMGeometryExt::FEMGeoDataSetup(InputFileData* InputData,
 		nodesElements[i].setSurfaceElems(
 				surfaceIDGenerator(tempMat, InputData, modelData, logFile));
 	}
+
+	// Extract surfaces
+	readSurfaceNodes(meshFileName,InputData,logFile);
 
 }
 
@@ -1360,7 +1353,7 @@ dbVector FEMGeometryExt::normaliseVec(dbVector& vec, std::ofstream& logFile){
 /*!****************************************************************************/
 /*!****************************************************************************/
 //! Create a GiD mesh file
-void FEMGeometryExt::writeMeshFile(InputFileData* InputData,
+void FEMGeometryExt::writeMeshFile(const char* fileName,InputFileData* InputData,
 		std::ofstream& logFile){
 
 	using namespace std;
@@ -1380,7 +1373,7 @@ void FEMGeometryExt::writeMeshFile(InputFileData* InputData,
 
 		if (rank == 0) {
 
-			femMeshFile.open("fem2.msh");
+			femMeshFile.open(fileName);
 			femMeshFile.precision(12);
 			femMeshFile.setf(ios_base::scientific, ios_base::floatfield);
 
@@ -1454,75 +1447,54 @@ void FEMGeometryExt::printVolumePtclsDetails(InputFileData* InputData,
 /*!****************************************************************************/
 /*!****************************************************************************/
 //!
-intVector FEMGeometryExt::findSupportingPtcls(dbVector pCoords, intVector& sVolElems,
-		InputFileData* InputData, std::ofstream& logFile) {
+intVector FEMGeometryExt::findSupportingPtcls(dbVector pCoords,
+		intVector& sVolElems, InputFileData* InputData,
+		std::ofstream& logFile) {
 
 	using namespace std;
 
-//	saveToMeshDatFile(InputData,logFile);
-
-	std::map<std::string, oPType> modelData; // To satisfy findPointInGeometry input argument
+	//! Find point in geometry
+	std::map<std::string, oPType> modelData; // satisfy findPointInGeometry input argument
 	int volumeElem = findPointInGeometry(pCoords, InputData, modelData,
 			logFile);
 	logFile << "Point belongs to Volume element : " << volumeElem << endl;
 
 	intVector sNodesList;
-	if (volumeElem != -1) {
+	if (volumeElem != -1) {	// If pCoords is inside the geometry
 
-		int sNodesLimit = InputData->getValue("particleSupportLimit") ;
-//		logFile << "particleSupportLimit: " << sNodesLimit << endl;
-
+		// set the nodes of the element to which pCoords belong to as
+		// supporting nodes
 		intVector volNodesVec = nodesElements[volumeElem].getNodes();
-		for(int i = 0 ; i < volNodesVec.size(); i++)
+		for (int i = 0; i < volNodesVec.size(); i++)
 			volNodesVec[i]--;
 
-
-//		logFile << "The point lies in volume element " << volumeElem
-//				<< " with nodes: ";
-		for (int i = 0; i < volNodesVec.size(); i++) {
-			dbVector& coords = particles[volNodesVec[i]].getCoords();
-//			logFile << volNodesVec[i] << "(" << coords[0] << "," << coords[1] << "," << coords[2] << ") ";  ;
-		}
-//		logFile << endl;
-
+		//! Add nodes of supporting elements of volumeElem as supporting nodes
 		sNodesList = volNodesVec;
 		intVector tempNodesList;
-
-//		printVector(sNodesList,"sNodesList",logFile);
-//		printVector(volNodesVec,"volNodesVec",logFile);
-//		printVector(tempNodesList,"tempNodesList",logFile);
-
 		int round = 0;
+		int sNodesLimit = InputData->getValue("particleSupportLimit");
+
 		while (volNodesVec.size() < sNodesLimit) {
-//			logFile << "********** In while loop [" << round++ << "] **********" << endl;
 
 			for (int i = 0; i < volNodesVec.size(); i++) {
 				intVector dummyVol;
-				intVector dummy = findNeighboursOfPtcls(volNodesVec[i],dummyVol,
-						InputData, logFile);
-//				printVector(dummy,"dummy",logFile);
-//				printVector(dummyVol,"dummyVol",logFile);
+				intVector dummy = findNeighboursOfPtcls(volNodesVec[i],
+						dummyVol, InputData, logFile);
 
 				tempNodesList.insert(tempNodesList.end(), dummy.begin(),
 						dummy.end());
-//				printVector(tempNodesList,"tempNodesList",logFile);
 
-				sVolElems.insert(sVolElems.end(),dummyVol.begin(),dummyVol.end());
-//				printVector(tempNodesList,"tempNodesList",logFile);
+				sVolElems.insert(sVolElems.end(), dummyVol.begin(),
+						dummyVol.end());
 			}
 
 			sort(tempNodesList.begin(), tempNodesList.end());
-//			printVector(tempNodesList,"tempNodesList",logFile);
-
 			sort(sVolElems.begin(), sVolElems.end());
-//			printVector(sVolElems,"sVolElems",logFile);
 
 			tempNodesList.erase(
 					unique(tempNodesList.begin(), tempNodesList.end()),
 					tempNodesList.end());
-//			printVector(tempNodesList,"tempNodesList",logFile);
 
-//			printVector(volNodesVec,"volNodesVec to be erased in tempNodesList",logFile);
 			for (int j = 0; j < volNodesVec.size(); j++) {
 				int location;
 				for (int k = 0; k < tempNodesList.size(); k++) {
@@ -1533,33 +1505,22 @@ intVector FEMGeometryExt::findSupportingPtcls(dbVector pCoords, intVector& sVolE
 				tempNodesList.erase(tempNodesList.begin() + location);
 			}
 
-//			printVector(tempNodesList,"tempNodesList",logFile);
-
-//			printVector(sNodesList,"sNodes(before)",logFile);
 			sNodesList.insert(sNodesList.end(), tempNodesList.begin(),
 					tempNodesList.end());
-//			printVector(sNodesList,"sNodes(after)",logFile);
 
 			volNodesVec = tempNodesList;
-//			printVector(volNodesVec,"volNodesVec(new)",logFile);
 
 			intVector().swap(tempNodesList);
 
 		}
 
-//		logFile << "--------------------------------------------------" << endl;
 		sort(sNodesList.begin(), sNodesList.end());
 		sNodesList.erase(unique(sNodesList.begin(), sNodesList.end()),
-							sNodesList.end());
-//		printVector(sNodesList,"sNodesList(sorted)",logFile);
+				sNodesList.end());
 
-		sVolElems.erase(
-				unique(sVolElems.begin(), sVolElems.end()),
+		sVolElems.erase(unique(sVolElems.begin(), sVolElems.end()),
 				sVolElems.end());
-//			printVector(sVolElems,"sVolElems",logFile);
-
 	}
-
 
 	return sNodesList;
 
@@ -1712,7 +1673,13 @@ double FEMGeometryExt::calcCavityVolume(InputFileData* InputData,
 
 	using namespace std;
 
-	dbMatrix& allLoadMat = FEMInputData->getSurfacePressureLoads();
+	logFile << "In Data::calcCavityVolumes, InputData->getLineDispBoundConds()"
+	           "problems have not been resolved yet." << endl;
+	cout << "In Data::calcCavityVolumes, InputData->getLineDispBoundConds()"
+			"problems have not been resolved yet." << endl;
+	MPI_Abort(MPI_COMM_WORLD, 1);
+
+	dbMatrix allLoadMat;
 	printMatrix(allLoadMat, "allLoadMat", logFile);
 
 	dbMatrix loadMat;
@@ -1753,5 +1720,126 @@ double FEMGeometryExt::calcCavityVolume(InputFileData* InputData,
 	cout << "Geometry volume = " << (volume / 6.0) << endl;
 
 	return (volume / 6.0);
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Get list of nodes of specific surfaces
+void FEMGeometryExt::readSurfaceNodes(std::string& meshFileName,
+		InputFileData* InputData, std::ofstream& logFile){
+
+	using namespace std;
+
+	// Read mesh file.
+	ifstream meshFile(meshFileName.c_str());
+
+	if (!meshFile) {
+		logFile << "Can't open FEM mesh file: " << meshFileName << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	string line,sName;
+	std::vector<FEMElementExt> sNodesElems;
+	while(meshFile.good()){
+		meshFile >> line;
+
+		if((line == "Epicardium_LV_Surface") || (line == "Epicardium_RV_Surface")
+				|| (line == "Endocaridum_LV_Surface") || (line == "Endocaridum_RV_Surface")
+				|| (line == "Endocaridum_RV_Surface") || (line == "Endocaridum_Freewall_Surface")
+				||	(line == "Base_LV_Surface") || (line == "Base_RV_Surface")){
+
+			sName = line;
+
+			int nElem;
+			meshFile >> nElem;
+
+			// Reset the surfaceNodesElem vector
+			std::vector<FEMElementExt> dummy(nElem,FEMElementExt(3));
+			sNodesElems = dummy;
+
+			vector<string> elemLine,elemNodes;
+
+			// Remove blank line
+			getline(meshFile,line);
+
+			for(int i=0; i<nElem; i++){
+
+				getline(meshFile,line);
+
+				char delim1 = ':';
+				char delim2 = ' ';
+				elemLine = splitLine(line,delim1);
+				elemNodes = splitLine(elemLine[1],delim2);
+
+				sNodesElems[i].setGlobalID(atoi(elemLine[0].c_str()));
+
+				for(int j=1; j<elemNodes.size(); j++){ // j=1, skip first empty entry
+						sNodesElems[i].getNodes().push_back(atoi(elemNodes[j].c_str()));
+				}
+			}
+
+			if ( surfaceList.find("f") == surfaceList.end() ) {
+				surfaceList[sName] = sNodesElems;
+			} else {
+				logFile << "In FEMGeometryExt::readSurfaceNodes, surfaceID '"
+						<< sName << "' list are repeated in '"
+						<< meshFileName <<"'" << endl;
+				cout << "In FEMGeometryExt::readSurfaceNodes, surfaceID '"
+						<< sName << "' list are repeated in '"
+						<< meshFileName <<"'" << endl;
+						MPI_Abort(MPI_COMM_WORLD, 1);
+			}
+		}
+	}
+
+	// Print all surfaces found
+	std::map<string,std::vector<FEMElementExt>>::iterator it;
+	for (it=surfaceList.begin(); it!=surfaceList.end(); ++it){
+		logFile <<"Surface: " << it->first << endl;
+
+		std::vector<FEMElementExt> elems = it->second;
+
+		for(int i=0; i<elems.size();i++){
+			logFile << elems[i].getGlobalID() << " : ";
+
+			for(int j=0; j<elems[i].getNodes().size();j++){
+				logFile << elems[i].getNode(j) << " ";
+			}
+			logFile << endl;
+		}
+	}
+
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Get list of nodes of specific surfaces
+void FEMGeometryExt::getSpecificSurfaceNodes(const char* surfName, intVector& surfaceIDList,
+		intMatrix& surfaceNodes, InputFileData* InputData,
+		std::ofstream& logFile){
+
+	using namespace std;
+
+	if (surfaceList.find(surfName) == surfaceList.end()) {
+		logFile << "In FEMGeometryExt::getSurfaceNodes, surfaceID '" << surfName
+				<< "' cannot be found in 'surfaceList'" << endl;
+		cout << "In FEMGeometryExt::getSurfaceNodes, surfaceID '" << surfName
+			 << "' cannot be found in 'surfaceList'" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	} else {
+
+		std::vector<FEMElementExt>& elems = surfaceList[surfName];
+
+		int nElems = elems.size();
+		surfaceIDList.resize(nElems);
+		surfaceNodes.resize(nElems,intVector());
+
+		for(int i=0;i<nElems;i++){
+			surfaceIDList[i] = elems[i].getGlobalID();
+			surfaceNodes[i] = elems[i].getNodes();
+		}
+
+	}
 
 }

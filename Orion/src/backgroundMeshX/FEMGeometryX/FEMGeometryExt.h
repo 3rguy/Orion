@@ -132,7 +132,8 @@ class FEMGeometryExt {
 
 	dbVector normaliseVec(dbVector& vec, std::ofstream& logFile);
 
-	void writeMeshFile(InputFileData* InputData, std::ofstream& logFile);
+	void writeMeshFile(const char* fileName,InputFileData* InputData,
+			std::ofstream& logFile);
 
 	void printVolumePtclsDetails(InputFileData* InputData, std::ofstream& logFile);
 
@@ -149,6 +150,12 @@ class FEMGeometryExt {
 	/*!************************************************************************/
 
 	double calcCavityVolume(InputFileData* InputData,std::ofstream& logFile);
+
+	void readSurfaceNodes(std::string& meshFileName,
+			InputFileData* InputData, std::ofstream& logFile);
+	void getSpecificSurfaceNodes(const char* surfName, intVector& surfaceIDList,
+			intMatrix& surfaceNodes, InputFileData* InputData,
+			std::ofstream& logFile);
 
   private:
 
@@ -178,6 +185,8 @@ class FEMGeometryExt {
     std::vector<GaussPointSetX*> volumeGaussPtTemplates;
     std::vector<GaussPointSetX*> surfaceGaussPtTemplates;
     std::vector<GaussPointSetX*> lineGaussPtTemplates;
+
+    std::map<std::string,std::vector<FEMElementExt> > surfaceList;
 
 };
 

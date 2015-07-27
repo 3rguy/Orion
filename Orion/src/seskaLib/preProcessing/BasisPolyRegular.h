@@ -27,13 +27,6 @@ class BasisPolyRegular : public BasisPolynom {
 		     std::map<std::string,double>& modelData, 
 		     std::ofstream& logFile);
 
-    //For POD calculation
-    BasisPolyRegular(InputFileData* InputData,std::vector<Particle>& ptcls,
-    		     intVector& sPtcls,double& x,double& y,double& z,
-    		     int& supportSize,int& linEQSize,
-    		     unsigned int derivationOrder,std::ofstream& logFile);
-
-
     ~BasisPolyRegular() {};
 
   private:

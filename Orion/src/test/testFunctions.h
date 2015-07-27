@@ -28,6 +28,7 @@
 #include "Interpolation.h"
 #include "testFunctions.h"
 #include "mlsTestFunctions.h"
+#include "GridNodesTest.h"
 
 #include <time.h>
 #include <chrono>

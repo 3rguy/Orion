@@ -1,4 +1,4 @@
-// Buffers all properties of a single FEM-Element.
+/// Buffers all properties of a single FEM-Element.
 
 #ifndef FEMElement_h_
 #define FEMElement_h_
@@ -15,25 +15,25 @@ class FEMElement : public ElementTemplate {
     FEMElement(int usedDOF);
     ~FEMElement() {};  
 
-    // FEM element type.
+    /// FEM element type.
     int& getElemType() { return elementType; };
     int& getElemOrder() { return elementOrder; };
 
-    // Global identifier manipulating.
+    /// Global identifier manipulating.
     void setGlobalID(int globalID);
     int& getGlobalID() { return globalID; };
 
-    // Return the global ID of the corresponding mother element
+    /// Return the global ID of the corresponding mother element
     int& getMotherElementID() { return motherElementID; };
 
-    // Material 'membership' manipulating.
+    /// Material 'membership' manipulating.
     int& getMaterialID() { return materialID; };
 
-    // Manipulating of its connected nodes.
+    /// Manipulating of its connected nodes.
     intVector& getNodes() { return nodes; };
     int& getNode(int idx) { return nodes[idx]; };
 
-    // shape functions
+    /// shape functions
     ElementTemplate* getVolumeElementTemplate() { return FEVolumeSet; };
     ElementTemplate* getSurfaceElementTemplate() { return FESurfaceSet; };
     ElementTemplate* getLineElementTemplate() { return FELineSet; };
@@ -59,7 +59,7 @@ class FEMElement : public ElementTemplate {
 
     dbMatrix3& getJacobian(std::vector<Particle>& particles,std::ofstream& logFile);
 
-    // integration points
+    /// integration points
     intVector& getVolumeIntegrationPts() { return volumeIntegrationPts; };
     intVector& getSurfaceIntegrationPts() { return surfaceIntegrationPts; };
     intVector& getLineIntegrationPts() { return lineIntegrationPts; };
@@ -72,7 +72,7 @@ class FEMElement : public ElementTemplate {
     void setLineGaussSet(GaussPointSet* pt) { LineGaussSet = pt; };
 
     /*******************************************************************/
-    // Force data manipulating.
+    /// Force data manipulating.
     double& getSurfacePressure(int ID);
     double& getSurfacePressure() { return getSurfacePressure(0); };
 
@@ -91,7 +91,7 @@ class FEMElement : public ElementTemplate {
     blVector& getLineForceDOF() { return getLineForceDOF(0); };
     dbVector& getLineForce() { return getLineForce(0); };
 
-    // moment data
+    /// moment data
     blVector& getBodyMomentDOF(int ID);
     dbVector& getBodyMoment(int ID);
     blVector& getBodyMomentDOF() { return getBodyMomentDOF(0); };
@@ -102,7 +102,7 @@ class FEMElement : public ElementTemplate {
     blVector& getSurfaceMomentDOF() { return getSurfaceMomentDOF(0); };
     dbVector& getSurfaceMoment() { return getSurfaceMoment(0); };
 
-    // electric charge data
+    /// electric charge data
     blVector& getSurfaceElectricChargeDOF(int ID);
     dbVector& getSurfaceElectricCharge(int ID);
     blVector& getSurfaceElectricChargeDOF() { return getSurfaceElectricChargeDOF(0); };
@@ -113,11 +113,11 @@ class FEMElement : public ElementTemplate {
     blVector& getBodyElectricChargeDOF() { return getBodyElectricChargeDOF(0); };
     dbVector& getBodyElectricCharge() { return getBodyElectricCharge(0); };
 
-    // Surface normal.
+    /// Surface normal.
     dbVector& getSurfaceNormal(int ID); 
     dbVector& getSurfaceNormal() { return getSurfaceNormal(0); }; 
 
-    // deformation boundary conditions
+    /// deformation boundary conditions
     blVector& getLineDeformationBoundDOF(int ID);
     dbVector& getLineDeformationBoundConds(int ID);
     blVector& getLineDeformationBoundDOF() { return getLineDeformationBoundDOF(0); };
@@ -128,7 +128,7 @@ class FEMElement : public ElementTemplate {
     blVector& getSurfaceDeformationBoundDOF() { return getSurfaceDeformationBoundDOF(0); };
     dbVector& getSurfaceDeformationBoundConds() { return getSurfaceDeformationBoundConds(0); };
 
-    // electric boundary condition (electric potential)
+    /// electric boundary condition (electric potential)
     blVector& getLineElectricBoundDOF(int ID);
     dbVector& getLineElectricBoundConds(int ID);
     blVector& getLineElectricBoundDOF() { return getLineElectricBoundDOF(0); };
@@ -139,7 +139,7 @@ class FEMElement : public ElementTemplate {
     blVector& getSurfaceElectricBoundDOF() { return getSurfaceElectricBoundDOF(0); };
     dbVector& getSurfaceElectricBoundConds() { return getSurfaceElectricBoundConds(0); };
 
-    // depolarisation boundary condition (depolarisation time)
+    /// depolarisation boundary condition (depolarisation time)
     blVector& getLineDepolarisationBoundDOF(int ID);
     dbVector& getLineDepolarisationBoundConds(int ID);
     blVector& getLineDepolarisationBoundDOF() { return getLineDepolarisationBoundDOF(0); };
@@ -150,7 +150,7 @@ class FEMElement : public ElementTemplate {
     blVector& getSurfaceDepolarisationBoundDOF() { return getSurfaceDepolarisationBoundDOF(0); };
     dbVector& getSurfaceDepolarisationBoundConds() { return getSurfaceDepolarisationBoundConds(0); };
 
-    // micro boundary condition
+    /// micro boundary condition
     blVector& getLineMicroBoundDOF(int ID);
     dbVector& getLineMicroBoundConds(int ID);
     blVector& getLineMicroBoundDOF() { return getLineMicroBoundDOF(0); };
@@ -171,12 +171,12 @@ class FEMElement : public ElementTemplate {
     intVector nodes;
     dbMatrix surfaceNormals;
 
-    // integration points
+    /// integration points
     intVector volumeIntegrationPts;
     intVector surfaceIntegrationPts;
     intVector lineIntegrationPts;
 
-    // loading conditions
+    /// loading conditions
     dbVector surfacePressureLoads;
     blMatrix bodyForceDOF;
     dbMatrix bodyForceLoads;
@@ -195,31 +195,31 @@ class FEMElement : public ElementTemplate {
     dbMatrix bodyElectricChargeLoads;
     blMatrix bodyElectricChargeDOF;
 
-    // deformation boundary conditions
+    /// deformation boundary conditions
     blMatrix lineDefBoundDOF;
     dbMatrix lineDefBoundConds;
     blMatrix surfaceDefBoundDOF;
     dbMatrix surfaceDefBoundConds;
 
-    // electric boundary conditions (electric potential)
+    /// electric boundary conditions (electric potential)
     blMatrix lineElectricBoundDOF;
     dbMatrix lineElectricBoundConds;
     blMatrix surfaceElectricBoundDOF;
     dbMatrix surfaceElectricBoundConds;
 
-    // depolarisation boundary conditions (depolarisation time)
+    /// depolarisation boundary conditions (depolarisation time)
     blMatrix lineDepolarisationBoundDOF;
     dbMatrix lineDepolarisationBoundConds;
     blMatrix surfaceDepolarisationBoundDOF;
     dbMatrix surfaceDepolarisationBoundConds;
 
-    // micro boundary conditions
+    /// micro boundary conditions
     blMatrix lineMicroBoundDOF;
     dbMatrix lineMicroBoundConds;
     blMatrix surfaceMicroBoundDOF;
     dbMatrix surfaceMicroBoundConds;
 
-    // approximation tools
+    /// approximation tools
     dbMatrix* volumeShapeFuncOrds;
     dbMatrix3* volumeShapeFuncDerivOrds;
     dbMatrix* surfaceShapeFuncOrds;

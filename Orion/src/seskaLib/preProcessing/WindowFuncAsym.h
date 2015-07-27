@@ -20,126 +20,154 @@
 #include "Particle.h"
 #include "PETScFunctions.h"
 #include "petscsys.h"
+#include "PrismaticWindowFunctionSet.h"
+#include "SphericalWindowFunctionSet.h"
 #include "SurfaceElementTemplates.h"
 #include "VolumeElementTemplates.h"
-#include "WindowFunctionSet.h"
-#include "WindowFunctionSets.h"
 
-
-class WindowFuncAsym : public virtual WindowFunctionSet {
+class WindowFuncAsym : public virtual WindowFunctionSet,
+    public virtual SphericalWindowFunctionSet {
 
   public:
 
-    WindowFuncAsym(): numOfSegments(0),integrationOrder(0) {};
-    WindowFuncAsym(InputFileData* InputData,
-		   std::vector<Particle>& ptcls,
-		   intVector& sPtcls,double& x,double& y,
-		   double& z,int& supportSize,
-		   unsigned int derivationOrder,
-		   std::map<std::string,double>& modelData, 
-		   std::ofstream& logFile,
-		   PetscViewer& viewerSEQ);
+    WindowFuncAsym() :
+        numOfSegments(0), integrationOrder(0) {
+    }
+    ;
+    WindowFuncAsym(InputFileData* InputData,std::vector<Particle>& ptcls,
+                   intVector& sPtcls,double& x,double& y,double& z,
+                   int& supportSize,unsigned int derivationOrder,
+                   std::map<std::string,double>& modelData,
+                   std::ofstream& logFile,PetscViewer& viewerSEQ);
 
-
-    ~WindowFuncAsym() {};
-
+    ~WindowFuncAsym() {
+    }
+    ;
 
     // Calculate window functions.
-    void calcWinFunctions(InputFileData* InputData,
-			  std::vector<Particle>& ptcls,
-			  intVector& sPtcls,double& x,double& y,
-			  double& z,int& supportSize,
-			  std::map<std::string,double>& modelData, 
-			  std::ofstream& logFile,
-			  PetscViewer& viewerSEQ);
+    void
+    calcWinFunctions(InputFileData* InputData,std::vector<Particle>& ptcls,
+                     intVector& sPtcls,double& x,double& y,double& z,
+                     int& supportSize,std::map<std::string,double>& modelData,
+                     std::ofstream& logFile,PetscViewer& viewerSEQ);
 
     // Calculation of first order derivation of the window functions 
-    void calcWinFunction1stDerivs(InputFileData* InputData,
-				  std::vector<Particle>& ptcls,
-				  intVector& sPtcls,
-				  double& x,double& y,double& z,
-				  int& supportSize,
-				  std::map<std::string,double>& modelData, 
-				  std::ofstream& logFile,
-				  PetscViewer& viewerSEQ);
+    void
+    calcWinFunction1stDerivs(InputFileData* InputData,
+                             std::vector<Particle>& ptcls,intVector& sPtcls,
+                             double& x,double& y,double& z,int& supportSize,
+                             std::map<std::string,double>& modelData,
+                             std::ofstream& logFile,PetscViewer& viewerSEQ);
 
     // Calculation of second order derivation of the window functions 
-    void calcWinFunction2ndDerivs(InputFileData* InputData,
-				  std::vector<Particle>& ptcls,
-				  intVector& sPtcls,
-				  double& x,double& y,double& z,
-				  int& supportSize,
-				  std::map<std::string,double>& modelData, 
-				  std::ofstream& logFile,
-				  PetscViewer& viewerSEQ);
+    void
+    calcWinFunction2ndDerivs(InputFileData* InputData,
+                             std::vector<Particle>& ptcls,intVector& sPtcls,
+                             double& x,double& y,double& z,int& supportSize,
+                             std::map<std::string,double>& modelData,
+                             std::ofstream& logFile,PetscViewer& viewerSEQ);
 
     // compute spline coefficients (currently only cubic)
-    void setCustomPtcleSpline(InputFileData* InputData,
-			      Particle& ptcle,
-			      std::map<std::string,double>& modelData,
-			      std::ofstream& logFile,
-			      PetscViewer& viewerSEQ);
+    void
+    setCustomPtcleSpline(InputFileData* InputData,Particle& ptcle,
+                         std::map<std::string,double>& modelData,
+                         std::ofstream& logFile,PetscViewer& viewerSEQ);
 
     // compute the window function integral
-    void setCustomPtcleSplineIntegral(InputFileData* InputData,
-				      Particle& ptcle,
-				      std::map<std::string,double>& modelData,
-				      std::ofstream& logFile,
-				      PetscViewer& viewerSEQ);
-
+    void
+    setCustomPtcleSplineIntegral(InputFileData* InputData,Particle& ptcle,
+                                 std::map<std::string,double>& modelData,
+                                 std::ofstream& logFile,PetscViewer& viewerSEQ);
 
     //protected:
 
     // compute the window function ordinate for local point x
-    void calcSplineValue(InputFileData* InputData,
-			 Particle& ptcle,dbVector& x,double& w,
-			 std::map<std::string,double>& modelData, 
-			 std::ofstream& logFile,
-			 PetscViewer& viewerSEQ);
+    void
+    calcSplineValue(InputFileData* InputData,Particle& ptcle,dbVector& x,
+                    double& w,std::map<std::string,double>& modelData,
+                    std::ofstream& logFile,PetscViewer& viewerSEQ);
 
     // compute the window function ordinate and its for first order 
     // derivatives for local point x
-    void calcSplineValue(InputFileData* InputData,
-			 Particle& ptcle,dbVector& x,double& w,
-			 double& dxW,double& dyW,double& dzW,
-			 std::map<std::string,double>& modelData, 
-			 std::ofstream& logFile,
-			 PetscViewer& viewerSEQ);
+    void
+    calcSplineValue(InputFileData* InputData,Particle& ptcle,dbVector& x,
+                    double& w,double& dxW,double& dyW,double& dzW,
+                    std::map<std::string,double>& modelData,
+                    std::ofstream& logFile,PetscViewer& viewerSEQ);
 
     // compute the window function ordinate and its for first-and second-order 
     // derivatives for local point x
-    void calcSplineValue(InputFileData* InputData,
-			 Particle& ptcle,dbVector& x,double& w,
-			 double& dxW,double& dyW,double& dzW,
-			 double& dxxW,double& dyyW,double& dzzW,
-			 double& dxyW,double& dyzW,double& dzxW,
-			 std::map<std::string,double>& modelData, 
-			 std::ofstream& logFile,
-			 PetscViewer& viewerSEQ);
+    void
+    calcSplineValue(InputFileData* InputData,Particle& ptcle,dbVector& x,
+                    double& w,double& dxW,double& dyW,double& dzW,double& dxxW,
+                    double& dyyW,double& dzzW,double& dxyW,double& dyzW,
+                    double& dzxW,std::map<std::string,double>& modelData,
+                    std::ofstream& logFile,PetscViewer& viewerSEQ);
+
+    dbVector& getWindowFuncs() { return windowFuncs; };
+
+    dbVector& getXDerivWinFuncs() { return xDerivWinFuncs; };
+    dbVector& getYDerivWinFuncs() { return yDerivWinFuncs; };
+    dbVector& getZDerivWinFuncs() { return zDerivWinFuncs; };
+
+    dbVector& getXXDerivWinFuncs() { return xxDerivWinFuncs; };
+    dbVector& getYYDerivWinFuncs() { return yyDerivWinFuncs; };
+    dbVector& getZZDerivWinFuncs() { return zzDerivWinFuncs; };
+
+    dbVector& getXYDerivWinFuncs() { return xyDerivWinFuncs; };
+    dbVector& getYZDerivWinFuncs() { return yzDerivWinFuncs; };
+    dbVector& getZXDerivWinFuncs() { return zxDerivWinFuncs; };
+
+  protected:
+
+    dbVector windowFuncs;
+
+    dbVector xDerivWinFuncs;
+    dbVector yDerivWinFuncs;
+    dbVector zDerivWinFuncs;
+
+    dbVector xxDerivWinFuncs;
+    dbVector yyDerivWinFuncs;
+    dbVector zzDerivWinFuncs;
+
+    dbVector xyDerivWinFuncs;
+    dbVector yzDerivWinFuncs;
+    dbVector zxDerivWinFuncs;
 
   private:
 
     int numOfSegments;
     int integrationOrder;
 
-    double cubicSpline(double s);
-    double dcubicSpline(double s);
-    double d2cubicSpline(double s);
-    double quarticSpline(double s);
+    double
+    cubicSpline(double s);
+    double
+    dcubicSpline(double s);
+    double
+    d2cubicSpline(double s);
+    double
+    quarticSpline(double s);
 
-    dbVector P(double x);
-    dbVector dP(double x);
-    dbVector d2P(double x);
-    dbVector d3P(double x);
-    dbVector d4P(double x);
-    dbVector d5P(double x);
+    dbVector
+    P(double x);
+    dbVector
+    dP(double x);
+    dbVector
+    d2P(double x);
+    dbVector
+    d3P(double x);
+    dbVector
+    d4P(double x);
+    dbVector
+    d5P(double x);
 
-    dbVector expP(double x);
-    dbVector dexpP(double x);
-    dbVector d2expP(double x);
-
+    dbVector
+    expP(double x);
+    dbVector
+    dexpP(double x);
+    dbVector
+    d2expP(double x);
 
 };
-
 
 #endif

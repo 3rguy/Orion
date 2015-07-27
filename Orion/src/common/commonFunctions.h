@@ -35,6 +35,12 @@
 // Ritesh:
 #include <string>
 
+template <class T>
+bool contains(std::vector<T> const &v, T const &x) {
+    return ! (v.empty() &&
+              std::find(v.begin(), v.end(), x) == v.end());
+}
+
 /***********************************************************************/
 // Clear arrays
 void clearArray(blVector& v);
@@ -446,51 +452,100 @@ void allocateArray(intMatrix3& outMat,intMatrix3& inMat);
 void allocateArray(dbMatrix4& mat,int idx1,int idx2,int idx3,int idx4);
 void allocateArray(dbMatrix5& mat,int idx1,int idx2,int idx3,int idx4,int idx5);
 
-
-//void pushBackVector(intVector& vec,int n);
-//void pushBackVector(dbVector& vec,double n);
-template<typename T>
-void pushBackVector(std::vector<T>& vec, T n){
-
-	  using namespace std;
-
-	  vec.resize(vec.size()+1);
-	  vec[vec.size()-1] = n;
-}
-
-//void pushBackVector(intMatrix& mat,intVector& vec);
-//void pushBackVector(dbMatrix& mat,dbVector& vec);
-template<typename T>
-void pushBackVector(std::vector<std::vector<T> >& mat,std::vector<T>& vec){
-	using namespace std;
-
-	mat.resize(mat.size()+1);
-	mat[mat.size()-1] = vec;
-}
-
 void pushBackVector(intMatrix& oldMat,intMatrix& deltaMat);
 
 /************************************************************************/
 // Array resize routines which shrink and fit also its reserved capacity
-//void resizeArray(intVector& vec,int size);
-//void resizeArray(dbVector& vec,int size);
 template<typename T>
-void resizeArray(std::vector<T>& vec,int size) {
-  vec.resize(size);
-  std::vector<T>(vec).swap(vec);
-}
+  void resizeArray(std::vector<T>& v,int idx1) {
+    v.resize(idx1);
+    std::vector<T>(v).swap(v);
+  }
+;
+template<typename T>
+  void resizeArray(std::vector<std::vector<T> >& v,int idx1,int idx2) {
+    v.resize(idx1);
+    for(int i = 0;i < v.size();i++)
+      v[i].resize(idx2);
+    std::vector<std::vector<T> >(v).swap(v);
+  }
+;
+template<typename T>
+  void resizeArray(std::vector<std::vector<std::vector<T> > >& v,int idx1,
+                     int idx2,int idx3) {
+    v.resize(idx1);
+    for(int i = 0;i < idx1;i++) {
+      v[i].resize(idx2);
+      for(int j = 0;j < idx2;j++) {
+        v[i][j].resize(idx3);
+      }
+    }
+    std::vector<std::vector<std::vector<T> > >(v).swap(v);
+  }
+;
+template<typename T>
+  void resizeArray(
+      std::vector<std::vector<std::vector<std::vector<T> > > >& v,int idx1,
+      int idx2,int idx3,int idx4) {
+    using namespace std;
+    v.resize(idx1);
+    for(int i = 0;i < idx1;i++) {
+      v[i].resize(idx2);
+      for(int j = 0;j < idx2;j++) {
+        v[i][j].resize(idx3);
+        for(int k = 0;k < idx3;k++) {
+          v[i][j][k].resize(idx4);
+        }
+      }
+    }
+    std::vector<std::vector<std::vector<std::vector<T> > > >(v).swap(v);
+  }
+;
+template<typename T>
+  void resizeArray(
+      std::vector<std::vector<std::vector<std::vector<std::vector<T> > > > >& v,
+      int idx1,int idx2,int idx3,int idx4,int idx5) {
+    using namespace std;
+    v.resize(idx1);
+    for(int i = 0;i < idx1;i++) {
+      v[i].resize(idx2);
+      for(int j = 0;j < idx2;j++) {
+        v[i][j].resize(idx3);
+        for(int k = 0;k < idx3;k++) {
+          v[i][j][k].resize(idx4);
+          for(int l = 0;l < idx4;l++) {
+            v[i][j][k][l].resize(idx5);
+          }
+        }
+      }
+    }
+    std::vector<std::vector<std::vector<std::vector<std::vector<T> > > > >(v).swap(v);
+  }
+;
 
-//void resizeArray(intMatrix& mat,int size);
-//void resizeArray(dbMatrix& mat,int size);
-template<typename T>
-void resizeArray(std::vector<std::vector<T> >& mat,int size) {
-  mat.resize(size);
-  std::vector<std::vector<T> >(mat).swap(mat);
-}
 
 void resizeArray(dbMatrix& mat,int size1,int size2);
 void resizeArray(dbMatrix3& mat,int size);
 void resizeArray(dbMatrix4& mat,int size);
+
+
+/************************************************************************/
+
+template<typename T>
+  void pushBackVector(T& v,T a) {
+    using namespace std;
+    int oldSize = v.size();
+    resizeArray(v,v.size()+a.size());
+    for(int i=oldSize,j=0;i<v.size();i++,j++)
+      v[i] = a[j];
+  };
+
+template<typename T>
+  void pushBackVector(std::vector<T>& v,T a) {
+    using namespace std;
+    resizeArray(v,v.size()+1);
+    v[v.size() - 1] = a;
+  };
 
 /***********************************************************************/
 // convert a integer number to a string
@@ -629,6 +684,10 @@ void printVector(dbVector& A, const char* msg, std::ofstream& logFile);
 //void printVector(intVector& A, std::ofstream& logFile);
 //void printVector(intVector& A, std::string& msg);
 void printVector(intVector& A, const char* msg, std::ofstream& logFile);
+
+std::vector<std::string> &splitLine(std::string &s, char delim, std::vector<std::string> &elems);
+
+std::vector<std::string> splitLine(std::string &s, char delim);
 
 
 

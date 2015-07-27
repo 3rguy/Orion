@@ -17,6 +17,8 @@
 #include "Particle.h"
 #include "PETScFunctions.h"
 #include "petscksp.h"
+#include "PrismaticWindowFunctionSet.h"
+#include "SphericalWindowFunctionSet.h"
 #include "WindowFunctionSet.h"
 
 
@@ -34,17 +36,6 @@ namespace EFGShapeFunc {
 		  std::map<std::string,double>& modelData,
 		  std::ofstream& logFile,
 		  PetscViewer& viewerSEQ);
-
-  	// Calculate at a node for all its supporting particles their
-    // shape functions (used in POD calculation)
-    void calcShapes(InputFileData* InputData,
-  		  int& supportSize,
-  		  intVector& sPtcls,
-  		  std::vector<Particle>& ptcls,
-  		  double& x,double& y,double& z,
-  		  dbVector& shapeFuncs,
-  		  int& basisTermNum,
-  		  std::ofstream& logFile);
 
   // Calculate at a gauss point for all its supporting particles their 
   // shape functions and their first order derivations.

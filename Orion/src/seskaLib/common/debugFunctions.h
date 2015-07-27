@@ -1,12 +1,7 @@
-/*
- * debugFunctions.h
- *
- *  Created on: Jul 17, 2014
- *      Author: rama
- */
+// Some debugging functions.
 
-#ifndef DEBUGFUNCTIONS_H_
-#define DEBUGFUNCTIONS_H_
+#ifndef debugFunctions_h_
+#define debugFunctions_h_
 
 #include "float.h"
 #include <fstream>
@@ -23,12 +18,14 @@
 #include "MaxEntShapeFunc.h"
 #include "OrthoShapeFunc.h"
 #include "Particle.h"
+#include "PrismaticWindowFunctionSet.h"
 #include "RKPMShapeFunc.h"
 #include "ShepardShapeFunc.h"
+#include "SphericalWindowFunctionSet.h"
 #include "WindowFuncAsym.h"
-#include "WindowFunctionSets.h"
+#include "WindowFunctionSet.h"
 
-// Test the Sansour algorithm to update the rotational degrees of
+// Test the Sansour algorithm to update the rotational degrees of 
 // freedom.
 void testUpdate(InputFileData* InputData,
 		std::ofstream& logFile);
@@ -41,20 +38,20 @@ void testContinuumMechanics(std::ofstream& logFile);
 // Plot a cubic spline and its first and second order derivations.
 void testSpline(std::ofstream& logFile);
 
-// Plot the RKPM or EFG shape functions and its first and second order
+// Plot the RKPM or EFG shape functions and its first and second order 
 // derivations(test particle 0,62,124!).
 void testShapes(InputFileData* InputData,std::vector<Particle>& ptcls,
 		std::map<std::string,double>& modelData,
 		std::ofstream& logFile,PetscViewer& viewerSEQ);
 
 
-// Test the curve fitting property of a MLS shape functions and its
+// Test the curve fitting property of a MLS shape functions and its 
 // first and second order derivations.
 void testMLS(InputFileData* InputData,std::vector<Particle>& ptcls,
 	     std::map<std::string,double>& modelData,
 	     std::ofstream& logFile,PetscViewer& viewerSEQ);
 
-// Test the curve fitting property of a MaxEnt shape functions and its
+// Test the curve fitting property of a MaxEnt shape functions and its 
 // first within the domain and on its boundary.
 void testMaxEnt(InputFileData* InputData,std::vector<Particle>& ptcls,
 		std::map<std::string,double>& modelData,
@@ -75,4 +72,4 @@ void testBoundCollocation(InputFileData* InputData,
 // test Carlo's 'dexpo' fortran routine
 void testDexpo(dbMatrix& IN,dbMatrix& OUT,bool seskaStorage,std::ofstream& logFile);
 
-#endif /* DEBUGFUNCTIONS_H_ */
+#endif

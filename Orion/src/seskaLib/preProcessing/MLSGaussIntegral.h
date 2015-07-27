@@ -20,7 +20,6 @@
 #include "ParticleDistribution.h"
 #include "petscsys.h"
 #include "petscvec.h"
-#include "WindowFunctionSets.h"
 
 class MLSGaussIntegral : public virtual MLSShapeFuncSet,
 			 public virtual ParticleDistribution,

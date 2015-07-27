@@ -20,6 +20,8 @@
 #include "petscksp.h"
 #include "ShapefunctionSet.h"
 #include "ShepardShapeFunc.h"
+#include "PrismaticWindowFunctionSet.h"
+#include "SphericalWindowFunctionSet.h"
 #include "WindowFunctionSet.h"
 
 

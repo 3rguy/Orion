@@ -1,8 +1,6 @@
 //============================================================================
 // Name        : Orion.cpp
 // Author      : Ritesh Rao Rama
-// Version     :
-// Copyright   : 
 // Description : POD-based real-time calculation
 //============================================================================
 #include <fstream>
@@ -19,30 +17,13 @@
 #include <chrono>
 #include <ctime>
 
-//#include "clapack.h"
 #define PI 3.14159265
 
-//#include "commonTypedefs.h"
-//#include "commonFunctions.h"
-//#include "fortranFunctions.h"
-
-#include <limits>
 #include "InputFileData.h"
-
-//#include "Database.h"
-
-//#include "PODCalc.h"
-//#include "FEMGeometryX.h"
-//#include "ParticleX.h"
-//#include "FEMElementX.h"
-
 #include "defs.h"
 #include "ROMCalc.h"
 #include "ErrorCalc.h"
-#include "Interpolation.h"
 #include "testFunctions.h"
-
-#include "Data.h"
 
 using namespace std;
 
@@ -58,7 +39,8 @@ int main(int argc, char* argv[]) {
 	// *************************************************************************
 	// Log writer
 	string fileOutput = "oLog.dat";
-	ofstream logFile(fileOutput.c_str(), std::ofstream::out | std::ofstream::app);
+//	ofstream logFile(fileOutput.c_str(), std::ofstream::out | std::ofstream::app);
+	ofstream logFile(fileOutput.c_str(), std::ofstream::out );
 	logFile.precision(15);
 
 	time_t tim;  //create variable of time_t

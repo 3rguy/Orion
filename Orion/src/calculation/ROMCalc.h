@@ -61,6 +61,9 @@ public:
 	void searchDatabase_two(DataContainer* problemData, Database& myDatabase,
 				InputFileData* InputData, ofstream& logFile);
 
+	void searchDatabase_three(DataContainer* problemData, Database& myDatabase,
+			InputFileData* InputData, ofstream& logFile);
+
 	/*!************************************************************************/
 	/*!************************************************************************/
 	// Preprocessing:

@@ -40,7 +40,7 @@ public:
     void setNdofs(int val){nDofs=val;};
     int& getNdofs(void){return nDofs;};
 
-    void setFileName(string name){folderName=name;};
+    void setFolderName(string name){folderName=name;};
     string& getFolderName(void){return folderName;};
 
 //    void setDisplacement(dbMatrix disp){dispMatrixList=disp;};
@@ -71,7 +71,11 @@ public:
 
 
     void readMeshDataFile(InputFileData* InputData, ofstream& logFile);
-    //void deleteMeshDataFile(InputFileData* InputData, ofstream& logFile);
+    void readMeshDataFile(string& meshFileName,string& inputFileName,
+    		InputFileData* InputData, ofstream& logFile);
+    void readTransformedMeshDataFile(InputFileData* InputData, ofstream& logFile);
+    void writeMeshToMSHFile(string& fileName,InputFileData* InputData,
+    		ofstream& logFile);
 
     // Reading displacement matrix from files
     void readResultFile(InputFileData* InputData,ofstream& logFile);
@@ -131,6 +135,10 @@ public:
     void setResultNameList(vector<string> nameList){resultNameList = nameList;};
 
     void calcCavityVolumes(InputFileData* InputData,ofstream& logFile);
+
+    void calcLeftAndRightCavityVolumes(InputFileData* InputData, ofstream& logFile);
+    void calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile);
+    void calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile);
 
 
 private:

@@ -141,9 +141,13 @@ class IntegrationPoint {
     dbVector& getDepolarisationBoundConds() { return getElectricBoundConds(0); };
     dbVector& getDeltaDepolarisationBoundConds(int ID);
     dbVector& getInitialDepolarisationBoundConds(int ID);
+
     // Surface normal for boundary Gauss points only.
     void setSurfaceNormal(dbVector& normal);
     dbVector& getSurfaceNormal() { return surfaceNormal; }; 
+
+    void setSurfaceTangent(int ID,dbVector& tangent);
+    dbVector& getSurfaceTangent(int ID);
 
 
     /*******************************************************************/
@@ -284,6 +288,7 @@ class IntegrationPoint {
     dbMatrix bodyElectricChargeLoads;
 
     dbVector surfaceNormal;
+    dbMatrix surfaceTangents;
 
     /*******************************************************************/
     // history variables

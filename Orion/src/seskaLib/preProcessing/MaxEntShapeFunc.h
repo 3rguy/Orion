@@ -31,14 +31,6 @@ public:
                     std::ofstream& logFile,
                     PetscViewer& viewerSEQ);
     
-    // For POD Calculation
-    void calcShapes(InputFileData* InputData,
-                        intVector& sPtcls,
-                        std::vector<Particle>& Ptcls,
-                        double& x, double& y,double& z,
-                        dbVector& shapeFuncs,
-                        std::ofstream& logFile);
-
     // Calculate at a point for all its supporting particles their
     // shape functions.
     void calcShapes(InputFileData* InputData,

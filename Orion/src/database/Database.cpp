@@ -19,7 +19,7 @@ Database::Database(string& databaseName, ofstream& logFile) {
 		// Define Data
 		a.setId(i);
 		a.setParamValuesVec(paramMatrix[i]);
-		a.setFileName(fileNameVec[i]);
+		a.setFolderName(fileNameVec[i]);
 		a.setAnchorPoint(anchorPointList[i]);
 
 		// Add Data to list

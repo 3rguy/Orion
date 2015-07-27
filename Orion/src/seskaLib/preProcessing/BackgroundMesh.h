@@ -21,7 +21,6 @@
 #include "ParticleDistribution.h"
 #include "petscsys.h"
 #include "petscvec.h"
-#include "WindowFunctionSets.h"
 
 class BackgroundMesh : public virtual ParticleDistribution {
 
@@ -382,6 +381,12 @@ public:
     intMatrix& getPointForceBoundPtcleIdx() {
         return pointForceBoundPtcleIdx; };
 
+    intMatrix& getElasticSurfaceForceBoundGaussPtsIdx() {
+        return elasticSurfaceForceBoundGaussPtsIdx; };
+
+    intMatrix& getElasticLineForceBoundGaussPtsIdx() {
+        return elasticLineForceBoundGaussPtsIdx; };
+
     // Return indices of boundary Gauss points with a moment loading
     // applied on
     intMatrix& getSurfaceMomentBoundGaussPtsIdx() {
@@ -407,6 +412,11 @@ public:
     // are applied.
     intMatrix& getSurfaceElectricChargeBoundGaussPtsIdx()
     { return surfaceElectricChargeBoundGaussPtsIdx; };
+
+    // Return the gauss points associated with cavity-volume-control
+    // conditions
+    intMatrix& getCavityVolumeControlBoundGaussPtsIdx()
+    { return cavityVolumeControlBoundGaussPtsIdx; };
 
     intVector& getGaussRootList()  { return gaussRootList; };
     intVector& getBoundGaussRootList() { return bGaussRootList; };
@@ -504,7 +514,9 @@ public:
     // applied
     intMatrix pointForceBoundPtcleIdx;
     intMatrix lineForceBoundGaussPtsIdx;
+    intMatrix elasticLineForceBoundGaussPtsIdx;
     intMatrix tractionBoundGaussPtsIdx;
+    intMatrix elasticSurfaceForceBoundGaussPtsIdx;
     intMatrix surfacePressureBoundGaussPtsIdx;
 
     // Indices of local gauss points any body loads are applied.
@@ -525,6 +537,10 @@ public:
     intMatrix pointMomentBoundPtcleIdx;
     intMatrix lineMomentBoundGaussPtsIdx;
 
+    // indices of all gauss points associated with cavity-volume-control
+    // conditions
+    intMatrix cavityVolumeControlBoundGaussPtsIdx;
+
 
     // all Dirichlet boundary Gauss points indices (point,line,surface)
     intMatrix allDisplacementBoundGaussPtsIdx;
@@ -534,7 +550,7 @@ public:
     intMatrix allMicroBoundGaussPtsIdx;
     intMatrix allDeformationBoundGaussPtsIdx;
 
-    // all v. Neumann boundary Gauss points indices (point,line,surface)
+    // all loading boundary Gauss points indices (point,line,surface)
     intMatrix allForceBoundGaussPtsIdx;
 
     intMatrix allLineBoundGaussPtsIdx;

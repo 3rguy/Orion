@@ -111,6 +111,23 @@ void Data::readMeshDataFile(InputFileData* InputData, ofstream& logFile) {
 
 }
 
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read the FEM.res file using the FEMGeometry class
+void Data::readMeshDataFile(string& meshFileName,string& inputFileName,
+		InputFileData* InputData, ofstream& logFile) {
+
+	using namespace std;
+
+	std::map<std::string, double> modelData;
+
+	meshData = new FEMGeometryExt(InputData, modelData, meshFileName,
+														inputFileName,logFile);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
 void Data::delMeshData(){
 
 	using namespace std;
@@ -120,13 +137,88 @@ void Data::delMeshData(){
 	}
 }
 
-//void Data::deleteMeshDataFile(InputFileData* InputData, ofstream& logFile) {
-//
-//	using namespace std;
-//
-//	delete meshData;
-//
-//}
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read the FEM.res file using the FEMGeometry class
+void Data::readTransformedMeshDataFile(InputFileData* InputData, ofstream& logFile) {
+
+	using namespace std;
+
+	std::map<std::string, double> modelData;
+
+	string meshFileName = folderName + "mesh_map.dat";
+	string inputFileName = folderName + "input.dat";
+
+	meshData = new FEMGeometryExt(InputData, modelData, meshFileName,
+														inputFileName,logFile);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Write to FEM.msh file using data from FEMGeometry class
+void Data::writeMeshToMSHFile(string& outputFileName,InputFileData* InputData,
+		ofstream& logFile){
+
+	ofstream writeGraphRes(outputFileName);
+
+	vector<ParticleExt>& ptcls = meshData->getNodesVec();
+	vector<FEMElementExt>& elems = meshData->getNodesElemsVec();
+
+	int dim = ptcls[0].getCoords().size();
+	int nodesPerElem = elems[0].getNodes().size();
+
+	string elemType;
+	if(nodesPerElem == 3)
+		elemType = "Tetrahedra";
+	else if (nodesPerElem == 4)
+		elemType = "Hexahedra";
+	else{
+		logFile << "In Data::writeMeshToMSHFile, nodesPerElem = "
+				<< nodesPerElem << " and is not supported." << endl;
+		cout << "In Data::writeMeshToMSHFile, nodesPerElem = "
+				<< nodesPerElem << " and is not supported." << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	string header_line = "MESH  dimension " + to_string(dim) + " ElemType "
+			+ elemType + " Nnode " + to_string(nodesPerElem);
+
+	writeGraphRes << header_line << endl;
+
+	// Writing coordinates
+	writeGraphRes << "Coordinates" << endl;
+	for(int i = 0 ; i < ptcls.size(); i++){
+		writeGraphRes << i << " ";
+
+		dbVector coords = ptcls[i].getCoords();
+		for(int j = 0 ; j < coords.size(); j++){
+			writeGraphRes << coords[j] << " ";
+		}
+
+		writeGraphRes << endl;
+	}
+	writeGraphRes << "end coordinates" << endl;
+
+
+	// Writing elements
+	writeGraphRes << "Elements" << endl;
+	for(int i = 0 ; i < elems.size(); i++){
+
+		writeGraphRes << i << " ";
+
+		intVector elemNodes = elems[i].getNodes();
+		for(int j=0; j< elemNodes.size(); j++){
+			writeGraphRes << elemNodes[j] << " ";
+		}
+		writeGraphRes << "0" << endl;
+
+	}
+	writeGraphRes << "end elements" << endl;
+
+
+
+}
 
 /*!****************************************************************************/
 /*!****************************************************************************/
@@ -737,7 +829,7 @@ void Data::readResultFile_txtFormat(ofstream& logFile) {
 //! Read and Extract results from a simple text file format
 void Data::readGraphResultFile(InputFileData* InputData, ofstream& logFile){
 
-	std::string fileName = folderName + "defVolLoad1.grf";
+	std::string fileName = folderName + "pressure_volume-loadID_0-dirichletID_0.grf";
 	dbMatrix defVolLoadMat;
 	readGraphFile_grfFormat(fileName, defVolLoadMat, logFile);
 	graphResultList.push_back(defVolLoadMat[1]); // discard volumes
@@ -1843,6 +1935,8 @@ void Data::deleteResultDOF(const char* resultName){
 
 /*!****************************************************************************/
 /*!****************************************************************************/
+// DO NOT USE: Data::calcCavityVolumes is based on the old input file. Hence,
+// Data::calcCavityVolumes is superseeded by Data::calcLeftAndRightCavityVolumes
 void Data::calcCavityVolumes(InputFileData* InputData,ofstream& logFile){
 
 	using namespace std;
@@ -1877,7 +1971,13 @@ void Data::calcCavityVolumes(InputFileData* InputData,ofstream& logFile){
 	FEMGeometry* myData_MeshData =  this->getMeshData()->getFEMGeoData();
 	InputFileData* myData_InputData =  this->getMeshData()->getFEMInputData();
 
-	dbMatrix& allLoadMat = myData_InputData->getSurfacePressureLoads();
+	logFile << "In Data::calcCavityVolumes, InputData->getLineDispBoundConds()"
+				"problems have not been resolved yet." << endl;
+	cout << "In Data::calcCavityVolumes, InputData->getLineDispBoundConds()"
+				"problems have not been resolved yet." << endl;
+	MPI_Abort(MPI_COMM_WORLD, 1);
+
+	dbMatrix allLoadMat;
 	printMatrix(allLoadMat,"allLoadMat",logFile);
 
 	dbMatrix loadMat;
@@ -1895,7 +1995,13 @@ void Data::calcCavityVolumes(InputFileData* InputData,ofstream& logFile){
 
 	printMatrix(loadMat,"loadMat",logFile);
 
-	dbMatrix& lineLoadMat = myData_InputData->getLineDispBoundConds();
+	logFile << "In Data::calcCavityVolumes, InputData->getLineDispBoundConds()"
+			"problems have not been resolved yet." << endl;
+	cout << "In Data::calcCavityVolumes, InputData->getLineDispBoundConds()"
+			"problems have not been resolved yet." << endl;
+	MPI_Abort(MPI_COMM_WORLD, 1);
+
+	dbMatrix lineLoadMat;
 	printMatrix(lineLoadMat,"lineLoadMat",logFile);
 
 	int numOfFaces = loadMat.size();
@@ -1956,5 +2062,226 @@ void Data::calcCavityVolumes(InputFileData* InputData,ofstream& logFile){
 	}
 
 	writeGraph.close();
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::calcLeftAndRightCavityVolumes(InputFileData* InputData, ofstream& logFile) {
+
+	cout << "Calculating cavity volumes" << endl;
+
+	calcLeftCavityVolumes(InputData,logFile);
+	calcRightCavityVolumes(InputData,logFile);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile) {
+
+	using namespace std;
+
+	logFile << "Calculating left cavity volumes" << endl;
+
+	dbMatrix& resultMatrix = this->getResult("displacement");
+	//printMatrix(resultMatrix,"displacement Matrix",logFile);
+
+	// Convert each result at each step from a vector to a matrix
+	vector<dbMatrix> resultMatList(resultMatrix[0].size()+1,
+				dbMatrix(resultMatrix.size() / 3, dbVector(3,0)));
+	for (int i = 1; i < resultMatrix[0].size(); i++) {
+		dbMatrix& mat = resultMatList[i+1];
+
+		int row = 0;
+		int col = 0;
+		for (int j = 0; j < resultMatrix.size(); j++) {
+
+			mat[row][col] = resultMatrix[j][i];
+			col++;
+
+			if (col > 2) {
+				col = 0;
+				row++;
+			}
+		}
+	}
+
+	// Extract the surface of the left ventricle
+	intVector surfaceIDList;
+	intMatrix surfaceNodes;
+	meshData->getSpecificSurfaceNodes("Endocaridum_LV_Surface", surfaceIDList,
+			surfaceNodes, InputData, logFile);
+
+	int numOfSteps = resultMatList.size();
+	dbVector volumeVec(numOfSteps, 0);
+
+
+	for (int i = 0; i < numOfSteps; i++) {
+
+		dbMatrix& rMatrix = resultMatList[i];
+		vector<ParticleExt> ptcls = meshData->getNodesVec();
+
+		// Update the coordinates
+		for (int j = 0; j < ptcls.size(); j++) {
+			for (int k = 0; k < 3; k++) {
+				ptcls[j].getCoord(k) += rMatrix[j][k];
+			}
+		}
+
+		// Compute the volume of the cavity
+		double volume = 0;
+
+		int x = 0;
+		int y = 1;
+		int z = 2;
+
+		int numOfsurfaces = surfaceIDList.size();
+		for (int m = 0; m < numOfsurfaces; m++) {
+
+			dbVector& v1 = ptcls[surfaceNodes[m][0] - 1].getCoords();
+			dbVector& v2 = ptcls[surfaceNodes[m][1] - 1].getCoords();
+			dbVector& v3 = ptcls[surfaceNodes[m][2] - 1].getCoords();
+
+			volume += ((v2[y] - v1[y]) * (v3[z] - v1[z])
+					- (v2[z] - v1[z]) * (v3[y] - v1[y]))
+					* (v1[x] + v2[x] + v3[x]);
+		}
+
+		volumeVec[i] = abs(volume / 6.0);
+
+		logFile << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
+	}
+
+	string graphFileName = folderName + "pressure_volume-LV.grf";
+
+	ofstream writeGraph(graphFileName);
+	writeGraph.precision(15);
+	writeGraph.setf( std::ios::scientific, std:: ios::floatfield );
+
+	dbVector stepValueVecMod = step_value_vec;
+	stepValueVecMod.insert(stepValueVecMod.begin(),0);
+
+	if (writeGraph.good()) {
+		for (int i = 0; i < stepValueVecMod.size(); i++) {
+			writeGraph << volumeVec[i] << " " << stepValueVecMod[i] << endl;
+		}
+	}
+
+	writeGraph.close();
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile) {
+
+	using namespace std;
+
+	logFile << "Calculating right cavity volumes" << endl;
+
+	dbMatrix& resultMatrix = this->getResult("displacement");
+	//printMatrix(resultMatrix,"displacement Matrix",logFile);
+
+	// Convert each result at each step from a vector to a matrix
+	vector<dbMatrix> resultMatList(resultMatrix[0].size()+1,
+			dbMatrix(resultMatrix.size() / 3, dbVector(3,0)));
+	for (int i = 0; i < resultMatrix[0].size(); i++) {
+		dbMatrix& mat = resultMatList[i+1];
+
+		int row = 0;
+		int col = 0;
+		for (int j = 0; j < resultMatrix.size(); j++) {
+
+			mat[row][col] = resultMatrix[j][i];
+			col++;
+
+			if (col > 2) {
+				col = 0;
+				row++;
+			}
+		}
+	}
+
+	// Extract the surface of the left ventricle
+	intVector surfaceIDList_EndoRV;
+	intMatrix surfaceNodes_EndoRV;
+	meshData->getSpecificSurfaceNodes("Endocaridum_RV_Surface",
+			surfaceIDList_EndoRV,surfaceNodes_EndoRV, InputData, logFile);
+
+	intVector surfaceIDList_FreeWall;
+	intMatrix surfaceNodes_FreeWall;
+	meshData->getSpecificSurfaceNodes("Endocaridum_Freewall_Surface",
+			surfaceIDList_FreeWall,surfaceNodes_FreeWall, InputData, logFile);
+
+	// Merge Endocaridum_RV_Surface and Endocaridum_Freewall_Surface data
+	intVector surfaceIDList;
+	intMatrix surfaceNodes;
+
+	surfaceIDList.reserve( surfaceIDList_EndoRV.size() + surfaceIDList_FreeWall.size() );
+	surfaceIDList.insert( surfaceIDList.end(), surfaceIDList_EndoRV.begin(), surfaceIDList_EndoRV.end() );
+	surfaceIDList.insert( surfaceIDList.end(), surfaceIDList_FreeWall.begin(), surfaceIDList_FreeWall.end() );
+
+	surfaceNodes.reserve( surfaceNodes_EndoRV.size() + surfaceNodes_FreeWall.size() ); // preallocate memory
+	surfaceNodes.insert( surfaceNodes.end(), surfaceNodes_EndoRV.begin(), surfaceNodes_EndoRV.end() );
+	surfaceNodes.insert( surfaceNodes.end(), surfaceNodes_FreeWall.begin(), surfaceNodes_FreeWall.end() );
+
+
+	int numOfSteps = resultMatList.size();
+	dbVector volumeVec(numOfSteps, 0);
+
+
+	for (int i = 0; i < numOfSteps; i++) {
+
+		dbMatrix& rMatrix = resultMatList[i];
+		vector<ParticleExt> ptcls = meshData->getNodesVec();
+
+		// Update the coordinates
+		for (int j = 0; j < ptcls.size(); j++) {
+			for (int k = 0; k < 3; k++) {
+				ptcls[j].getCoord(k) += rMatrix[j][k];
+			}
+		}
+
+		// Compute the volume of the cavity
+		double volume = 0;
+
+		int x = 0;
+		int y = 1;
+		int z = 2;
+
+		int numOfsurfaces = surfaceIDList.size();
+		for (int m = 0; m < numOfsurfaces; m++) {
+
+			dbVector& v1 = ptcls[surfaceNodes[m][0] - 1].getCoords();
+			dbVector& v2 = ptcls[surfaceNodes[m][1] - 1].getCoords();
+			dbVector& v3 = ptcls[surfaceNodes[m][2] - 1].getCoords();
+
+			volume += ((v2[y] - v1[y]) * (v3[z] - v1[z])
+					- (v2[z] - v1[z]) * (v3[y] - v1[y]))
+					* (v1[x] + v2[x] + v3[x]);
+		}
+
+		volumeVec[i] = abs(volume / 6.0);
+
+		logFile << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
+	}
+
+	string graphFileName = folderName + "pressure_volume-RV.grf";
+
+	ofstream writeGraph(graphFileName);
+	writeGraph.precision(15);
+	writeGraph.setf( std::ios::scientific, std::ios::floatfield);
+
+	dbVector stepValueVecMod = step_value_vec;
+	stepValueVecMod.insert(stepValueVecMod.begin(),0);
+
+	if (writeGraph.good()) {
+		for (int i = 0; i < stepValueVecMod.size(); i++) {
+			writeGraph << volumeVec[i] << " " << stepValueVecMod[i] << endl;
+		}
+	}
+
+	writeGraph.close();
+
 }
 

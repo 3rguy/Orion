@@ -24,6 +24,7 @@
 
 class MicroSpace {
 
+
  public:
 
   MicroSpace() {};

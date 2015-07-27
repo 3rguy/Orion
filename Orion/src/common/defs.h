@@ -39,7 +39,7 @@
 #ifndef _GridNodesDebugMode_
 #define _GridNodesDebugMode_
 #endif
-#undef _GridNodesDebugMode_
+//#undef _GridNodesDebugMode_
 
 #ifndef _NodesDebugMode_
 #define _NodesDebugMode_
@@ -77,7 +77,7 @@
 #ifndef _MLSDebugMode_
 #define _MLSDebugMode_
 #endif
-#undef _MLSDebugMode_
+//#undef _MLSDebugMode_
 
 // ----------------------------------------------------------------------------
 // Activate checking algorithms

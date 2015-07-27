@@ -403,7 +403,7 @@ void testSpline(std::ofstream& logFile) {
   d01shp.open("d01spline.gra");
   d12shp.open("d12spline.gra");
   d20shp.open("d20spline.gra");
-
+    
 
 
   /* Write the header.*/
@@ -481,7 +481,7 @@ void testSpline(std::ofstream& logFile) {
 
 /***********************************************************************/
 /***********************************************************************/
-// Plot the RKPM shape functions and its first and second order
+// Plot the RKPM shape functions and its first and second order 
 // derivations.
 void testShapes(InputFileData* InputData,std::vector<Particle>& ptcls,
                 std::map<std::string,double>& modelData,
@@ -1235,7 +1235,7 @@ void testShapes(InputFileData* InputData,std::vector<Particle>& ptcls,
 
   ofstream support;
   support.open("support.gra");
-
+    
   // Write the headers.
   support<<"# Graf: \"number of supporting particles\"\n"
 	 <<"#\n"
@@ -1273,7 +1273,7 @@ void testShapes(InputFileData* InputData,std::vector<Particle>& ptcls,
   d01shp.open("d01shape.grf");
   d12shp.open("d12shape.grf");
   d20shp.open("d20shape.grf");
-
+    
 
   // Plot the shape function of a particular particle.
   if(pltPtcle != -1) {
@@ -1519,7 +1519,7 @@ void testShapes(InputFileData* InputData,std::vector<Particle>& ptcls,
 
 /************************************************************************/
 /************************************************************************/
-// Test the curve fitting property of a MLS shape functions and its
+// Test the curve fitting property of a MLS shape functions and its 
 // first and second order derivations within the domain and on its
 // boundary.
 
@@ -1854,7 +1854,7 @@ void testMLS(InputFileData* InputData,std::vector<Particle>& ptcls,
       if(shapefunctionType != 5)
 
 	WFuncSet =
-	  new WindowFunctionSet(InputData,ptcls,suppPtcls[i],
+	  new PrismaticWindowFunctionSet(InputData,ptcls,suppPtcls[i],
 				pltCoords[i][0],pltCoords[i][1],
 				pltCoords[i][2],supportSize,0,
 				modelData,logFile);
@@ -1983,7 +1983,7 @@ void testMLS(InputFileData* InputData,std::vector<Particle>& ptcls,
 
   // Select choosen polynom type (Pascal,Lagrangian,serendipity).
   switch(functionType) {
-
+    
     // own creation
   case 0:
 
@@ -3604,7 +3604,7 @@ void testMLS(InputFileData* InputData,std::vector<Particle>& ptcls,
 
 /************************************************************************/
 /************************************************************************/
-// Test the curve fitting property of a MaxEnt shape functions and its
+// Test the curve fitting property of a MaxEnt shape functions and its 
 // first within the domain and on its boundary.
 
 void testMaxEnt(InputFileData* InputData,std::vector<Particle>& ptcls,
@@ -3853,7 +3853,7 @@ void testMaxEnt(InputFileData* InputData,std::vector<Particle>& ptcls,
 
   // Select choosen polynom type (Pascal,Lagrangian,serendipity).
   switch(functionType) {
-
+    
     // own creation
   case 0:
 
@@ -4835,7 +4835,7 @@ void testUpdate(InputFileData* InputData,
   double absBeta3,absNewRotVec,absOldRotVec,absDeltaRotVec,alpha1,alpha2,
     sinusRotVec,sinusDeltaRotVec,arcTerm3;
   dbVector beta1(3),beta2(3),beta3(3);
-
+    
   intMatrix e = getPermutations(3);
 
   logFile<<"#####################################################"<<endl;
@@ -5373,7 +5373,7 @@ void testBoundCollocation(InputFileData* InputData,
   dbMatrix newShapes(particlesNum,dbVector(particlesNum));
   int m=0;
 
-
+    
   logFile<<"#####################################################"<<endl;
   logFile<<"********** test boundary collocation method *********"<<endl;
   logFile<<"*****************************************************"<<endl;
@@ -5385,7 +5385,7 @@ void testBoundCollocation(InputFileData* InputData,
   MatCreateSeqAIJ(PETSC_COMM_SELF,particlesNum,
 		  particlesNum,PETSC_NULL,PETSC_NULL,&A);
   MatSetFromOptions(A);
-
+    
   // Loop over all particle a essential boundary conditions applied and
   // intialize Mat A row to row.
   for(int j=0;j<boundaryPtcls[dof].size();j++) {
@@ -5424,7 +5424,7 @@ void testBoundCollocation(InputFileData* InputData,
 
       MatSetValue(A,j,j,1.0,INSERT_VALUES);
 
-
+    
   MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);
   MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);
 
@@ -5446,7 +5446,7 @@ void testBoundCollocation(InputFileData* InputData,
     else
       logFile<<"non-boundary particle"<<endl;
   }
-
+    
   // Create the solution vector and the right needed for the
   // PETSC-Solver.
   Vec X;
@@ -5499,7 +5499,7 @@ void testBoundCollocation(InputFileData* InputData,
 
     VecRestoreArray(X,&XCalc);
   }
-
+    
   // Destroy all petsc objects.
   destroyPETScSolver(ksp);
   destroyPETScMat(A);
@@ -5607,7 +5607,7 @@ void testBoundCollocation(InputFileData* InputData,
     logFile<<"*********"<<endl;
 
   }
-
+    
   logFile<<"******************************************************"<<endl;
   logFile<<"********* test of boundary enforcement ***************"<<endl;
 
@@ -5667,15 +5667,15 @@ void testBoundCollocation(InputFileData* InputData,
   //---------------------------------------------------------------------
   // calculate the function value at the chosen boundary particle
   double funcValue = 0;
-
+    
   intVector& sPtcls = ptcls[boundPtcle].getSupportPtcls();
   dbVector& shps = ptcls[boundPtcle].getShapeFuncs();
-
+    
   for(int j=0;j<shps.size();j++) {
     funcValue += shps[j]*ptcls[sPtcls[j]].getDOF(dof);
     logFile<<j<<".) "<<sPtcls[j]<<" "<<shps[j]<<" "<<ptcls[sPtcls[j]].getDOF(dof)<<endl;
   }
-
+    
   logFile<<"funcValue = "<<funcValue<<endl;
 
   for(int j=0;j<boundaryPtcls[dof].size();j++) {

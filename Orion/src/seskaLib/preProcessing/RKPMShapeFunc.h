@@ -17,6 +17,8 @@
 #include "Particle.h"
 #include "PETScFunctions.h"
 #include "petscksp.h"
+#include "PrismaticWindowFunctionSet.h"
+#include "SphericalWindowFunctionSet.h"
 #include "WindowFunctionSet.h"
 
 

@@ -138,18 +138,18 @@ void GridNodes::setGridNodes(InputFileData* InputData, ofstream& logFile) {
 		modelData["usedDegreesOfFreedom"] = 3;
 		modelData["usedDimensions"] = 3;
 
-		std::string folderName = "gridNodes/";
+		folderName = "gridNodes/";
 		std::string meshFileName = folderName + "mesh.dat";
 		std::string inputFileName = folderName + "input.dat";
 
 		gridGeometry = new FEMGeometryExt(InputData, modelData, meshFileName,
 				inputFileName, logFile);
 
+		std::string mshFileName = folderName + "fem.msh";
+		gridGeometry->writeMeshFile(mshFileName.c_str(),InputData,logFile);
+
 		importGridNodes(InputData, logFile);
 
-//		cout << "Num of Gauss Points: " << gridGeometry->getFEMGeoData()->getGaussPointsVec().size() << endl;
-
-//		MPI_Abort(MPI_COMM_WORLD, 1);
 		break;
 	}
 	default:
@@ -659,7 +659,6 @@ void GridNodes::setSupportingParticles_two(FEMGeometryExt* FEMDataExt,
 //			printVector(nodesOutsideGeo,"nodesOutsideGeo",logFile);
 		} else {
 			nodesInsideGeo.push_back(i);
-//			nodesVec[nodesInsideGeo[i]].getSPtlcs() = sPtcls;
 			nodesVec[i].getSPtlcs() = sPtcls;
 		}
 	}
@@ -981,6 +980,7 @@ void GridNodes::setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* I
 			logFile << endl;
 	}
 
+	double radExtFactor = InputData->getValue("gInfluenceRadExtFactor");
 	for (int i = 0; i < nodalList.size(); i++) {
 
 		intVector supportingPtlcs = nodalList[i].getSPtlcs();
@@ -1029,7 +1029,7 @@ void GridNodes::setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* I
 
 				for (int m = 0; m < sPtclsCoord[maxRadId].size(); m++) {
 					radiusVec[m] = (sPtclsCoord[maxRadId][m]
-							- nodalList[i].getCoords()[m]) * 1.1;
+							- nodalList[i].getCoords()[m]) * radExtFactor;
 				}
 
 				break;
@@ -1042,7 +1042,7 @@ void GridNodes::setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* I
 						if(radiusVec[k] < abs(sPtclsCoord[l][k]-
 								nodalList[i].getCoords()[k])){
 							radiusVec[k] = abs(sPtclsCoord[l][k]-
-									nodalList[i].getCoords()[k]) * 1.1;
+									nodalList[i].getCoords()[k]) * radExtFactor;
 						}
 					}
 				}
@@ -1070,12 +1070,21 @@ void GridNodes::setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* I
 
 			switch(intType){
 
-			case 1:
+			case 1:{
 				// Calculating interpolants using multi-DIM MLS
 				Interpolation(nodalList[i].getCoords(), sPtclsCoord, radiusVec,
 						sPtclsInterpolants, InputData, logFile);
-				break;
 
+				double sum = 0;
+				for (int j = 0; j < sPtclsInterpolants.size(); j++) {
+					sum += sPtclsInterpolants[j];
+				}
+
+				logFile
+						<< "In GridNodes::setInterpolantsOnNodes, sum of interpolants ="
+						<< sum << endl;
+			}
+				break;
 			case 2:
 				// Calculating interpolants using Seska's MLS
 				calcMatrixFieldMLSApproximants(nodalList[i].getCoords(),
@@ -1445,6 +1454,15 @@ dbMatrix GridNodes::setInterpolantsOnParticles(Data& iData,
 			// nodalList[i].setInterpolants(sNodesInterpolants);
 
 			sNodesInterpolantsList[i] = sNodesInterpolants;
+
+			double sum=0;
+			for(int j=0;j<sNodesInterpolants.size();j++){
+				sum += sNodesInterpolants[j];
+			}
+
+			logFile
+			<< "In GridNodes::setInterpolantsOnParticles, sum of interpolants ="
+			<< sum << endl;
 
 #ifdef _GridNodesDebugMode_
 			logFile << "For Particle[" << i << "], Interpolants are" << endl;

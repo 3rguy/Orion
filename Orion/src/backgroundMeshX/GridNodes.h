@@ -42,6 +42,8 @@ public:
 
 	~GridNodes() {}	;
 
+	std::string& getFolderName(){return folderName;}
+
 	void setNumDimensions(int val){nDims = val;}
 	int getNumDimensions(void){return nDims;}
 
@@ -154,6 +156,8 @@ public:
 private:
 	int nDims;
 	std::vector<Node> nodalList;
+
+	string folderName;
 
 	FEMGeometryExt* gridGeometry;
 	MeshlessApproximation* MeshlessData;

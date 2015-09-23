@@ -100,7 +100,10 @@ void PODICalc::interpolantsCalc(dbVector& myParameters,
 	oPType intpolantSum = 0;
 	for(int i=0; i<interpolants.size();i++) intpolantSum += interpolants[i];
 	logFile << "Sum of interpolants: " << intpolantSum << endl;
-	cout <<  "Sum of interpolants: " << intpolantSum << endl;
+
+	if(InputData->getValue("printPodiInfo") == 1) {
+		cout <<  "Sum of interpolants: " << intpolantSum << endl;
+	}
 
 }
 
@@ -272,7 +275,7 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 	}
 
 	// Info display
-	if (interpolation_choice == 0) {
+	if (interpolation_choice == 0 && InputData->getValue("printPodiInfo") == 1) {
 
 		logFile << "Average POVs conserved = "
 				<< totalPOVsConserved/rearrangeDisplacementList.size() << endl;
@@ -375,6 +378,7 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 	double energyLevel = InputData->getValue("PODEnergyLevel");
 	double totalPOVsConserved = 0;
 	double totalEnergyConverserved = 0;
+	int count_interpolChange = 0;
 	for (int i = 0; i < rearrangeDisplacementList.size(); i++) {
 
 		// Find the zeroes entries
@@ -398,13 +402,20 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 
 		//Erase the zeroes entries
 		logFile << "Number of zero rows found = " << zeroEntriesVec.size() << endl;
-
-//		printMatrix(fullDispMat,"fullDispMat -> Full",logFile);
-
 		for(int j=zeroEntriesVec.size()-1; j>-1 ; j--){
 			fullDispMat.erase(fullDispMat.begin()+zeroEntriesVec[j]);
 		}
 		logFile << endl;
+
+		// If all entries has been deleted form the fullDispMat, the
+		// interpolation_choice is switched to 1
+		int oldInterpolation_choice = interpolation_choice;
+		bool zeroDispMat = false;
+		if(fullDispMat.size() == 0){
+			zeroDispMat = true;
+			interpolation_choice = 1;
+			count_interpolChange++;
+		}
 
 //		printMatrix(fullDispMat,"fullDispMat -> Reduced",logFile);
 
@@ -480,8 +491,10 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 			cout << "In PODICalc::PODInterpolation, interpolation method "
 					"does not exist.\n directInterpolation(0,1)" << endl;
 			MPI_Abort(MPI_COMM_WORLD,1);
-
 		}
+
+		if(zeroDispMat == true)
+					interpolation_choice = oldInterpolation_choice;
 
 //		logFile << "---------- Before adding zero row ----------" << endl;
 //		printVector(fullInterpolatedDispVec,"fullInterpolatedDispVec",logFile);
@@ -504,20 +517,20 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 	}
 
 	// Info display
-	if (interpolation_choice == 0) {
+	if (interpolation_choice == 0 && InputData->getValue("printPodiInfo") == 1) {
 
 		logFile << "Average POVs conserved = "
-				<< totalPOVsConserved/rearrangeDisplacementList.size() << endl;
+				<< totalPOVsConserved/(rearrangeDisplacementList.size()-count_interpolChange) << endl;
 		cout << "Average POVs conserved = "
-			 << totalPOVsConserved/rearrangeDisplacementList.size() << endl;
+			 << totalPOVsConserved/(rearrangeDisplacementList.size()-count_interpolChange) << endl;
 
 		logFile << "Targeted energy level: " << energyLevel
 				<< "\t Average Energy conserved: "
-				<< totalEnergyConverserved/rearrangeDisplacementList.size()
+				<< totalEnergyConverserved/(rearrangeDisplacementList.size()-count_interpolChange)
 				<< endl;
 		cout << "Targeted energy level: " << energyLevel
 			 << "\t Average Energy conserved: "
-			 << totalEnergyConverserved/rearrangeDisplacementList.size()
+			 << totalEnergyConverserved/(rearrangeDisplacementList.size()-count_interpolChange)
 			 << endl;
 	}
 

@@ -354,7 +354,7 @@ void Interpolation::shiftedBasisCalc(dbVector& iPoint, dbMatrix& coords,
 			for (int j = 0; j < ndim; j++) {
 				coords[i][j] = ((coords[i][j] - iPoint[j]) / radiusVec[j])
 															+ shiftedBasisCoef;
-				logFile << "coords[i][j] = " << coords[i][j] << endl;
+//				logFile << "coords[i][j] = " << coords[i][j] << endl;
 			}
 		}
 

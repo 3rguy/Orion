@@ -8,10 +8,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <algorithm>
-#include <math.h>
 #include <stdio.h>
-#include <cmath>
 
 #include <time.h>
 #include <chrono>
@@ -19,11 +16,12 @@
 
 #define PI 3.14159265
 
-#include "InputFileData.h"
 #include "defs.h"
-#include "ROMCalc.h"
+#include "InputFileData.h"
+
 #include "ErrorCalc.h"
 #include "testFunctions.h"
+#include "Calculation.h"
 
 using namespace std;
 
@@ -69,16 +67,16 @@ int main(int argc, char* argv[]) {
 	int choice = InputData->getValue("orionMode");
 
 	switch (choice) {
-	case 0: {
-		//*************************************************************************
-		// Reduced Order Method Calculation Calculation
-		ROMCalc* reducedOrderCalculation = new ROMCalc(InputData, logFile);
-		delete reducedOrderCalculation;
+
+	case 1: {
+		//**********************************************************************
+		// New Implementation
+		Calculation calc(InputData, logFile);
 		break;
 	}
 
-	case 1: {
-		//*************************************************************************
+	case 2: {
+		//**********************************************************************
 		// Error Calculation
 		string fileOutput2 = "oLogError.dat";
 		ofstream elogFile(fileOutput2.c_str(), std::ofstream::out);
@@ -88,16 +86,16 @@ int main(int argc, char* argv[]) {
 		break;
 	}
 
-	case 2: {
-		//*************************************************************************
+	case 3: {
+		//**********************************************************************
 		// Testing specific algorithm in Orion
 		testFunctions(InputData, logFile);
 		break;
 	}
 
 	default:
-		cout << "ERROR: In main(), choice is not valid" << endl;
-		logFile << "ERROR: In main(), choice is not valid" << endl;
+		cout << "ERROR: In main(), orionMode choice is not valid" << endl;
+		logFile << "ERROR: In main(), orionMode choice is not valid" << endl;
 	}
 
 	delete InputData;

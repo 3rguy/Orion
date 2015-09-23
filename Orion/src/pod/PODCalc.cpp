@@ -84,7 +84,9 @@ void PODCalc::snapshotCalc(ofstream& logFile) {
 
 	// Calculate (A^T)A
 	dbMatrix snapshotMat;
+//	printMatrix(dataMat,"dataMat",logFile);
 	innerTensorProduct(dataMat, dataMat, snapshotMat, true, false, logFile);
+//	printMatrix(snapshotMat,"snapshotMat",logFile);
 
 	// Compute 1/n * (A^T)A
 	int n = dataMat[0].size();

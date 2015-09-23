@@ -36,10 +36,10 @@ FEMGeometryExt::FEMGeometryExt(InputFileData* InputData,
 
 	default:
 		logFile
-				<< "In FEMGeometryExt::FEMGeometryExt, FEMGeometrySetupType incorrect \n "
+				<< "ERROR: In FEMGeometryExt::FEMGeometryExt, FEMGeometrySetupType incorrect \n "
 				<< "Valid options are: 1, 2" << endl;
 		cout
-				<< "In FEMGeometryExt::FEMGeometryExt, FEMGeometrySetupType incorrect \n "
+				<< "ERROR: In FEMGeometryExt::FEMGeometryExt, FEMGeometrySetupType incorrect \n "
 				<< "Valid options are: 1, 2" << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}

@@ -353,12 +353,39 @@ void ErrorCalc::calculateErrors_grf_Format(dbMatrix& exactGrfMatrix,
 	printMatrix(exactGrfMatrix_volOnly,"exactGrfMatrix_volOnly",logFile);
 	printMatrix(approxGrfMatrix_volOnly,"approxGrfMatrix_volOnly",logFile);
 
-	// *********************************************************************
-	double rel2Norm =
+	// *************************************************************************
+	double rel2Norm_first =
 		relativeL2norm(exactGrfMatrix_volOnly,approxGrfMatrix_volOnly,
 				InputData,logFile);
 
+	cout << "First graph column" << endl;
+	cout << "Relative L2 Norm: " << rel2Norm_first << endl;
+	logFile << "First graph column" << endl;
+	logFile << "Relative L2 Norm: " << rel2Norm_first << endl;
+	// *************************************************************************
+
+
+	exactGrfMatrix_volOnly[0] = exactGrfMatrix[1];
+	approxGrfMatrix_volOnly[0] = approxGrfMatrix[1];
+
+	printMatrix(exactGrfMatrix_volOnly, "exactGrfMatrix_volOnly", logFile);
+	printMatrix(approxGrfMatrix_volOnly, "approxGrfMatrix_volOnly", logFile);
+
+	// *********************************************************************
+	double rel2Norm_second = relativeL2norm(exactGrfMatrix_volOnly,
+			approxGrfMatrix_volOnly, InputData, logFile);
+
+	cout << "Second graph column" << endl;
+	cout << "Relative L2 Norm: " << rel2Norm_second << endl;
+	logFile << "Second graph column" << endl;
+	logFile << "Relative L2 Norm: " << rel2Norm_second << endl;
+	// *************************************************************************
+
+	// Combined relative L2Norm
+	double rel2Norm = sqrt(pow(rel2Norm_first,2)+pow(rel2Norm_second,2));
+	cout << "Combined graph column" << endl;
 	cout << "Relative L2 Norm: " << rel2Norm << endl;
+	logFile << "Second graph column" << endl;
 	logFile << "Relative L2 Norm: " << rel2Norm << endl;
 
 }

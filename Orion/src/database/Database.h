@@ -30,6 +30,8 @@ using namespace std;
 
 class Database{
 public:
+
+	Database(){};
     Database(string& databaseName,ofstream& logFile);
     ~Database(){}
     void addEntry(Data entry);

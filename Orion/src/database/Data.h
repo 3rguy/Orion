@@ -63,12 +63,6 @@ public:
     FEMGeometryExt* getMeshData(){return meshData;};
     void setMeshData(FEMGeometryExt* p){meshData = p;};
 
-    void setGraphResultList(dbMatrix graphMatList){graphResultList = graphMatList;};
-    dbMatrix& getGraphResultList(){return graphResultList;};
-
-//    void printDispMatrix(ofstream& logFile);
-//    void plotNode(int dof,ofstream& logFile);
-
 
     void readMeshDataFile(InputFileData* InputData, ofstream& logFile);
     void readMeshDataFile(string& meshFileName,string& inputFileName,
@@ -94,10 +88,16 @@ public:
 			map<double, map<string,dbMatrix> >& resultsData,
 			ofstream& logFile);
 
-	void readGraphResultFile(InputFileData* InputData, ofstream& logFile);
 	void readGraphFile_grfFormat(std::string& fileName, dbMatrix& grfMatrix,
 			ofstream& logFile);
-	void saveGraphResultsToFile(ofstream& logFile);
+
+	void readVentriclesPVGraphResultFile(InputFileData* InputData,
+															ofstream& logFile);
+	void readLeftVentriclePVGraphResultFile(InputFileData* InputData,
+															ofstream& logFile);
+	void readRightVentriclePVGraphResultFile(InputFileData* InputData,
+															ofstream& logFile);
+
 	void saveGraphResultsToFile_grf_format(std::string outputFileName,
 			dbVector& graphVecOne,dbVector& graphVecTwo,ofstream& logFile);
 
@@ -140,6 +140,22 @@ public:
     void calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile);
     void calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile);
 
+    dbVector& getLeftCavityVolumes(){return leftCavityVolumes;};
+    dbVector& getRightCavityVolumes(){return rightCavityVolumes;};
+
+    dbVector& getLeftCavityPressures(){return leftCavityPressures;};
+    dbVector& getRightCavityPressures(){return rightCavityPressures;};
+
+    void setInterpolants(dbVector& vals){interpolants = vals;};
+    dbVector& getInterpolants(){return interpolants;};
+
+    void setGraph(const char* graphName,dbVector graphResult);
+    dbVector& getGraph(const char* graphName);
+    void deleteGraph(const char* graphName);
+
+    void syncCardiacTimeStepsAndResults(InputFileData* InputData, ofstream& logFile);
+
+    void insertZeroResultFields(InputFileData* InputData, ofstream& logFile);
 
 private:
 
@@ -156,19 +172,29 @@ private:
     string folderName;
 
     // Results extracted from result file
+    dbVector step_value_vec;
+
     vector<vector<string> > allResultsNameList;
     vector<string> resultNameList;
-    dbVector step_value_vec;
+
     map<string,dbMatrix> resultList;
     map<string,int> resultDofList;
 
-    dbMatrix graphResultList;
+    map<string,dbVector> graphList;
 
     // DOFStandardisation stuff
     FEMGeometryExt* meshData;
     dbMatrix coordsList;
     int anchorPoint;
     intMatrix supportingNodesList;
+
+    dbVector leftCavityVolumes;
+    dbVector leftCavityPressures;
+
+    dbVector rightCavityVolumes;
+    dbVector rightCavityPressures;
+
+    dbVector interpolants;
 
 };
 

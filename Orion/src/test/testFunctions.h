@@ -8,35 +8,22 @@
 #ifndef TESTFUNCTIONS_H_
 #define TESTFUNCTIONS_H_
 
-#define PI 3.14159265
-
-//#include "commonTypedefs.h"
-//#include "commonFunctions.h"
-//#include "fortranFunctions.h"
-
+#include <iostream>
 #include <limits>
-
-//#include "Database.h"
-#include "Data.h"
-//#include "PODCalc.h"
-//#include "FEMGeometryX.h"
-//#include "ParticleX.h"
-//#include "FEMElementX.h"
-
-#include "defs.h"
-#include "ROMCalc.h"
-#include "Interpolation.h"
-#include "testFunctions.h"
-#include "mlsTestFunctions.h"
-#include "GridNodesTest.h"
 
 #include <time.h>
 #include <chrono>
 #include <ctime>
 
-#include <iostream>
-//#include <pcl/io/pcd_io.h>
-//#include <pcl/point_types.h>
+#include "defs.h"
+#include "Data.h"
+#include "Interpolation.h"
+#include "GridNodesTest.h"
+#include "PODCalc.h"
+#include "PODICalc.h"
+#include "mlsTestFunctions.h"
+
+#define PI 3.14159265
 
 // *****************************************************************************
 // *****************************************************************************

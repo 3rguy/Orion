@@ -717,7 +717,7 @@ void calcVolumeTwo(InputFileData* InputData,ofstream& logFile){
 
 	myData.readMeshDataFile(InputData,logFile);
 	myData.readResultFile(InputData,logFile);
-	myData.readGraphResultFile(InputData,logFile);
+	myData.readVentriclesPVGraphResultFile(InputData,logFile);
 
 	dbMatrix& resultMatrix = myData.getResult("displacement");
 	printMatrix(resultMatrix,"displacement Matrix",logFile);
@@ -834,15 +834,14 @@ void calcVolumeTwo(InputFileData* InputData,ofstream& logFile){
 		cout << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
 	}
 
-	dbMatrix& graphResult = myData.getGraphResultList();
-	printMatrix(graphResult,"graphResult", logFile);
+	dbVector& pressureVec = myData.getLeftCavityPressures();
 
 	ofstream writeGraph("defVolLoad_myAlgo.grf");
 	writeGraph.precision(15);
 
 	if(writeGraph.good()){
-		for(int i = 0 ; i < graphResult[0].size(); i++){
-			writeGraph << volumeVec[i] << " " << graphResult[0][i] << endl;
+		for(int i = 0 ; i < pressureVec.size(); i++){
+			writeGraph << volumeVec[i] << " " << pressureVec[i] << endl;
 		}
 	}
 

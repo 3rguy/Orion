@@ -476,6 +476,8 @@ void Data::readResultFile_resFormat_allResult(string& inputFileName,
 	if (!readFemRes) {
 		logFile << "File " << inputFileName << " does not exist or is empty"
 				<< endl;
+		cout << "File " << inputFileName << " does not exist or is empty"
+						<< endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
@@ -827,17 +829,6 @@ void Data::readResultFile_txtFormat(ofstream& logFile) {
 /*!****************************************************************************/
 /*!****************************************************************************/
 //! Read and Extract results from a simple text file format
-void Data::readGraphResultFile(InputFileData* InputData, ofstream& logFile){
-
-	std::string fileName = folderName + "pressure_volume-loadID_0-dirichletID_0.grf";
-	dbMatrix defVolLoadMat;
-	readGraphFile_grfFormat(fileName, defVolLoadMat, logFile);
-	graphResultList.push_back(defVolLoadMat[1]); // discard volumes
-}
-
-/*!****************************************************************************/
-/*!****************************************************************************/
-//! Read and Extract results from a simple text file format
 void Data::readGraphFile_grfFormat(std::string& fileName, dbMatrix& grfMatrix,
 		ofstream& logFile) {
 
@@ -855,8 +846,8 @@ void Data::readGraphFile_grfFormat(std::string& fileName, dbMatrix& grfMatrix,
 			trimLine.erase(remove(trimLine.begin(), trimLine.end(), '\t'), trimLine.end());
 			trimLine.erase(remove(trimLine.begin(), trimLine.end(), ' '), trimLine.end());
 			if (trimLine.compare(0,1,"#") != 0 && trimLine.compare(blank_line) != 1) {
-				logFile << "----------------------------------" << endl;
-				logFile << "Line: " << line << endl;
+//				logFile << "----------------------------------" << endl;
+//				logFile << "Line: " << line << endl;
 				istringstream ss(line);
 				dbVector resultLine;
 				for (;;) {
@@ -880,8 +871,8 @@ void Data::readGraphFile_grfFormat(std::string& fileName, dbMatrix& grfMatrix,
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 
-	logFile << "Data::readGraphFile_grfFormat" << endl;
-	printMatrix(resMat,"",logFile);
+//	logFile << "Data::readGraphFile_grfFormat" << endl;
+//	printMatrix(resMat,"",logFile);
 
 	// Transpose resMat
 	grfMatrix.resize(resMat[0].size(),dbVector(resMat.size(),0));
@@ -901,12 +892,62 @@ void Data::readGraphFile_grfFormat(std::string& fileName, dbMatrix& grfMatrix,
 
 /*!****************************************************************************/
 /*!****************************************************************************/
-void Data::saveGraphResultsToFile(ofstream& logFile){
+//! Read and Extract results from a simple text file format
+void Data::readVentriclesPVGraphResultFile(InputFileData* InputData,
+		ofstream& logFile){
 
-	std::string outputFileName = "defVolLoad1.grf";
-	saveGraphResultsToFile_grf_format(outputFileName,graphResultList[0],
-			graphResultList[1],logFile);
+	readLeftVentriclePVGraphResultFile(InputData,logFile);
+	readRightVentriclePVGraphResultFile(InputData,logFile);
+}
 
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read and Extract results from a simple text file format
+void Data::readLeftVentriclePVGraphResultFile(InputFileData* InputData,
+		ofstream& logFile) {
+
+	std::string vFileName = folderName + "volume_time-dirichletID_0.grf";
+	dbMatrix vGraphResult;
+	readGraphFile_grfFormat(vFileName, vGraphResult, logFile);
+	printMatrix(vGraphResult, "vGraphResult", logFile);
+	setGraph("LVTimeSteps",vGraphResult[0]);
+	leftCavityVolumes = vGraphResult[1];
+
+
+	std::string pFileName = folderName + "load_time-loadID_0.grf";
+	dbMatrix pGraphResult;
+	readGraphFile_grfFormat(pFileName, pGraphResult, logFile);
+	printMatrix(pGraphResult, "pGraphResult", logFile);
+	setGraph("LPTimeSteps",pGraphResult[0]);
+	leftCavityPressures = pGraphResult[1];
+
+
+	printVector(leftCavityVolumes, "leftCavityVolumes", logFile);
+	printVector(leftCavityPressures, "leftCavityPressures", logFile);
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read and Extract results from a simple text file format
+void Data::readRightVentriclePVGraphResultFile(InputFileData* InputData,
+		ofstream& logFile){
+
+	std::string vFileName = folderName + "volume_time-dirichletID_1.grf";
+	dbMatrix vGraphResult;
+	readGraphFile_grfFormat(vFileName, vGraphResult, logFile);
+	printMatrix(vGraphResult, "vGraphResult", logFile);
+	setGraph("RVTimeSteps", vGraphResult[0]);
+	rightCavityVolumes = vGraphResult[1];
+
+	std::string pFileName = folderName + "load_time-loadID_1.grf";
+	dbMatrix pGraphResult;
+	readGraphFile_grfFormat(pFileName, pGraphResult, logFile);
+	printMatrix(pGraphResult, "pGraphResult", logFile);
+	setGraph("RPTimeSteps", pGraphResult[0]);
+	rightCavityPressures = pGraphResult[1];
+
+	printVector(rightCavityVolumes,"rightCavityVolumes",logFile);
+	printVector(rightCavityPressures,"rightCavityPressures",logFile);
 }
 
 /*!****************************************************************************/
@@ -1591,10 +1632,12 @@ void Data::saveResultsToFile(ofstream& logFile) {
 
 	switch (choice) {
 	case 1:
+	{
 		//Save matrix to .res file format
-		saveAllResultsToFile_res_format("fem_orion.res",logFile);
+		string str = folderName + "fem_orion.res";
+		saveAllResultsToFile_res_format(str.c_str(),logFile);
 		break;
-
+	}
 	default:
 		logFile << "ERROR: Specified file format cannot be written to" << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
@@ -1609,6 +1652,7 @@ void Data::saveResultsToFile(ofstream& logFile) {
 void Data::saveAllResultsToFile_res_format(const char* outputFileName,
 		ofstream& logFile) {
 
+	std::cout << "Saving fem_orion.res to: " << outputFileName << endl;
 	saveResultsToFile_res_format(outputFileName,resultNameList,logFile);
 
 }
@@ -2087,10 +2131,10 @@ void Data::calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 	//printMatrix(resultMatrix,"displacement Matrix",logFile);
 
 	// Convert each result at each step from a vector to a matrix
-	vector<dbMatrix> resultMatList(resultMatrix[0].size()+1,
+	vector<dbMatrix> resultMatList(resultMatrix[0].size(),
 				dbMatrix(resultMatrix.size() / 3, dbVector(3,0)));
 	for (int i = 1; i < resultMatrix[0].size(); i++) {
-		dbMatrix& mat = resultMatList[i+1];
+		dbMatrix& mat = resultMatList[i];
 
 		int row = 0;
 		int col = 0;
@@ -2148,26 +2192,34 @@ void Data::calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 		}
 
 		volumeVec[i] = abs(volume / 6.0);
-
-		logFile << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
 	}
 
-	string graphFileName = folderName + "pressure_volume-LV.grf";
+	string timeGraphFileName = folderName + "time_volume-LV.grf";
+	cout << "Writing to: " << timeGraphFileName << endl;
 
-	ofstream writeGraph(graphFileName);
-	writeGraph.precision(15);
-	writeGraph.setf( std::ios::scientific, std:: ios::floatfield );
+	ofstream writeTimeGraph(timeGraphFileName);
+	writeTimeGraph.precision(15);
+	writeTimeGraph.setf( std::ios::scientific, std:: ios::floatfield );
 
-	dbVector stepValueVecMod = step_value_vec;
-	stepValueVecMod.insert(stepValueVecMod.begin(),0);
+	string pressureGraphFileName = folderName + "pressure_volume-LV.grf";
+	cout << "Writing to: " << pressureGraphFileName << endl;
 
-	if (writeGraph.good()) {
-		for (int i = 0; i < stepValueVecMod.size(); i++) {
-			writeGraph << volumeVec[i] << " " << stepValueVecMod[i] << endl;
+	ofstream writePressureGraph(pressureGraphFileName);
+	writePressureGraph.precision(15);
+	writePressureGraph.setf( std::ios::scientific, std:: ios::floatfield );
+
+
+	if (writeTimeGraph.good() && writePressureGraph.good()) {
+		for (int i = 0; i < step_value_vec.size(); i++) {
+			writeTimeGraph << step_value_vec[i] << " " << volumeVec[i] << endl;
+			writePressureGraph << volumeVec[i] << " " << leftCavityPressures[i] << endl;
 		}
 	}
 
-	writeGraph.close();
+	writeTimeGraph.close();
+	writePressureGraph.close();
+
+	leftCavityVolumes = volumeVec;
 
 }
 
@@ -2180,13 +2232,14 @@ void Data::calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 	logFile << "Calculating right cavity volumes" << endl;
 
 	dbMatrix& resultMatrix = this->getResult("displacement");
-	//printMatrix(resultMatrix,"displacement Matrix",logFile);
+//	printMatrix(resultMatrix,"displacement Matrix",logFile);
+//	MPI_Abort(MPI_COMM_WORLD, 1);
 
 	// Convert each result at each step from a vector to a matrix
-	vector<dbMatrix> resultMatList(resultMatrix[0].size()+1,
+	vector<dbMatrix> resultMatList(resultMatrix[0].size(),
 			dbMatrix(resultMatrix.size() / 3, dbVector(3,0)));
 	for (int i = 0; i < resultMatrix[0].size(); i++) {
-		dbMatrix& mat = resultMatList[i+1];
+		dbMatrix& mat = resultMatList[i];
 
 		int row = 0;
 		int col = 0;
@@ -2233,6 +2286,7 @@ void Data::calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 	for (int i = 0; i < numOfSteps; i++) {
 
 		dbMatrix& rMatrix = resultMatList[i];
+
 		vector<ParticleExt> ptcls = meshData->getNodesVec();
 
 		// Update the coordinates
@@ -2263,25 +2317,214 @@ void Data::calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 
 		volumeVec[i] = abs(volume / 6.0);
 
-		logFile << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
+//		logFile << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
 	}
 
-	string graphFileName = folderName + "pressure_volume-RV.grf";
+	string timeGraphFileName = folderName + "time_volume-RV.grf";
+	cout << "Writing to: " << timeGraphFileName << endl;
 
-	ofstream writeGraph(graphFileName);
-	writeGraph.precision(15);
-	writeGraph.setf( std::ios::scientific, std::ios::floatfield);
+	ofstream writeTimeGraph(timeGraphFileName);
+	writeTimeGraph.precision(15);
+	writeTimeGraph.setf(std::ios::scientific, std::ios::floatfield);
 
-	dbVector stepValueVecMod = step_value_vec;
-	stepValueVecMod.insert(stepValueVecMod.begin(),0);
 
-	if (writeGraph.good()) {
-		for (int i = 0; i < stepValueVecMod.size(); i++) {
-			writeGraph << volumeVec[i] << " " << stepValueVecMod[i] << endl;
+	string pressureGraphFileName = folderName + "pressure_volume-RV.grf";
+	cout << "Writing to: " << pressureGraphFileName << endl;
+
+	ofstream writePressureGraph(pressureGraphFileName);
+	writePressureGraph.precision(15);
+	writePressureGraph.setf( std::ios::scientific, std:: ios::floatfield );
+
+
+	if (writeTimeGraph.good() && writePressureGraph.good()) {
+		for (int i = 0; i < step_value_vec.size(); i++) {
+			writeTimeGraph << step_value_vec[i] << " " << volumeVec[i] << endl;
+			writePressureGraph << volumeVec[i] << " " << rightCavityPressures[i] << endl;
 		}
 	}
 
-	writeGraph.close();
+	writeTimeGraph.close();
+	writePressureGraph.close();
+
+	rightCavityVolumes = volumeVec;
 
 }
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::setGraph(const char* graphName,dbVector graph) {
+
+	string str(graphName);
+
+	map<string, dbVector>::iterator it = graphList.find(str);
+
+	if (it == graphList.end())
+		graphList[str] = graph ;
+	else{
+		cout << "ERROR: In Data::setGraph, '" << graphName
+				<< "' already exists in graphList" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+dbVector& Data::getGraph(const char* graphName) {
+
+	string str(graphName);
+
+	map<string, dbVector>::iterator it = graphList.find(str);
+
+	if (it != graphList.end())
+		return it->second;
+	else {
+		cout << "ERROR: In Data::getGraph, '" << graphName
+				<< "' does not exist in graphList" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::deleteGraph(const char* graphName){
+
+	string str(graphName);
+
+	map<string, dbVector>::iterator it = graphList.find(str);
+
+	if (it != graphList.end())
+		graphList.erase(it);
+	else {
+		cout << "ERROR: In Data::deleteGraph, '" << graphName
+				<< "' does not exist in graphList" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::syncCardiacTimeStepsAndResults(InputFileData* InputData, ofstream& logFile){
+
+	logFile << "Synchronising result timesteps and graph results." << endl;
+	cout    << "Synchronising result timesteps and graph results." << endl;
+
+	printVector(leftCavityVolumes,"leftCavityVolumes(Before)",logFile);
+	printVector(leftCavityPressures,"leftCavityPressures(Before)",logFile);
+
+	printVector(rightCavityVolumes,"rightCavityVolumes(Before)",logFile);
+	printVector(rightCavityPressures,"rightCavityPressures(Before)",logFile);
+
+
+	dbVector& LVTimeSteps = getGraph("LVTimeSteps");
+	intVector selectedLVIndex;
+
+	logFile << "LVTimeSteps.size() = " << LVTimeSteps.size() << endl;
+	logFile << "step_value_vec.size() = " << step_value_vec.size() << endl;
+
+	if(LVTimeSteps.size()>1){
+		for(int i=0; i<step_value_vec.size();i++){
+			for(int j=0; j<LVTimeSteps.size();j++){
+				if(step_value_vec[i] == LVTimeSteps[j]){
+					selectedLVIndex.push_back(j);
+				}
+			}
+		}
+
+		if(selectedLVIndex.size() != step_value_vec.size()){
+			logFile << "In Data::syncCardiacTimeStepsAndResults, not all the graph "
+					"timesteps were found in the step_value_vec vector." << endl;
+			cout << "In Data::syncCardiacTimeStepsAndResults, not all the graph "
+					"timesteps were found in the step_value_vec vector." << endl;
+			MPI_Abort(MPI_COMM_WORLD, 1);
+		}
+
+		dbVector tempVolVec(selectedLVIndex.size(),0), tempPreVec(selectedLVIndex.size(),0);
+		for(int i=0;i<selectedLVIndex.size();i++){
+			int index = selectedLVIndex[i];
+
+			tempVolVec[i] = leftCavityVolumes[index];
+			tempPreVec[i] = leftCavityPressures[index];
+		}
+
+		leftCavityVolumes = tempVolVec;
+		leftCavityPressures = tempPreVec;
+
+		deleteGraph("LVTimeSteps");
+
+	}
+	else{
+		logFile << "In Data::syncCardiacTimeStepsAndResults, LV timesteps is empty." << endl;
+	}
+
+
+
+
+
+	dbVector& RVTimeSteps = getGraph("RVTimeSteps");
+	intVector selectedRVIndex;
+
+	logFile << "RVTimeSteps.size() = " << RVTimeSteps.size() << endl;
+	logFile << "step_value_vec.size() = " << step_value_vec.size() << endl;
+
+	if(RVTimeSteps.size()>1){
+		for(int i=0; i<step_value_vec.size();i++){
+			for(int j=0; j<RVTimeSteps.size();j++){
+				if(step_value_vec[i] == RVTimeSteps[j]){
+					selectedRVIndex.push_back(j);
+				}
+			}
+		}
+
+		if(selectedRVIndex.size() != step_value_vec.size()){
+			logFile << "In Data::syncCardiacTimeStepsAndResults, not all the graph "
+					"timesteps were found in the step_value_vec vector." << endl;
+			cout << "In Data::syncCardiacTimeStepsAndResults, not all the graph "
+					"timesteps were found in the step_value_vec vector." << endl;
+			MPI_Abort(MPI_COMM_WORLD, 1);
+		}
+
+		dbVector tempVolVec(selectedRVIndex.size(),0), tempPreVec(selectedRVIndex.size(),0);
+		for(int i=0;i<selectedRVIndex.size();i++){
+			int index = selectedRVIndex[i];
+
+			tempVolVec[i] = rightCavityVolumes[index];
+			tempPreVec[i] = rightCavityPressures[index];
+		}
+
+		rightCavityVolumes = tempVolVec;
+		rightCavityPressures = tempPreVec;
+
+		deleteGraph("RVTimeSteps");
+
+	}
+	else{
+		logFile << "In Data::syncCardiacTimeStepsAndResults, RV timesteps is empty." << endl;
+	}
+
+	printVector(leftCavityVolumes,"leftCavityVolumes(after)",logFile);
+	printVector(leftCavityPressures,"leftCavityPressures(after)",logFile);
+
+	printVector(rightCavityVolumes,"rightCavityVolumes(after)",logFile);
+	printVector(rightCavityPressures,"rightCavityPressures(after)",logFile);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::insertZeroResultFields(InputFileData* InputData, ofstream& logFile){
+
+	for(int i=0;i<resultNameList.size();i++){
+		dbMatrix& result = this->getResult(resultNameList[i].c_str());
+
+		for(int j=0; j<result.size(); j++){
+			result[j].insert(result[j].begin(),0);
+		}
+	}
+
+	step_value_vec.insert(step_value_vec.begin(),0);
+
+}
+
 

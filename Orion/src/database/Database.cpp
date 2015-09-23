@@ -2,8 +2,8 @@
 
 Database::Database(string& databaseName, ofstream& logFile) {
 
-	cout << "Loading-up database" << endl;
-	logFile << "Loading-up database" << endl;
+	cout << "Loading-up database ... ";
+	logFile << "Loading-up database ... ";
 
 	//! Read database file (e.g myDatabase.csv)
 	dbMatrix paramMatrix;
@@ -30,6 +30,10 @@ Database::Database(string& databaseName, ofstream& logFile) {
 #ifdef _DatabaseDebugMode_
 	printDatabase(logFile);
 #endif
+
+	cout << "DONE" << endl;
+	logFile << "DONE" << endl;
+
 }
 
 void Database::addEntry(Data entry) {

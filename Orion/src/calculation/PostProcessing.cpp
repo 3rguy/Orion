@@ -88,6 +88,7 @@ void PostProcessing::defaultPostProcessing(Database& myDatabase, DataContainer* 
 	}
 
 	myData.saveResultsToFile(logFile);
+	myData.plotPostProcessGraph(InputData,logFile);
 
 	additionalPostProcessingFunctions(problemData,InputData,logFile);
 

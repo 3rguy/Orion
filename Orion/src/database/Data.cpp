@@ -1907,6 +1907,48 @@ dbMatrix& Data::getResult(const char* resultName) {
 
 /*!****************************************************************************/
 /*!****************************************************************************/
+dbVector& Data::getResultAcrossSteps(const char* resultName,int dofID) {
+
+	string str(resultName);
+
+	map<string, dbMatrix>::iterator it = resultList.find(str);
+
+	if (it == resultList.end()){
+		cout << "ERROR: In Data::getResult, '" << resultName
+				<< "' does not exist in resultList" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	dbMatrix& result = it->second;
+	return result[dofID];
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+dbVector& Data::getResultAcrossDOFs(const char* resultName,int step) {
+
+	string str(resultName);
+
+	map<string, dbMatrix>::iterator it = resultList.find(str);
+
+	if (it == resultList.end()){
+		cout << "ERROR: In Data::getResult, '" << resultName
+				<< "' does not exist in resultList" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	dbMatrix& result = it->second;
+	dbVector resultVector(result.size(),0);
+
+	for(int i=0; i < result.size() ; i++){
+		resultVector[i] = result[i][step];
+	}
+
+	return resultVector;
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
 void Data::deleteResult(const char* resultName){
 
 	string str(resultName);
@@ -2524,6 +2566,79 @@ void Data::insertZeroResultFields(InputFileData* InputData, ofstream& logFile){
 	}
 
 	step_value_vec.insert(step_value_vec.begin(),0);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::plotPostProcessGraph(InputFileData* InputData, ofstream& logFile){
+
+	// Read influence factors from input file
+	string graphX_start = "graphX";
+	string graphY_start = "graphY";
+	string graphNode_start = "graphNode";
+	string graphDOF_start = "graphDOF";
+
+	int nGraphs = InputData->getValue("nGraphs");
+
+	for(int i=0; i < nGraphs ; i ++){
+
+		ostringstream convert;   // stream used for the conversion
+		convert << i;
+
+		string graphX_name = graphX_start + convert.str();
+		string graphY_name = graphY_start + convert.str();
+		string graphNode_name = graphNode_start + convert.str();
+		string graphDOF_name = graphDOF_start + convert.str();
+
+		int graphX = InputData->getValue(graphX_name.c_str());
+		int graphY = InputData->getValue(graphY_name.c_str());
+		int graphNode =InputData->getValue(graphNode_name.c_str());
+		int graphDOF = InputData->getValue(graphDOF_name.c_str());
+
+		string resultNameX, resultNameY;
+		dbVector graphX_data = getGraphData(graphX,graphNode,graphDOF,resultNameX,InputData,logFile);
+		dbVector graphY_data = getGraphData(graphY,graphNode,graphDOF,resultNameY,InputData,logFile);
+
+		ostringstream nodeConvert;   // stream used for the conversion
+		nodeConvert << graphNode;
+
+		ostringstream DOFConvert;   // stream used for the conversion
+		DOFConvert << graphDOF;
+
+		string graphFileName = resultNameX + "_" + resultNameY + "-node" + nodeConvert.str() + "-DOF" + DOFConvert.str();
+		saveGraphResultsToFile_grf_format(graphFileName, graphX_data,
+				graphY_data, logFile);
+
+	}
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+dbVector& Data::getGraphData(int graphType, int node, int DOF, string& resultName,
+		InputFileData* InputData, ofstream& logFile){
+
+	if (graphType == -1){
+		resultName = "time";
+		return step_value_vec;
+	}
+	else if (graphType > -1 && graphType < allResultsNameList.size()){
+		resultName = allResultsNameList[graphType][0];
+
+		int numDofs = this->getResultDOF(resultName.c_str());
+		int DOFIndex = ((node - 1)*numDofs) + (DOF - 1);
+
+		return this->getResultAcrossSteps(resultName.c_str(),DOFIndex);
+
+	}
+	else {
+		logFile << "In Data::plotPostProcessGraph, graphType = " << graphType
+				<< " and is not supported." << endl;
+		cout << "In Data::plotPostProcessGraph, graphType = " << graphType
+				<< " and is not supported." << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
 
 }
 

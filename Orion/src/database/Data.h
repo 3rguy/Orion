@@ -123,6 +123,8 @@ public:
 
     void setResult(const char* resultName,dbMatrix result);
     dbMatrix& getResult(const char* resultName);
+    dbVector& getResultAcrossSteps(const char* resultName,int dofID);
+    dbVector& getResultAcrossDOFs(const char* resultName,int step);
     map<string,dbMatrix>& getResultList(){return resultList;};
     void deleteResult(const char* resultName);
 
@@ -156,6 +158,10 @@ public:
     void syncCardiacTimeStepsAndResults(InputFileData* InputData, ofstream& logFile);
 
     void insertZeroResultFields(InputFileData* InputData, ofstream& logFile);
+
+    void plotPostProcessGraph(InputFileData* InputData, ofstream& logFile);
+    dbVector& getGraphData(int graphType, int node, int DOF, string& resultName,
+    		InputFileData* InputData, ofstream& logFile);
 
 private:
 

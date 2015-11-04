@@ -913,6 +913,8 @@ void InputFileData::setDefaultSimulationParameters(std::ofstream& logFile) {
 
   problemData["dispMatrixRearrange"] = 1;
 
+  problemData["nGraphs"] = 0;
+
 
   //calc control mode 6 stuff
   problemData["cardiacPhase"] = 1;

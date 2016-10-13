@@ -14,28 +14,49 @@
 /*!****************************************************************************/
 /*!****************************************************************************/
 void PreProcessing::initPreProcessing(Database& myDatabase,
-	 DataContainer* problemData, InputFileData* InputData, ofstream& logFile) {
+		DataContainer* problemData, InputFileData* InputData,
+		ofstream& logFile) {
 
 	using namespace std;
 
-	problemData->setValue("supportDataID",intVector());
-	problemData->setValue("myParameters",dbVector());
-	problemData->setValue("parameterRadii",dbVector());
-	problemData->setValue("resultList",vector<dbMatrix>());
-	problemData->setValue("dataParametersList",dbMatrix());
-	problemData->setValue("calcResultList",vector<dbMatrix>());
-	problemData->setValue("standardStepsList",dbMatrix());
-	problemData->setValue("stepHistoryList",dbMatrix());
+	problemData->setValue("supportDataID", intVector());
+	problemData->setValue("myParameters", dbVector());
+	problemData->setValue("parameterRadii", dbVector());
+	problemData->setValue("resultList", vector<dbMatrix>());
+	problemData->setValue("dataParametersList", dbMatrix());
+	problemData->setValue("calcResultList", vector<dbMatrix>());
+	problemData->setValue("standardStepsList", dbMatrix());
+	problemData->setValue("stepHistoryList", dbMatrix());
 
 	if (InputData->getValue("standardiseDOF") == 1) {
-		myData.readTransformedMeshDataFile(InputData, logFile);
-		myData.getMeshData()->writeMeshFile("fem_orion_map.msh", InputData,
-				logFile);
 
 		DOFStandard = new DOFStandardisation(myData);
-		DOFStandard->initDOFStandardisation(problemData, myDatabase,InputData,
-				logFile);
-		myGrid = DOFStandard->getGrid() ;
+
+		// Generated grid points
+		if (InputData->getValue("gridNodesType") == 1) {
+			myData.setAnchorPoint(InputData->getValue("anchorPoint"));
+			myData.readMeshDataFile(InputData, logFile);
+			myData.getMeshData()->writeMeshFile("fem_orion.msh", InputData,
+					logFile);
+		// geometry specific grid points (e.g heart)
+		} else if (InputData->getValue("gridNodesType") == 2) {
+			myData.readTransformedMeshDataFile(InputData, logFile);
+			myData.getMeshData()->writeMeshFile("fem_orion_map.msh", InputData,
+					logFile);
+
+			DOFStandard->initDOFStandardisation(problemData, myDatabase,
+					InputData, logFile);
+			myGrid = DOFStandard->getGrid();
+
+		// Arbitrary grid points (e.g cube)
+		} else if (InputData->getValue("gridNodesType") == 3) {
+			myData.readMeshDataFile(InputData, logFile);
+			myData.getMeshData()->writeMeshFile("fem_orion.msh", InputData,
+					logFile);
+			DOFStandard->initDOFStandardisation(problemData, myDatabase,
+					InputData, logFile);
+			myGrid = DOFStandard->getGrid();
+		}
 
 	} else {
 		myData.readMeshDataFile(InputData, logFile);
@@ -63,7 +84,10 @@ void PreProcessing::defaultPreProcessing(Database& myDatabase,
 
 	settingCommonResultNames(myDatabase, problemData, InputData, logFile);
 
-	stepStandardisation(problemData, InputData, logFile);
+	if(InputData->getValue("standardiseStep") == 1)
+		standardiseStep(problemData, InputData, logFile);
+	else
+		assembleResultsOnly(problemData, InputData, logFile);
 
 	if(InputData->getValue("savePreProcessedData") == 1){
 		savePreProcessedData(problemData,InputData,logFile);
@@ -193,6 +217,7 @@ void PreProcessing::loadSelectedData(DataContainer* problemData,
 	dbMatrix& stepHistoryList = problemData->getDbMatrix("stepHistoryList");
 	stepHistoryList.resize(supportDataID.size());
 
+
 	for (int i = 0; i < supportDataID.size(); i++) {
 
 		Data& mainData = myDatabase.getDataId(supportDataID[i]);
@@ -221,11 +246,25 @@ void PreProcessing::loadSelectedData(DataContainer* problemData,
 		stepHistoryList[i] = mainData.getStepValueVec();
 
 		// Standardise the degrees of Freedom
-		if (InputData->getValue("standardiseDOF") == 1){
-			standardiseDOF(mainData, problemData, InputData, logFile);
-		}
+//		if (InputData->getValue("standardiseDOF") == 1){
+//			standardiseDOF(mainData, problemData, InputData, logFile);
+//		}
 
 	}
+
+	if(InputData->getValue("standardiseDOF") == 1 &&
+				InputData->getValue("gridNodesType") == 1 ){
+
+			DOFStandard->initDOFStandardisation(problemData, myDatabase,InputData,
+					logFile);
+			myGrid = DOFStandard->getGrid();
+	}
+
+	for (int i = 0; i < supportDataID.size(); i++) {
+		Data& mainData = myDatabase.getDataId(supportDataID[i]);
+		standardiseDOF(mainData, problemData, InputData, logFile);
+	}
+
 
 	cout << "-----------------------------" << endl;
 	cout << endl;
@@ -241,16 +280,19 @@ void PreProcessing::standardiseDOF(Data& mainData, DataContainer* problemData,
 	logFile << "Starting DOF standardisation of Data " << mainData.getId()
 			<< endl;
 
-	// Read the mapped goemetry(used by point-in-polygon algorithm)
-	mainData.readTransformedMeshDataFile(InputData, logFile);
+	if(InputData->getValue("gridNodesType") == 2){
 
-	// Output results in map nodes format
-	string mapResFileName = mainData.getFolderName() + "fem_map.res";
-	mainData.saveAllResultsToFile_res_format(mapResFileName.c_str(), logFile);
+		// Read the mapped geometry(used by point-in-polygon algorithm)
+		mainData.readTransformedMeshDataFile(InputData, logFile);
 
-	string mapMshFileName = mainData.getFolderName() + "fem_map.msh";
-	mainData.getMeshData()->writeMeshFile(mapMshFileName.c_str(), InputData,
-			logFile);
+		// Output results in map nodes format
+		string mapResFileName = mainData.getFolderName() + "fem_map.res";
+		mainData.saveAllResultsToFile_res_format(mapResFileName.c_str(), InputData, logFile);
+
+		string mapMshFileName = mainData.getFolderName() + "fem_map.msh";
+		mainData.getMeshData()->writeMeshFile(mapMshFileName.c_str(), InputData,
+				logFile);
+	}
 
 	// -----------------------------------------------------------------
 	std::chrono::time_point<std::chrono::system_clock> start, end;
@@ -269,13 +311,15 @@ void PreProcessing::standardiseDOF(Data& mainData, DataContainer* problemData,
 			<< elapsed_seconds.count() << " sec" << endl;
 	// -----------------------------------------------------------------
 
+	if(InputData->getValue("gridNodesType") == 2){
 	// Output results in grid nodes format
 	string gridResFileName = mainData.getFolderName() + "fem_grid.res";
-	mainData.saveAllResultsToFile_res_format(gridResFileName.c_str(), logFile);
+	mainData.saveAllResultsToFile_res_format(gridResFileName.c_str(), InputData, logFile);
 
 	string gridMshFileName = mainData.getFolderName() + "fem_grid.msh";
 	myGrid->getGridGeometry(logFile)->writeMeshFile(gridMshFileName.c_str(),
 			InputData, logFile);
+	}
 
 }
 
@@ -393,7 +437,7 @@ vector<string> PreProcessing::findCommonResultName(DataContainer* problemData,
 /*!****************************************************************************/
 /*!****************************************************************************/
 //!
-void PreProcessing::stepStandardisation(DataContainer* problemData,
+void PreProcessing::standardiseStep(DataContainer* problemData,
 		InputFileData* InputData, ofstream& logFile) {
 
 	cout << "Step value standardisation" << endl;
@@ -419,6 +463,9 @@ void PreProcessing::stepStandardisation(DataContainer* problemData,
 	intVector& supportDataID = problemData->getIntVector("supportDataID");
 	for (int i = 0; i < commonResultsNameList.size(); i++) {
 
+		logFile << "***** Standardising result: "
+				<< commonResultsNameList[i] << " *****" << endl;
+
 		myData.setResultDOF(commonResultsNameList[i].c_str(),
 				myDatabase.getDataId(supportDataID[0]).getResultDOF(
 						commonResultsNameList[i].c_str()));
@@ -431,6 +478,8 @@ void PreProcessing::stepStandardisation(DataContainer* problemData,
 			myDatabase.getDataId(supportDataID[j]).deleteResult(
 					commonResultsNameList[i].c_str());
 		}
+
+//		printMatrix(resultList[0], "Non-standardise result fields:",logFile);
 
 		StepStandard->standardise(problemData, InputData, logFile);
 
@@ -458,6 +507,109 @@ void PreProcessing::stepStandardisation(DataContainer* problemData,
 	logFile << "Step value standardisation completed in: "
 			<< elapsed_seconds.count() << " sec" << endl;
 
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//!
+void PreProcessing::assembleResultsOnly(DataContainer* problemData,
+		InputFileData* InputData, ofstream& logFile) {
+
+	cout << "results assembly" << endl;
+	logFile << "results assembly" << endl;
+
+	std::chrono::time_point<std::chrono::system_clock> start, end;
+	start = std::chrono::system_clock::now();
+
+	vector<string> commonResultsNameList = myData.getResultNameList();
+
+	// Some additional calculations -> function is overloaded by each model
+	preROMCalculationFunctions(problemData, InputData, logFile);
+
+	interpolateStandardSteps(problemData, InputData, logFile);
+
+	// Standardise the step of all commonResult name
+	vector<dbMatrix>& resultList = problemData->getDbMatrixVec("resultList");
+	intVector& supportDataID = problemData->getIntVector("supportDataID");
+	for (int i = 0; i < commonResultsNameList.size(); i++) {
+
+		logFile << "***** Assembling result: " << commonResultsNameList[i] << " *****" << endl;
+
+		myData.setResultDOF(commonResultsNameList[i].c_str(),
+				myDatabase.getDataId(supportDataID[0]).getResultDOF(
+						commonResultsNameList[i].c_str()));
+
+		// Compile list of specific result result
+		for (int j = 0; j < supportDataID.size(); j++) {
+			resultList.push_back(
+					myDatabase.getDataId(supportDataID[j]).getResult(
+							commonResultsNameList[i].c_str()));
+			myDatabase.getDataId(supportDataID[j]).deleteResult(
+					commonResultsNameList[i].c_str());
+		}
+
+//		printMatrix(resultList[0], "Non-standardise result fields:",logFile);
+
+//		StepStandard->standardise(problemData, InputData, logFile);
+
+		// ---------------------------------------------------------------------
+		// Record results
+
+		// save the step standardised results
+		for (int j = 0; j < supportDataID.size(); j++) {
+			myDatabase.getDataId(supportDataID[j]).setResult(
+					commonResultsNameList[i].c_str(), resultList[j]);
+		}
+
+		vector<dbMatrix>().swap(problemData->getDbMatrixVec("resultList"));
+
+	}
+
+
+	end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - start;
+
+	cout << "results assembly completed in: "
+			<< elapsed_seconds.count() << " sec" << endl;
+	logFile << "results assembly completed in: "
+			<< elapsed_seconds.count() << " sec" << endl;
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//!
+void PreProcessing::interpolateStandardSteps(DataContainer* problemData,
+			InputFileData* InputData, ofstream& logFile){
+
+	intVector& supportDataID = problemData->getIntVector("supportDataID");
+
+	dbMatrix stepList(supportDataID.size(),dbVector());
+
+	for (int i=0; i< supportDataID.size(); i++){
+		stepList[i] = myDatabase.getDataId(supportDataID[i]).getStepValueVec();
+	}
+
+	dbVector interpolants = myData.getInterpolants();
+
+	if(interpolants.size() != stepList.size()){
+		logFile << "ERROR: In PreProcessing::interpolateStandardSteps, "
+				"interpolants and steplist size does not match" << endl;
+
+		cout << "ERROR: In PreProcessing::interpolateStandardSteps, "
+				"interpolants and steplist size does not match" << endl;
+	}
+
+	dbVector interpolatedSteps(stepList[0].size(),0);
+
+	for(int i = 0 ; i < interpolatedSteps.size(); i++){
+		for (int j = 0; j < supportDataID.size(); j++){
+			interpolatedSteps[i] += stepList[j][i]*interpolants[j];
+		}
+	}
+
+	myData.setStepValueVec(interpolatedSteps);
+	problemData->setValue("PODIStepValueVec", myData.getStepValueVec());
 }
 
 /*!****************************************************************************/
@@ -506,7 +658,7 @@ void PreProcessing::savePreProcessedData(DataContainer* problemData,
 	for(int i=0; i<supportDataID.size();i++){
 		Data& sData = myDatabase.getDataId(supportDataID[i]);
 
-		sData.saveResultsToFile(logFile);
+		sData.saveResultsToFile(InputData,logFile);
 		sData.calcLeftAndRightCavityVolumes(InputData,logFile);
 	}
 

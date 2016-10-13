@@ -2407,19 +2407,27 @@ ParticleDistribution::mergeLocalPtcleVectors(
   for(int i = 1;i < size;i++)
     displs[i] = displs[i - 1] + recvCounts[i - 1];
 
-  dbVector tmpVec(particlesNum * ptcleEntries);
-
-  MPI_Allgatherv( &localVec[0],recvCounts[rank],MPI_DOUBLE, &tmpVec[0],
-                  &recvCounts[0], &displs[0],MPI_DOUBLE,MPI_COMM_WORLD);
-
 #ifdef _geometryDebugMode_
   logFile << "******************** local vector ********************" << endl;
+  logFile<<"ptcleEntries="<<ptcleEntries<<endl;
+  logFile<<"sendCount="<<sendCount<<endl;
+  for(int i=0;i<recvCounts.size();i++)
+    logFile<<"recv="<<recvCounts[i]<<" displs="<<displs[i]<<endl;
+  logFile<<"--------------------------------------------------------"<<endl;
   for(int i = 0,k = 0;i < localVec.size();i += ptcleEntries,k++) {
     logFile << k << ".) ";
     for(int j = 0;j < ptcleEntries;j++)
       logFile << localVec[i + j] << " ";
     logFile << endl;
   }
+#endif
+
+  dbVector tmpVec(particlesNum * ptcleEntries);
+
+  MPI_Allgatherv( &localVec[0],recvCounts[rank],MPI_DOUBLE, &tmpVec[0],
+                  &recvCounts[0], &displs[0],MPI_DOUBLE,MPI_COMM_WORLD);
+
+#ifdef _geometryDebugMode_
   logFile << "**************** tmp global vector *******************" << endl;
   for(int i = 0,k = 0;i < tmpVec.size();i += ptcleEntries,k++) {
     logFile << k << ".) ";

@@ -8,12 +8,13 @@
 /// Rotation-Point-Constraint,Rotation-Line-Constraint,Rotation-Surface-Constraint
 /// Stress-Point-Constraint,Stress-Line-Constraint,Stress-Surface-Constraint
 /// Micro-Point-Constraints,Micro-Line-Constraints,Micro-Surface-Constraints
-/// Electric-Point-Constraint,Electric-Line-Constraint,Electric-Surface-Constraint
+/// Electric-Point-Constraint,Electric-Line-Constraint,Electric-Surface-Constraint,Pore-Pressure-Constraint
 /// Depolarisation-Time-Point-Constraint,Depolarisation-Time-Line-Constraint,Depolarisation-Time-Surface-Constraint
 
 /// Point-Force-Loading,Line-Force-Loading,Traction-Loading,Surface-Pressure-Loading,Body-Force-Loading
 /// Point-Moment-Loading,Line-Moment-Loading,Surface-Moment-Loading,Body-Moment-Loading
-/// Electric-Surface-Charge-Loading,Electric-Body-Charge-Loading
+/// Electric-Surface-Charge-Loading,Electric-Body-Charge-Loading,Fluid-Volume-Flux
+/// Pre-Stress-Loading
 
 /// Elastic-Point-Force, Elastic-Line-Force, Elastic-Surface-Force
 
@@ -33,6 +34,7 @@
 #include "commonFunctions.h"
 #include "commonTypedefs.h"
 #include "ConditionElement.h"
+#include "ConditionParticle.h"
 
 class Condition {
 
@@ -69,6 +71,10 @@ class Condition {
       }
       else if(name == "function") {
         function = value;
+        info = true;
+      }
+      else if(name == "functionParam") {
+        functionParams[0] = value;
         info = true;
       }
       else if(name == "conditionTime") {
@@ -127,12 +133,44 @@ class Condition {
         dirichletControlConditionID = value-1;
         info = true;
       }
+      else if(name == "cardiacBeatNumber") {
+        cardiacBeatNumber = value;
+        info = true;
+      }
       else if(name == "cardiacCyclePhase") {
         cardiacCyclePhase = value;
         info = true;
       }
+      else if(name == "endDiastolicCavityVolume") {
+        endDiastolicCavityVolume = value;
+        info = true;
+      }
+      else if(name == "endSystolicCavityVolume") {
+        endSystolicCavityVolume = value;
+        info = true;
+      }
+      else if(name == "endRelaxationCavityVolume") {
+        endRelaxationCavityVolume = value;
+        info = true;
+      }
+      else if(name == "currentStrokeVolume") {
+        currentStrokeVolume = value;
+        info = true;
+      }
+      else if(name == "diastolicFillingFunction") {
+        diastolicFillingFunction = value;
+        info = true;
+      }
       else if(name == "endDiastolicTime") {
         endDiastolicTime = value;
+        info = true;
+      }
+      else if(name == "endIVRTime") {
+        endIVRTime = value;
+        info = true;
+      }
+      else if(name == "cardiacResidualPressure") {
+        cardiacResidualPressure = value;
         info = true;
       }
       else if(name == "endDiastolicPressure") {
@@ -145,6 +183,10 @@ class Condition {
       }
       else if(name == "endSystolicPressure") {
         endSystolicPressure = value;
+        info = true;
+      }
+      else if(name == "endIVRPressure") {
+        endIVRPressure = value;
         info = true;
       }
       else if(name == "rateOfChangeOfPressure") {
@@ -165,6 +207,18 @@ class Condition {
       }
       else if(name == "flowRateGradient") {
         flowRateGradient = value;
+        info = true;
+      }
+      else if(name == "flowResistance") {
+        flowResistance = value;
+        info = true;
+      }
+      else if(name == "arterialCompliance") {
+        arterialCompliance = value;
+        info = true;
+      }
+      else if(name == "peripheralResistance") {
+        peripheralResistance = value;
         info = true;
       }
       else {
@@ -193,19 +247,11 @@ class Condition {
 
     double& getFactor() { return factor; };
     double& getPreviousFactor() { return previousFactor; };
-    double& getMaxFactor() { return maxFactor; };
-    double& getMinFactor() { return minFactor; };
+    double& getMaxFactor();
+    double& getMinFactor();
     double& getMaxInverseFactor() { return maxInverseFactor; };
+    double& getMinInverseFactor() { return minInverseFactor; };
     double& getIncrement() { return increment; }; // increment of factor
-    double& getMaxFactor(std::map<std::string,double>& calcData) {
-
-      // deformed Lagrangian computation - initial inverse computation stage
-      if((bool) calcData["inverseLoadingControlledSimulation"]) return maxInverseFactor;
-
-      // conventional Lagrangian computation or deformed Lagrangian
-      // computation subsequent forward computation stage
-      else return maxFactor;
-    };
 
     // set the maxFactor such that the condition value matches the given
     // maxValue
@@ -216,6 +262,7 @@ class Condition {
     double& getConditionApplicationTimePeriod() { return conditionApplicationTimePeriod; };
 
     std::vector<ConditionElement>& getElements() { return elements; };
+    std::vector<ConditionParticle>& getParticles() { return particles; };
     intVector& getNodes(std::ofstream& logFile);
     intVector& getGaussPoints() { return gaussPoints; };
     intVector& getLocalBoundPtcls() { return localBoundPtcls; };
@@ -242,14 +289,25 @@ class Condition {
     double& getCurrentCavityVolume() { return currentCavityVolume; };
     double& getPreviousCavityVolume() { return previousCavityVolume; };
     double& getEndDiastolicCavityVolume() { return endDiastolicCavityVolume; };
+    double& getEndSystolicCavityVolume() { return endSystolicCavityVolume; };
+    double& getEndRelaxationCavityVolume() { return endRelaxationCavityVolume; };
+
+    /// rotating conditions
+    dbVector& getRotationAxis() { return rotationAxis; };
+    dbVector& getRotationCenter() { return rotationCenter; }
 
     /// cardiac mechanics
+    int& getCardiacBeatNumber() { return cardiacBeatNumber; };
     int& getCardiacCyclePhase() { return cardiacCyclePhase; };
+    int& getDiastolicFillingFunction() { return diastolicFillingFunction; };
     double& getEndDiastolicTime() { return endDiastolicTime; };
+    double& getEndIVRTime() { return endIVRTime; };
     double& getEndDiastolicPressure() { return endDiastolicPressure; };
     double& getEndSystolicPressure() { return endSystolicPressure; };
     double& getEndIVCPressure() { return  endIVCPressure; };
     double& getEndIVRPressure() { return  endIVRPressure; };
+    // residual filling pressure
+    double& getCardiacResidualPressure() { return cardiacResidualPressure; };
 
     double& getRateOfChangeOfPressure() { return rateOfChangeOfPressure; };
     double& getPreviousRateOfChangeOfPressure() { return previousRateOfChangeOfPressure; };
@@ -267,23 +325,29 @@ class Condition {
     double& getWindkesselODEResidualTolerence() { return windkesselODEResidualTolerence; };
     double& getPressureIncrement() { return cavityPressureIncrement; };
     int& getLinkedControlConditionID() { return linkedControlConditionID; };
-
-  //protected:
     
-    /// return the condition time increment referring to the user-specified
-    /// condition function and a corresponding condition increment:
-    /// df = f(t_n+1) - f(t_n)
-    double getConditionTimeIncrement(std::map<std::string,double>& calcData,
-                                     std::map<std::string,double>& modelData,
-                                     std::ofstream& logFile);
+    /// return the condition time increment of the next simulation step
+    /// using the specified condition function
+    double getNewConditionTimeIncrement(
+        double incrementFactor,
+        std::map<std::string,double>& calcData,
+        std::map<std::string,double>& modelData,std::ofstream& logFile);
 
     // Check whether the condition time increment is within the
     // user-specified limits
     void checkConditionTimeIncrementLimits(double& newConditionTimeIncrement,
                                            std::ofstream& logFile);
 
-    /// incrementally update the condition factor by time increment
-    void updateFactor(double incrementFactor,
+    /// increase incrementally the condition factor via the condition time
+    /// increment
+    void setFactor(double incrementFactor,
+                   std::map<std::string,double>& calcData,
+                   std::map<std::string,double>& modelData,
+                   std::ofstream& logFile);
+
+    /// update the condition factor and the corresponding condition time
+    /// increment
+    void updateFactor(double& factorIncrement,
                       std::map<std::string,double>& calcData,
                       std::map<std::string,double>& modelData,
                       std::ofstream& logFile);
@@ -292,11 +356,6 @@ class Condition {
     double computeFactor(double t,std::map<std::string,double>& calcData,
                          std::map<std::string,double>& modelData,
                          std::ofstream& logFile);
-
-    /// update the condition time to match a current loading factor
-    void updateConditionTime(std::map<std::string,double>& calcData,
-                             std::map<std::string,double>& modelData,
-                             std::ofstream& logFile);
 
     /// check whether the inverse simulation is active
     bool checkInverseSimulationActive(std::map<std::string,double>& calcData,
@@ -313,16 +372,12 @@ class Condition {
     bool isLineLoadingCondition();
     bool isSurfaceLoadingCondition();
 
-    /// check whether specified resultant reaction type is admissible
-    bool isReactionType(std::string& t);
-
     /// check whether the condition is a Dirichlet-control condition.
     bool isDirichletControlType(std::string& t);
     bool isSurfaceDirichletControlCondition();
     bool isDirichletControlCondition();
 
-
-  private:
+  protected:
     
     int ID;
     std::string type;
@@ -339,8 +394,6 @@ class Condition {
     std::vector<std::string> admissibleDirichletControlTypes;
     std::vector<std::string> admissibleSurfaceDirichletControlTypes;
 
-    std::vector<std::string> admissibleResultantReactionsTypes;
-
     int function;
     double conditionTimeIncrement; // usually equal to problem time increment
     double minConditionTimeIncrement,maxConditionTimeIncrement;
@@ -351,7 +404,7 @@ class Condition {
     double factor;
     double previousFactor;
     double maxFactor,minFactor;
-    double maxInverseFactor;
+    double maxInverseFactor,minInverseFactor;
 
     double increment;
 
@@ -367,6 +420,7 @@ class Condition {
 
     /// applied to elements, nodes, Gauss points or boundary particles
     std::vector<ConditionElement> elements;
+    std::vector<ConditionParticle> particles;
     intVector nodes;
     intVector gaussPoints;
     intVector localBoundPtcls;
@@ -375,6 +429,10 @@ class Condition {
 
     // surface orientation-dependent condition application
     int surfaceApplicationType;
+
+    /// rotating conditions
+    dbVector rotationAxis;
+    dbVector rotationCenter;
 
     /// ------------------------------------------------------------------
     /// loading application direct (1), displacement (2), cavity-volume (3)
@@ -394,7 +452,7 @@ class Condition {
     double currentCavityVolume; // cavity volume at current simulation and iteration step
     double targetCavityVolume; // target cavity volume of current simulation step
     double previousCavityVolume; // cavity volume at previous simulation and iteration step
-    double endDiastolicCavityVolume;
+    double endDiastolicCavityVolume,endSystolicCavityVolume,endRelaxationCavityVolume;
 
     /// 3-element Windkessel
     int linkedControlConditionID;
@@ -410,10 +468,13 @@ class Condition {
     /// 'diastolePressureControlled' = 1
 
     bool inverseSimulationActive;
-    int cardiacCyclePhase;
-    double endDiastolicTime;
+    int cardiacCyclePhase,cardiacBeatNumber;
+    int diastolicFillingFunction; // slow/fast filling
+    double endDiastolicTime,endIVRTime;
     double endDiastolicPressure,endSystolicPressure,
         endIVCPressure,endIVRPressure;
+    // residual filling pressure
+    double cardiacResidualPressure;
     double rateOfChangeOfPressure,previousRateOfChangeOfPressure;
     double flowRate,previousFlowRate,flowRateGradient;
 

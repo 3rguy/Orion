@@ -2,6 +2,13 @@
 
 /*!****************************************************************************/
 /*!****************************************************************************/
+FEMGeometryExt::FEMGeometryExt(InputFileData* InputData, std::ofstream& logFile):
+		FEMGeoData(NULL),FEMInputData(NULL) {
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
 FEMGeometryExt::FEMGeometryExt(InputFileData* InputData,
 		std::map<std::string, double>& modelData, std::string& meshFileName,
 		std::ofstream& logFile) :
@@ -46,6 +53,8 @@ FEMGeometryExt::FEMGeometryExt(InputFileData* InputData,
 
 }
 
+/*!****************************************************************************/
+/*!****************************************************************************/
 FEMGeometryExt::~FEMGeometryExt() {
 
 	for (int i = 0; i < lineElemTemplates.size(); i++)
@@ -861,7 +870,7 @@ int FEMGeometryExt::findPointInGeometry(dbVector& pointCoord,
 		// --------------------------------------------------------------------
 #endif
 
-		// find if pointCoord is found in volume element:nodesElements[i]
+		// find if pointCoord is found in volume element: nodesElements[i]
 		dbVector info;
 		isInside = findPointInVolumeElem(pointCoord,
 				nodesElements[i].getSurfaceElems(), nodesElements[i].getNodes(),
@@ -1457,7 +1466,7 @@ intVector FEMGeometryExt::findSupportingPtcls(dbVector pCoords,
 	std::map<std::string, oPType> modelData; // satisfy findPointInGeometry input argument
 	int volumeElem = findPointInGeometry(pCoords, InputData, modelData,
 			logFile);
-	logFile << "Point belongs to Volume element : " << volumeElem << endl;
+//	logFile << "Point belongs to Volume element : " << volumeElem << endl;
 
 	intVector sNodesList;
 	if (volumeElem != -1) {	// If pCoords is inside the geometry
@@ -1792,6 +1801,7 @@ void FEMGeometryExt::readSurfaceNodes(std::string& meshFileName,
 		}
 	}
 
+#ifdef _FEdebugMode_
 	// Print all surfaces found
 	std::map<string,std::vector<FEMElementExt>>::iterator it;
 	for (it=surfaceList.begin(); it!=surfaceList.end(); ++it){
@@ -1808,6 +1818,7 @@ void FEMGeometryExt::readSurfaceNodes(std::string& meshFileName,
 			logFile << endl;
 		}
 	}
+#endif
 
 
 }

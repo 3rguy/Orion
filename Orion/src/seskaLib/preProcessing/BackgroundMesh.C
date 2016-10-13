@@ -67,6 +67,8 @@ void BackgroundMesh::copyFEData(FEMGeometry* FEData,InputFileData* InputData,
   lineElectricBoundGaussPtsIdx = FEData->getLineElectricBoundGaussPtsIdx();
   pointElectricBoundPtcleIdx = FEData->getPointElectricBoundPtcleIdx();
 
+  porePressureBoundGaussPtsIdx = FEData->getPorePressureBoundGaussPtsIdx();
+
   surfaceDepolarisationBoundGaussPtsIdx =
     FEData->getSurfaceDepolarisationBoundGaussPtsIdx();
   lineDepolarisationBoundGaussPtsIdx =
@@ -82,9 +84,13 @@ void BackgroundMesh::copyFEData(FEMGeometry* FEData,InputFileData* InputData,
   // applied
   pointForceBoundPtcleIdx = FEData->getPointForceBoundPtcleIdx();
   lineForceBoundGaussPtsIdx = FEData->getLineForceBoundGaussPtsIdx();
-  elasticLineForceBoundGaussPtsIdx = FEData->getElasticLineForceBoundGaussPtsIdx();
+  elasticLineForceBoundGaussPtsIdx =
+    FEData->getElasticLineForceBoundGaussPtsIdx();
   tractionBoundGaussPtsIdx = FEData->getTractionBoundGaussPtsIdx();
-  elasticSurfaceForceBoundGaussPtsIdx = FEData->getElasticSurfaceForceBoundGaussPtsIdx();
+  fluidVolumeFluxBoundGaussPtsIdx =
+    FEData->getFluidVolumeFluxBoundGaussPtsIdx();
+  elasticSurfaceForceBoundGaussPtsIdx =
+    FEData->getElasticSurfaceForceBoundGaussPtsIdx();
   surfacePressureBoundGaussPtsIdx =
     FEData->getSurfacePressureBoundGaussPtsIdx();
 
@@ -100,6 +106,10 @@ void BackgroundMesh::copyFEData(FEMGeometry* FEData,InputFileData* InputData,
   bodyElectricChargeGaussPtsIdx = FEData->getBodyElectricChargeGaussPtsIdx();
   cavityVolumeControlBoundGaussPtsIdx =
     FEData->getCavityVolumeControlBoundGaussPtsIdx();
+
+  // resultant surface reactions
+  resultantReactionBoundGaussPtsIdx =
+    FEData->getResultantReactionBoundGaussPtsIdx();
 
   intMatrix& dummyIntMat = FEData->getSurfaceDispBoundGaussPtsIdx();
   resizeArray(dummyIntMat,0);
@@ -119,6 +129,8 @@ void BackgroundMesh::copyFEData(FEMGeometry* FEData,InputFileData* InputData,
   resizeArray(dummyIntMat,0);
   dummyIntMat = FEData->getPointElectricBoundPtcleIdx();
   resizeArray(dummyIntMat,0);
+  dummyIntMat = FEData->getPorePressureBoundGaussPtsIdx();
+  resizeArray(dummyIntMat,0);
   dummyIntMat = FEData->getSurfaceDepolarisationBoundGaussPtsIdx();
   resizeArray(dummyIntMat,0);
   dummyIntMat = FEData->getLineDepolarisationBoundGaussPtsIdx();
@@ -137,6 +149,8 @@ void BackgroundMesh::copyFEData(FEMGeometry* FEData,InputFileData* InputData,
   resizeArray(dummyIntMat,0);
   dummyIntMat = FEData->getTractionBoundGaussPtsIdx();
   resizeArray(dummyIntMat,0);
+  dummyIntMat = FEData->getFluidVolumeFluxBoundGaussPtsIdx();
+  resizeArray(dummyIntMat,0);
   dummyIntMat = FEData->getElasticSurfaceForceBoundGaussPtsIdx();
   resizeArray(dummyIntMat,0);
   dummyIntMat = FEData->getSurfacePressureBoundGaussPtsIdx();
@@ -150,6 +164,10 @@ void BackgroundMesh::copyFEData(FEMGeometry* FEData,InputFileData* InputData,
   dummyIntMat = FEData->getBodyMomentGaussPtsIdx();
   resizeArray(dummyIntMat,0);
   dummyIntMat = FEData->getBodyElectricChargeGaussPtsIdx();
+  resizeArray(dummyIntMat,0);
+  dummyIntMat = FEData->getCavityVolumeControlBoundGaussPtsIdx();
+  getCavityVolumeControlBoundGaussPtsIdx();
+  dummyIntMat = FEData->getResultantReactionBoundGaussPtsIdx();
   resizeArray(dummyIntMat,0);
 
   //---------------------------------------------------------------------
@@ -5076,6 +5094,8 @@ void BackgroundMesh::setGaussDistribution(
     InputData->getDirichletConditions();
   std::vector<Condition>& dirichletControlConditions =
     InputData->getDirichletControlConditions();
+  vector<ResultantReactionCondition>& resultantReactions =
+    InputData->getResultantReactions();
 
 #ifdef _geometryDebugMode_
   logFile << "######################################################" << endl;
@@ -5565,6 +5585,25 @@ void BackgroundMesh::setGaussDistribution(
   pointElectricBoundPtcleIdx.resize(m);
 
   // --------------------------------------------------------------------
+  // pore pressure boundary conditions
+  tmpGaussPtsIdx = porePressureBoundGaussPtsIdx;
+  m = 0;
+
+  for(int i = 0;i < tmpGaussPtsIdx.size();i++)
+
+    if(globalLocalIdx[tmpGaussPtsIdx[i][0]] != -1) {
+      int& ID = globalLocalIdx[tmpGaussPtsIdx[i][0]];
+      porePressureBoundGaussPtsIdx[m][0] = ID;
+
+      for(int j = 1;j < tmpGaussPtsIdx[i].size();j++)
+        porePressureBoundGaussPtsIdx[m][j] = tmpGaussPtsIdx[i][j];
+
+      m++;
+    }
+
+  porePressureBoundGaussPtsIdx.resize(m);
+
+  // --------------------------------------------------------------------
   // surface depolarisation boundary conditions
   tmpGaussPtsIdx = surfaceDepolarisationBoundGaussPtsIdx;
   m = 0;
@@ -5660,7 +5699,7 @@ void BackgroundMesh::setGaussDistribution(
   // cavity volume control boundary conditions
   tmpGaussPtsIdx = cavityVolumeControlBoundGaussPtsIdx;
   m = 0;
-  intVector cavityGPtNum,cavityGPtCounter;
+  intVector gPtNum,gPtCounter;
 
   for(int i = 0;i < tmpGaussPtsIdx.size();i++) {
 
@@ -5676,12 +5715,12 @@ void BackgroundMesh::setGaussDistribution(
       // differenciate and count the various cavity-control conditions
       int& condID = cavityVolumeControlBoundGaussPtsIdx[i][2];
 
-      if(condID >= cavityGPtNum.size()) {
-        resizeArray(cavityGPtNum,condID+1);
-        resizeArray(cavityGPtCounter,condID+1);
+      if(condID >= gPtNum.size()) {
+        resizeArray(gPtNum,condID + 1);
+        resizeArray(gPtCounter,condID + 1);
       }
 
-      cavityGPtNum[condID]++;
+      gPtNum[condID]++;
     }
 
   }
@@ -5696,11 +5735,10 @@ void BackgroundMesh::setGaussDistribution(
     Condition& condition = dirichletControlConditions[condID];
     intVector& gPts = condition.getGaussPoints();
 
-    if(gPts.size() == 0)
-      resizeArray(gPts,cavityGPtNum[condID]);
+    if(gPts.size() == 0) resizeArray(gPts,gPtNum[condID]);
 
-    gPts[cavityGPtCounter[condID]] = cavityVolumeControlBoundGaussPtsIdx[i][0];
-    cavityGPtCounter[condID]++;
+    gPts[gPtCounter[condID]] = cavityVolumeControlBoundGaussPtsIdx[i][0];
+    gPtCounter[condID]++;
 
   }
 
@@ -5723,6 +5761,7 @@ void BackgroundMesh::setGaussDistribution(
 
   surfacePressureBoundGaussPtsIdx.resize(m);
 
+  // -------------------------------------------------------------------
   // elastic surface force boundary conditions
   tmpGaussPtsIdx = elasticSurfaceForceBoundGaussPtsIdx;
   m = 0;
@@ -5759,7 +5798,7 @@ void BackgroundMesh::setGaussDistribution(
 
   elasticLineForceBoundGaussPtsIdx.resize(m);
 
-
+  // -------------------------------------------------------------------
   // traction boundary conditions
   tmpGaussPtsIdx = tractionBoundGaussPtsIdx;
   m = 0;
@@ -5798,15 +5837,15 @@ void BackgroundMesh::setGaussDistribution(
 
   // point force boundary conditions
   tmpGaussPtsIdx = pointForceBoundPtcleIdx;
-  m=0;
+  m = 0;
 
-  for(int i=0;i<tmpGaussPtsIdx.size();i++) {
+  for(int i = 0;i < tmpGaussPtsIdx.size();i++) {
 
     if(ptcleRootList[tmpGaussPtsIdx[i][0]] == rank) {
       int& ID = tmpGaussPtsIdx[i][0];
       pointForceBoundPtcleIdx[m][0] = ID;
 
-      for(int j=1;j<tmpGaussPtsIdx[i].size();j++)
+      for(int j = 1;j < tmpGaussPtsIdx[i].size();j++)
         pointForceBoundPtcleIdx[m][j] = tmpGaussPtsIdx[i][j];
 
       m++;
@@ -5852,6 +5891,73 @@ void BackgroundMesh::setGaussDistribution(
     }
 
   surfaceElectricChargeBoundGaussPtsIdx.resize(m);
+
+  // --------------------------------------------------------------------
+  // fluid volume flux boundary conditions
+  tmpGaussPtsIdx = fluidVolumeFluxBoundGaussPtsIdx;
+  m = 0;
+
+  for(int i = 0;i < tmpGaussPtsIdx.size();i++)
+
+    if(globalLocalIdx[tmpGaussPtsIdx[i][0]] != -1) {
+      int& ID = globalLocalIdx[tmpGaussPtsIdx[i][0]];
+      fluidVolumeFluxBoundGaussPtsIdx[m][0] = ID;
+
+      for(int j = 1;j < tmpGaussPtsIdx[i].size();j++)
+        fluidVolumeFluxBoundGaussPtsIdx[m][j] = tmpGaussPtsIdx[i][j];
+
+      m++;
+    }
+
+  fluidVolumeFluxBoundGaussPtsIdx.resize(m);
+
+  // --------------------------------------------------------------------
+  // cavity volume control boundary conditions
+  tmpGaussPtsIdx = resultantReactionBoundGaussPtsIdx;
+  m = 0;
+  resizeArray(gPtNum,0);
+  resizeArray(gPtCounter,0);
+
+  for(int i = 0;i < tmpGaussPtsIdx.size();i++) {
+
+    if(globalLocalIdx[tmpGaussPtsIdx[i][0]] != -1) {
+      int& ID = globalLocalIdx[tmpGaussPtsIdx[i][0]];
+      resultantReactionBoundGaussPtsIdx[m][0] = ID;
+
+      for(int j = 1;j < tmpGaussPtsIdx[i].size();j++)
+        resultantReactionBoundGaussPtsIdx[m][j] = tmpGaussPtsIdx[i][j];
+
+      m++;
+
+      // differenciate and count the various cavity-control conditions
+      int& condID = resultantReactionBoundGaussPtsIdx[i][2];
+
+      if(condID >= gPtNum.size()) {
+        resizeArray(gPtNum,condID + 1);
+        resizeArray(gPtCounter,condID + 1);
+      }
+
+      gPtNum[condID]++;
+    }
+
+  }
+
+  resultantReactionBoundGaussPtsIdx.resize(m);
+
+  // store the boundary Gauss point IDs at the corresponding boundary
+  // condition
+
+  for(int i = 0;i < resultantReactionBoundGaussPtsIdx.size();i++) {
+    int& condID = resultantReactionBoundGaussPtsIdx[i][2];
+    ResultantReactionCondition& condition = resultantReactions[condID];
+    intVector& gPts = condition.getGaussPoints();
+
+    if(gPts.size() == 0) resizeArray(gPts,gPtNum[condID]);
+
+    gPts[gPtCounter[condID]] = resultantReactionBoundGaussPtsIdx[i][0];
+    gPtCounter[condID]++;
+
+  }
 
   globalLocalIdx.resize(0);
   tmpGaussPtsIdx.resize(0);
@@ -5910,6 +6016,14 @@ void BackgroundMesh::setGaussDistribution(
     logFile << i << ".) ";
     for(int j = 0;j < surfaceElectricBoundGaussPtsIdx[i].size();j++)
     logFile << surfaceElectricBoundGaussPtsIdx[i][j] << " ";
+    logFile << endl;
+  }
+  logFile << "****** local pore pressure boundary Gauss points *******"
+  << endl;
+  for(int i = 0;i < porePressureBoundGaussPtsIdx.size();i++) {
+    logFile << i << ".) ";
+    for(int j = 0;j < porePressureBoundGaussPtsIdx[i].size();j++)
+    logFile << porePressureBoundGaussPtsIdx[i][j] << " ";
     logFile << endl;
   }
   logFile << "****** local line electric boundary Gauss points *******" << endl;
@@ -5980,6 +6094,20 @@ void BackgroundMesh::setGaussDistribution(
     logFile << tractionBoundGaussPtsIdx[i][j] << " ";
     logFile << endl;
   }
+  logFile << "****** local fluid flux boundary Gauss points *******" << endl;
+  for(int i = 0;i < fluidVolumeFluxBoundGaussPtsIdx.size();i++) {
+    logFile << i << ".) ";
+    for(int j = 0;j < fluidVolumeFluxBoundGaussPtsIdx[i].size();j++)
+    logFile << fluidVolumeFluxBoundGaussPtsIdx[i][j] << " ";
+    logFile << endl;
+  }
+  logFile << "**** local pore pressure boundary Gauss points ******" << endl;
+  for(int i = 0;i < porePressureBoundGaussPtsIdx.size();i++) {
+    logFile << i << ".) ";
+    for(int j = 0;j < porePressureBoundGaussPtsIdx[i].size();j++)
+    logFile << porePressureBoundGaussPtsIdx[i][j] << " ";
+    logFile << endl;
+  }
   logFile << "****** local line force boundary Gauss points *******" << endl;
   for(int i = 0;i < lineForceBoundGaussPtsIdx.size();i++) {
     logFile << i << ".) ";
@@ -6032,9 +6160,30 @@ void BackgroundMesh::setGaussDistribution(
     logFile << cavityVolumeControlBoundGaussPtsIdx[i][j] << " ";
     logFile << endl;
   }
+  logFile << "*** local resultant reaction boundary gauss points ***" << endl;
+  for(int i = 0;i < resultantReactionBoundGaussPtsIdx.size();i++) {
+    logFile << i << ".) ";
+    for(int j = 0;j < resultantReactionBoundGaussPtsIdx[i].size();j++)
+    logFile << resultantReactionBoundGaussPtsIdx[i][j] << " ";
+    logFile << endl;
+  }
   logFile<<"****************************************************"<<endl;
   for(int i=0;i<dirichletControlConditions.size();i++) {
     Condition& condition = dirichletControlConditions[i];
+    intVector& gPts = condition.getGaussPoints();
+    logFile<<i<<".) "<<condition.getType()<<" "<<condition.getID()<<" Gauss points:"<<endl;
+    for(int k=0;k<gPts.size();k++) {
+      GaussPoint& gPoint = boundGaussPoints[gPts[k]];
+      dbVector& coords = gPoint.getCoords();
+      logFile<<k<<".) GAUSS POINT "<<gPoint.getGlobalID()<<" coords: ";
+      for(int k=0;k<coords.size();k++)
+      logFile<<coords[k]<<" ";
+      logFile<<endl;
+    }
+  }
+  logFile<<"****************************************************"<<endl;
+  for(int i=0;i<resultantReactions.size();i++) {
+    ResultantReactionCondition& condition = resultantReactions[i];
     intVector& gPts = condition.getGaussPoints();
     logFile<<i<<".) "<<condition.getType()<<" "<<condition.getID()<<" Gauss points:"<<endl;
     for(int k=0;k<gPts.size();k++) {
@@ -7981,6 +8130,8 @@ void BackgroundMesh::getAllBoundPenaltyParameters(
   intMatrix& electricBGaussPtsIdx = getAllElectricBoundGaussPtsIdx(InputData,
                                                                    modelData,
                                                                    logFile);
+  intMatrix& TPMBGaussPtsIdx = getAllTPMBoundGaussPtsIdx(InputData,modelData,
+                                                         logFile);
   intMatrix& depolarisationBGaussPtsIdx = getAllDepolarisationBoundGaussPtsIdx(
       InputData,modelData,logFile);
 
@@ -8008,6 +8159,20 @@ void BackgroundMesh::getAllBoundPenaltyParameters(
     dbVector& beta = bGPoint.getPenaltyParameters();
 
     for(int k = electricStartDOF;k < electricEndDOF;k++)
+      localPenaltyParams[p * usedDOF + k] = beta[k];
+
+  }
+
+  int porePressureStartDOF = (int) modelData["porePressureDOFID"];
+  int porePressureEndDOF = porePressureStartDOF
+    + (int) modelData["porePressureDegreesOfFreedom"];
+
+  // Loop over portion of TPM boundary Gauss points.
+  for(int p = 0;p < TPMBGaussPtsIdx.size();p++) {
+    GaussPoint& bGPoint = boundGaussPoints[TPMBGaussPtsIdx[p][0]];
+    dbVector& beta = bGPoint.getPenaltyParameters();
+
+    for(int k = porePressureStartDOF;k < porePressureEndDOF;k++)
       localPenaltyParams[p * usedDOF + k] = beta[k];
 
   }
@@ -8115,11 +8280,11 @@ void BackgroundMesh::getAllGPointHistoryVariables(
   logFile << "******** local volume history variables **************" << endl;
   for(int i = 0;i < gaussPoints.size();i++) {
     logFile << i << ".) GAUSSPOINT " << gaussPoints[i].getGlobalID() << " : "
-        << endl;
+    << endl;
     dbMatrix& history = gaussPoints[i].getPlasticityHistory();
     for(int r = 0;r < history.size();r++) {
       for(int s = 0;s < history[r].size();s++)
-        logFile << history[r][s] << " ";
+      logFile << history[r][s] << " ";
       logFile << endl;
     }
   }
@@ -8160,7 +8325,7 @@ void BackgroundMesh::getAllGPointHistoryVariables(
   for(int i = 0;i < allHistoryVariables.size();i += historySize) {
     logFile << n << ".) ";
     for(int k = 0;k < historySize;k++)
-      logFile << allHistoryVariables[i + k] << " ";
+    logFile << allHistoryVariables[i + k] << " ";
     logFile << endl;
     n++;
   }
@@ -8194,11 +8359,11 @@ void BackgroundMesh::getAllGPointHistoryVariables(
   logFile << "******* local boundary history variables *************" << endl;
   for(int i = 0;i < boundGaussPoints.size();i++) {
     logFile << i << ".) BOUND-GAUSSPOINT " << boundGaussPoints[i].getGlobalID()
-        << " : " << endl;
+    << " : " << endl;
     dbMatrix& history = boundGaussPoints[i].getPlasticityHistory();
     for(int r = 0;r < history.size();r++) {
       for(int s = 0;s < history[r].size();s++)
-        logFile << history[r][s] << " ";
+      logFile << history[r][s] << " ";
       logFile << endl;
     }
   }
@@ -8232,7 +8397,7 @@ void BackgroundMesh::getAllGPointHistoryVariables(
   for(int i = 0;i < numOfGlobalData;i += historySize) {
     logFile << n << ".) GAUSSPOINT :";
     for(int k = 0;k < historySize;k++)
-      logFile << allHistoryVariables[i + k] << " ";
+    logFile << allHistoryVariables[i + k] << " ";
     logFile << endl;
     n++;
   }
@@ -8241,7 +8406,7 @@ void BackgroundMesh::getAllGPointHistoryVariables(
   for(int i = numOfGlobalData;i < allHistoryVariables.size();i += historySize) {
     logFile << n << ".) BOUND-GAUSSPOINT :";
     for(int k = 0;k < historySize;k++)
-      logFile << allHistoryVariables[i + k] << " ";
+    logFile << allHistoryVariables[i + k] << " ";
     logFile << endl;
     n++;
   }
@@ -8363,6 +8528,44 @@ BackgroundMesh::getAllElectricBoundGaussPtsIdx(
 #endif
 
     return allElectricBoundGaussPtsIdx;
+  }
+
+}
+
+/************************************************************************/
+/************************************************************************/
+// Return all boundary Gauss indices where a TPM Dirichlet boundary
+// condition is applied.
+intMatrix&
+BackgroundMesh::getAllTPMBoundGaussPtsIdx(
+    InputFileData* InputData,std::map<std::string,double>& modelData,
+    std::ofstream& logFile) {
+
+  using namespace std;
+
+  if(allTPMBoundGaussPtsIdx.size() > 0) return allTPMBoundGaussPtsIdx;
+
+  else {
+
+    if((bool) modelData["TPMConstraint"]) {
+
+      //pushBackVector(allTPMBoundGaussPtsIdx,fluidVolumeFluxBoundGaussPtsIdx);
+      pushBackVector(allTPMBoundGaussPtsIdx,porePressureBoundGaussPtsIdx);
+    }
+
+#ifdef _geometryDebugMode_
+    logFile << "***************************************************" << endl;
+    logFile << "******** all TPM gauss point indices *********" << endl;
+    for(int i = 0;i < allTPMBoundGaussPtsIdx.size();i++) {
+      logFile << i << ".) local ID " << allTPMBoundGaussPtsIdx[i][0]
+      << ": ";
+      for(int j = 1;j < allTPMBoundGaussPtsIdx[i].size();j++)
+      logFile << allTPMBoundGaussPtsIdx[i][j] << " ";
+      logFile << endl;
+    }
+#endif
+
+    return allTPMBoundGaussPtsIdx;
   }
 
 }
@@ -8582,6 +8785,9 @@ BackgroundMesh::getAllForceBoundGaussPtsIdx(
     if((bool) modelData["tractionLoad"]) pushBackVector(
         allForceBoundGaussPtsIdx,tractionBoundGaussPtsIdx);
 
+    if((bool) modelData["fluidVolumeFluxLoad"]) pushBackVector(
+        allForceBoundGaussPtsIdx,fluidVolumeFluxBoundGaussPtsIdx);
+
     if((bool) modelData["surfacePressureLoad"]) pushBackVector(
         allForceBoundGaussPtsIdx,surfacePressureBoundGaussPtsIdx);
 
@@ -8642,6 +8848,12 @@ BackgroundMesh::getAllSurfaceGaussPtsIdx(std::ofstream& logFile) {
     mat.insert(mat.begin(),tractionBoundGaussPtsIdx.begin(),
                tractionBoundGaussPtsIdx.end());
 
+    mat.insert(mat.begin(),fluidVolumeFluxBoundGaussPtsIdx.begin(),
+               fluidVolumeFluxBoundGaussPtsIdx.end());
+
+    mat.insert(mat.begin(),porePressureBoundGaussPtsIdx.begin(),
+               porePressureBoundGaussPtsIdx.end());
+
     mat.insert(mat.begin(),elasticLineForceBoundGaussPtsIdx.begin(),
                elasticSurfaceForceBoundGaussPtsIdx.end());
 
@@ -8653,6 +8865,12 @@ BackgroundMesh::getAllSurfaceGaussPtsIdx(std::ofstream& logFile) {
 
     mat.insert(mat.begin(),surfaceElectricChargeBoundGaussPtsIdx.begin(),
                surfaceElectricChargeBoundGaussPtsIdx.end());
+
+    mat.insert(mat.begin(),cavityVolumeControlBoundGaussPtsIdx.begin(),
+               cavityVolumeControlBoundGaussPtsIdx.end());
+
+    mat.insert(mat.begin(),resultantReactionBoundGaussPtsIdx.begin(),
+               resultantReactionBoundGaussPtsIdx.end());
 
 #ifdef _FEdebugMode_
     logFile << "------------------------------------------------------" << endl;

@@ -80,15 +80,21 @@ public:
 
 	/*!************************************************************************/
 	/*!************************************************************************/
-	void savePOMsToFile_ResFormat(dbMatrix& POMs, int stepValueID,
-			DataContainer* problemData,	InputFileData* InputData,
+	void savePOMsToFile_ResFormat(dbMatrix& POMs, dbVector& meanVec,
+			int stepValueID, DataContainer* problemData,
+			InputFileData* InputData, ofstream& logFile);
+
+	/*!************************************************************************/
+	/*!************************************************************************/
+	void savePOVsToFile_GrfFormat(dbVector& POVs, int stepValueID,
+			DataContainer* problemData, InputFileData* InputData,
 			ofstream& logFile);
 
 	/*!************************************************************************/
 	/*!************************************************************************/
-	void savePOVsToFile_ResFormat(dbVector& POVs, int stepValueID,
-			DataContainer* problemData, InputFileData* InputData,
-			ofstream& logFile);
+	void saveConservedPOVsToFile_GrfFormat(int& numConsrvPOV,
+			double& consrvPOVPercentage, int stepValueID, DataContainer* problemData,
+			InputFileData* InputData, ofstream& logFile);
 
 
 

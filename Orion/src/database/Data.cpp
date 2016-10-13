@@ -21,13 +21,13 @@ Data::Data() {
 	allResultsNameList[2][0] = "effective strain";
 	allResultsNameList[2][1] = "Scalar";
 
-	allResultsNameList[3][0] = "fibre strain E_11";
+	allResultsNameList[3][0] = "fibre strain E_ff";
 	allResultsNameList[3][1] = "Scalar";
 
-	allResultsNameList[4][0] = "fibre strain E_22";
+	allResultsNameList[4][0] = "fibre strain E_tt";
 	allResultsNameList[4][1] = "Scalar";
 
-	allResultsNameList[5][0] = "fibre strain E_33";
+	allResultsNameList[5][0] = "fibre strain E_nn";
 	allResultsNameList[5][1] = "Scalar";
 
 	allResultsNameList[6][0] = "stress";
@@ -36,13 +36,13 @@ Data::Data() {
 	allResultsNameList[7][0] = "effective stress";
 	allResultsNameList[7][1] = "Scalar";
 
-	allResultsNameList[8][0] = "fibre stress 1";
+	allResultsNameList[8][0] = "fibre stress S_ff";
 	allResultsNameList[8][1] = "Scalar";
 
-	allResultsNameList[9][0] = "fibre stress 2";
+	allResultsNameList[9][0] = "fibre stress S_tt";
 	allResultsNameList[9][1] = "Scalar";
 
-	allResultsNameList[10][0] = "fibre stress 3";
+	allResultsNameList[10][0] = "fibre stress S_nn";
 	allResultsNameList[10][1] = "Scalar";
 
 }
@@ -69,13 +69,13 @@ Data::Data(dbVector paramVec) {
 	allResultsNameList[2][0] = "effective strain";
 	allResultsNameList[2][1] = "Scalar";
 
-	allResultsNameList[3][0] = "fibre strain E_11";
+	allResultsNameList[3][0] = "fibre strain E_ff";
 	allResultsNameList[3][1] = "Scalar";
 
-	allResultsNameList[4][0] = "fibre strain E_22";
+	allResultsNameList[4][0] = "fibre strain E_tt";
 	allResultsNameList[4][1] = "Scalar";
 
-	allResultsNameList[5][0] = "fibre strain E_33";
+	allResultsNameList[5][0] = "fibre strain E_nn";
 	allResultsNameList[5][1] = "Scalar";
 
 	allResultsNameList[6][0] = "stress";
@@ -84,13 +84,13 @@ Data::Data(dbVector paramVec) {
 	allResultsNameList[7][0] = "effective stress";
 	allResultsNameList[7][1] = "Scalar";
 
-	allResultsNameList[8][0] = "fibre stress 1";
+	allResultsNameList[8][0] = "fibre stress S_ff";
 	allResultsNameList[8][1] = "Scalar";
 
-	allResultsNameList[9][0] = "fibre stress 2";
+	allResultsNameList[9][0] = "fibre stress S_tt";
 	allResultsNameList[9][1] = "Scalar";
 
-	allResultsNameList[10][0] = "fibre stress 3";
+	allResultsNameList[10][0] = "fibre stress S_nn";
 	allResultsNameList[10][1] = "Scalar";
 }
 
@@ -642,28 +642,38 @@ void Data::readResultFile_resFormat_allResult(string& inputFileName,
 		if (it_stepVal == it_stepVal_beg) {
 			it_result_beg = it_stepVal->second.begin();
 			it_result_end = it_stepVal->second.end();
+#ifdef _DataDebugMode_
 			logFile << "------------------------------------------" << endl;
 			logFile << "Step: " << it_stepVal->first;
+#endif
 			for (it_result = it_result_beg; it_result != it_result_end;
 					it_result++) {
+#ifdef _DataDebugMode_
 				logFile << it_result->first << endl;
+#endif
 				resultNameList.push_back(it_result->first);
 			}
 		} else {
+#ifdef _DataDebugMode_
 			logFile << "------------------------------------------" << endl;
-			logFile << "Step: " << it_stepVal->first << endl;;
+			logFile << "Step: " << it_stepVal->first << endl;
 			for (it_result = it_result_beg; it_result != it_result_end;
 								it_result++) {
 				logFile << it_result->first << endl;
 			}
+#endif
 			for(int i=0; i < resultNameList.size(); i++){
 				it_result_beg = it_stepVal->second.begin();
 				it_result_end = it_stepVal->second.end();
 
+#ifdef _DataDebugMode_
 				logFile << "looking for: " << resultNameList[i] << endl;
+#endif
 				if(it_stepVal->second.find(resultNameList[i])
 						== it_stepVal->second.end()){
+#ifdef _DataDebugMode_
 					logFile << "Not found !!" << endl;
+#endif
 					nameToDeleteList.push_back(resultNameList[i]);
 					nameToDeleteListID.push_back(i);
 				}
@@ -675,24 +685,33 @@ void Data::readResultFile_resFormat_allResult(string& inputFileName,
 	cout << "deleting incompatible result names" << endl;
 
 	// Delete incompatible result names
+#ifdef _DataDebugMode_
 	logFile << "size of nameToDeleteList: " << nameToDeleteList.size() << endl;
+#endif
+
 	for(int i = nameToDeleteListID.size() ; i != 0; i--){
 
+#ifdef _DataDebugMode_
 		logFile << "resultNameList" << endl;
 		for(int j = 0; j < resultNameList.size(); j++){
 			logFile << "[" << j << "]" << resultNameList[j] << endl;
 		}
-
 		logFile << "deleting entry: " << nameToDeleteListID[i] << endl;
+#endif
+
 		resultNameList.erase(resultNameList.begin()+nameToDeleteListID[i]);
 
+#ifdef _DataDebugMode_
 		logFile << "resultNameList" << endl;
 		for(int j = 0; j < resultNameList.size(); j++){
 			logFile << "[" << j << "]" << resultNameList[j] << endl;
 		}
+#endif
 	}
 
+#ifdef _DataDebugMode_
 	logFile << "Deleting elements in result map " << endl;
+#endif
 	for (it_stepVal = it_stepVal_beg; it_stepVal != it_stepVal_end;
 				it_stepVal++) {
 
@@ -700,12 +719,18 @@ void Data::readResultFile_resFormat_allResult(string& inputFileName,
 		it_result_end = it_stepVal->second.end();
 
 		for(int i=0; i < nameToDeleteList.size(); i++){
+
+#ifdef _DataDebugMode_
 			logFile << "Here" << endl;
+#endif
+
 			it_result = it_stepVal->second.find(nameToDeleteList[i]);
 
 			if(it_result != it_result_end){
+#ifdef _DataDebugMode_
 				logFile << "Result excluded: " << it_result->first;
 				cout << "Result excluded: " << it_result->first;
+#endif
 				it_stepVal->second.erase(it_result);
 			}
 		}
@@ -716,17 +741,23 @@ void Data::readResultFile_resFormat_allResult(string& inputFileName,
 		for(; it_result != it_result_beg; it_result--){
 			bool isFound = false;
 			for(int i = 0 ; i < resultNameList.size(); i++){
+#ifdef _DataDebugMode_
 				logFile << "Comparing resultNameList[i]: " << resultNameList[i]
 				        << " with it_result->first: " << it_result->first << endl;
+#endif
 				if(resultNameList[i] == it_result->first){
+#ifdef _DataDebugMode_
 					logFile << "Found !!" << endl;
+#endif
 					isFound = true;
 					break;
 				}
 			}
 
 			if(isFound == false){
+#ifdef _DataDebugMode_
 				logFile << "Step[" << it_stepVal->first << "] Deleting result:" << it_result->first << endl;
+#endif
 				it_stepVal->second.erase(it_result);
 			}
 		}
@@ -954,6 +985,9 @@ void Data::readRightVentriclePVGraphResultFile(InputFileData* InputData,
 /*!****************************************************************************/
 void Data::saveGraphResultsToFile_grf_format(std::string outputFileName,
 		dbVector& graphVecOne,dbVector& graphVecTwo,ofstream& logFile){
+
+	printVector(graphVecOne,"graphVecOne",logFile);
+	printVector(graphVecTwo,"graphVecTwo",logFile);
 
 	if(graphVecOne.size() != graphVecTwo.size()){
 		cout << "In Data::saveGraphResultsToFile_grf_format, graphVecOne and"
@@ -1626,7 +1660,7 @@ vector<vector<string> > Data::readResultFile_resFormat_HeadersOnly(
 /*!****************************************************************************/
 /*!****************************************************************************/
 //! Save the displacement matrix to the a specific file format
-void Data::saveResultsToFile(ofstream& logFile) {
+void Data::saveResultsToFile(InputFileData* InputData,ofstream& logFile) {
 
 	int choice = 1;
 
@@ -1635,7 +1669,7 @@ void Data::saveResultsToFile(ofstream& logFile) {
 	{
 		//Save matrix to .res file format
 		string str = folderName + "fem_orion.res";
-		saveAllResultsToFile_res_format(str.c_str(),logFile);
+		saveAllResultsToFile_res_format(str.c_str(),InputData,logFile);
 		break;
 	}
 	default:
@@ -1650,10 +1684,10 @@ void Data::saveResultsToFile(ofstream& logFile) {
 /*!****************************************************************************/
 // Writing generated displacement matrix to files
 void Data::saveAllResultsToFile_res_format(const char* outputFileName,
-		ofstream& logFile) {
+		InputFileData* InputData,ofstream& logFile) {
 
 	std::cout << "Saving fem_orion.res to: " << outputFileName << endl;
-	saveResultsToFile_res_format(outputFileName,resultNameList,logFile);
+	saveResultsToFile_res_format(outputFileName,resultNameList,InputData,logFile);
 
 }
 
@@ -1661,7 +1695,8 @@ void Data::saveAllResultsToFile_res_format(const char* outputFileName,
 /*!****************************************************************************/
 // Writing generated displacement matrix to files
 void Data::saveResultsToFile_res_format(const char* outputFileName,
-		vector<string>& saveResultNameList, ofstream& logFile) {
+		vector<string>& saveResultNameList, InputFileData* InputData,
+		ofstream& logFile) {
 
 #ifdef _DataDebugMode_
 	logFile << "****** All Results available ******" << endl;
@@ -1705,7 +1740,11 @@ for(it_dbMatrix = resultList.begin();it_dbMatrix != resultList.end();it_dbMatrix
 
 		readFemRes << headerLine << endl;
 
-		for (int j = 0; j < step_value_vec.size(); j++) {
+		int startIndex = 0;
+		if(InputData->getValue("insertZeroResultFields") == 1)
+			startIndex = 1;
+
+		for (int j = startIndex; j < step_value_vec.size(); j++) {
 			for (int k = 0; k < ResultNameAndTypeToBeSavedList.size(); k++) {
 
 				// Result details
@@ -1821,10 +1860,10 @@ void Data::assignResultToParticles(const char* resultName,
 	int numDofs = this->getResultDOF(resultName);
 	int numSteps = step_value_vec.size();
 
-//#ifdef _DataDebugMode_
+#ifdef _DataDebugMode_
 	logFile << "Before assigning '" << resultName << "' to particles" << endl;
 	printMatrix(resultMatrix, "", logFile);
-//#endif
+#endif
 
 	if (resultMatrix.size() > 0
 			&& particleList.size() * numDofs == resultMatrix.size()) {
@@ -1842,7 +1881,7 @@ void Data::assignResultToParticles(const char* resultName,
 			}
 		}
 
-//#ifdef _DataDebugMode_
+#ifdef _DataDebugMode_
 
 		logFile << "******** Particles stepDOFs ********" << endl;
 		for(int l=0; l<particleList.size(); l++) {
@@ -1854,7 +1893,7 @@ void Data::assignResultToParticles(const char* resultName,
 			logFile << endl;
 		}
 
-//#endif
+#endif
 
 	} else {
 		logFile << "Result matrix is empty or the size of resultMatrix["
@@ -2504,58 +2543,74 @@ void Data::syncCardiacTimeStepsAndResults(InputFileData* InputData, ofstream& lo
 
 
 
-	dbVector& RVTimeSteps = getGraph("RVTimeSteps");
-	intVector selectedRVIndex;
-
-	logFile << "RVTimeSteps.size() = " << RVTimeSteps.size() << endl;
-	logFile << "step_value_vec.size() = " << step_value_vec.size() << endl;
-
-	if(RVTimeSteps.size()>1){
-		for(int i=0; i<step_value_vec.size();i++){
-			for(int j=0; j<RVTimeSteps.size();j++){
-				if(step_value_vec[i] == RVTimeSteps[j]){
-					selectedRVIndex.push_back(j);
-				}
-			}
-		}
-
-		if(selectedRVIndex.size() != step_value_vec.size()){
-			logFile << "In Data::syncCardiacTimeStepsAndResults, not all the graph "
-					"timesteps were found in the step_value_vec vector." << endl;
-			cout << "In Data::syncCardiacTimeStepsAndResults, not all the graph "
-					"timesteps were found in the step_value_vec vector." << endl;
-			MPI_Abort(MPI_COMM_WORLD, 1);
-		}
-
-		dbVector tempVolVec(selectedRVIndex.size(),0), tempPreVec(selectedRVIndex.size(),0);
-		for(int i=0;i<selectedRVIndex.size();i++){
-			int index = selectedRVIndex[i];
-
-			tempVolVec[i] = rightCavityVolumes[index];
-			tempPreVec[i] = rightCavityPressures[index];
-		}
-
-		rightCavityVolumes = tempVolVec;
-		rightCavityPressures = tempPreVec;
-
-		deleteGraph("RVTimeSteps");
-
-	}
-	else{
-		logFile << "In Data::syncCardiacTimeStepsAndResults, RV timesteps is empty." << endl;
-	}
+//	dbVector& RVTimeSteps = getGraph("RVTimeSteps");
+//	intVector selectedRVIndex;
+//
+//	logFile << "RVTimeSteps.size() = " << RVTimeSteps.size() << endl;
+//	logFile << "step_value_vec.size() = " << step_value_vec.size() << endl;
+//
+//	if(RVTimeSteps.size()>1){
+//		for(int i=0; i<step_value_vec.size();i++){
+//			for(int j=0; j<RVTimeSteps.size();j++){
+//				if(step_value_vec[i] == RVTimeSteps[j]){
+//					selectedRVIndex.push_back(j);
+//				}
+//			}
+//		}
+//
+//		if(selectedRVIndex.size() != step_value_vec.size()){
+//			logFile << "In Data::syncCardiacTimeStepsAndResults, not all the graph "
+//					"timesteps were found in the step_value_vec vector." << endl;
+//			cout << "In Data::syncCardiacTimeStepsAndResults, not all the graph "
+//					"timesteps were found in the step_value_vec vector." << endl;
+//			MPI_Abort(MPI_COMM_WORLD, 1);
+//		}
+//
+//		dbVector tempVolVec(selectedRVIndex.size(),0), tempPreVec(selectedRVIndex.size(),0);
+//		for(int i=0;i<selectedRVIndex.size();i++){
+//			int index = selectedRVIndex[i];
+//
+//			tempVolVec[i] = rightCavityVolumes[index];
+//			tempPreVec[i] = rightCavityPressures[index];
+//		}
+//
+//		rightCavityVolumes = tempVolVec;
+//		rightCavityPressures = tempPreVec;
+//
+//		deleteGraph("RVTimeSteps");
+//
+//	}
+//	else{
+//		logFile << "In Data::syncCardiacTimeStepsAndResults, RV timesteps is empty." << endl;
+//	}
 
 	printVector(leftCavityVolumes,"leftCavityVolumes(after)",logFile);
 	printVector(leftCavityPressures,"leftCavityPressures(after)",logFile);
 
-	printVector(rightCavityVolumes,"rightCavityVolumes(after)",logFile);
-	printVector(rightCavityPressures,"rightCavityPressures(after)",logFile);
+//	printVector(rightCavityVolumes,"rightCavityVolumes(after)",logFile);
+//	printVector(rightCavityPressures,"rightCavityPressures(after)",logFile);
 
 }
 
 /*!****************************************************************************/
 /*!****************************************************************************/
 void Data::insertZeroResultFields(InputFileData* InputData, ofstream& logFile){
+
+	for(int i=0;i<resultNameList.size();i++){
+		dbMatrix& result = this->getResult(resultNameList[i].c_str());
+
+		for(int j=0; j<result.size(); j++){
+			result[j].insert(result[j].begin(),0);
+		}
+	}
+
+	step_value_vec.insert(step_value_vec.begin(),0);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::removeZeroResultFields(InputFileData* InputData, ofstream& logFile){
 
 	for(int i=0;i<resultNameList.size();i++){
 		dbMatrix& result = this->getResult(resultNameList[i].c_str());
@@ -2619,7 +2674,11 @@ void Data::plotPostProcessGraph(InputFileData* InputData, ofstream& logFile){
 dbVector& Data::getGraphData(int graphType, int node, int DOF, string& resultName,
 		InputFileData* InputData, ofstream& logFile){
 
-	if (graphType == -1){
+	if (graphType == -2){
+		resultName = "load";
+		return this->getGraph("surfaceLoad");
+	}
+	else if (graphType == -1){
 		resultName = "time";
 		return step_value_vec;
 	}
@@ -2641,5 +2700,3 @@ dbVector& Data::getGraphData(int graphType, int node, int DOF, string& resultNam
 	}
 
 }
-
-

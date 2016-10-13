@@ -126,23 +126,25 @@ void Database::readDatabase(string& databaseName, vector<string>& paramNameVec,
 				}
 			}
 		}
-//#ifdef _DatabaseDebugMode_
+
+		// Output database content in logFile
 		logFile << "***** Database[ "<< databaseName <<"] *****" << endl;
 		for (int i = 0; i < paramNameVec.size(); i++){
 			logFile << paramNameVec[i] << "\t";
 		}
-		logFile << "Filename \t anchorPoint";
+		logFile << "anchorPoint \t Filename";
 		logFile << endl;
 		for(int j=0; j <paramMatrix.size(); j++){
 			for(int k=0; k <paramMatrix[j].size(); k++){
 				logFile << paramMatrix[j][k] << std::setw(6);
 			}
-			logFile << anchorPointList[j] << std::setw(6);
+			logFile << anchorPointList[j] << "\t";
+
 			logFile << fileNameVec[j] << endl;
 		}
-//#endif
 
 		myfile.close();
+
 	} else {
 		logFile << "ERROR: Unable to open database file" << endl;
 		cout << "ERROR: Unable to open database file" << endl;

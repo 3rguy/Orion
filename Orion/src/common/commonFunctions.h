@@ -553,7 +553,7 @@ std::string convertIntToString(int number);
 
 // Check if a double precision number equals to zero within numerical
 // precision limits.
-bool checkZero(double& value);
+bool checkZero(double value);
 
 // Determine the twist of a point given by its reference configuration
 // and its current configuration around a given axis going through
@@ -661,6 +661,13 @@ void combineSortedVecs(intMatrix& inputMat);
 
 // combines sorted vectors inputVec1 and inputVec2 and puts the sorted vector into inputVec1
 void combine2SortedVecs(intVector& inputVec1, intVector& inputVec2);
+
+void normalizeVector(dbVector& vec);
+
+/************************************************************************/
+/************************************************************************/
+// Compute a vector norm.
+double computeNorm(dbVector& aVector,int type);
 
 // ========================================================================
 // ========================================================================

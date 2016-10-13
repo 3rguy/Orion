@@ -62,7 +62,7 @@ void testFunctions(InputFileData* InputData, ofstream& logFile) {
 		//**********************************************************************
 		// extracting result from FEM.res file
 		cout << "MLS Interpolation test" << endl;
-//			mlsTest(InputData, logFile);
+		mlsTest(InputData, logFile);
 		break;
 	}
 
@@ -279,7 +279,10 @@ void PODCalcTest(InputFileData* InputData, ofstream& logFile) {
 	double energy_Level = 95;
 	dbMatrix fullMatrix;
 
-	PODCalcTest_readFile(fullMatrix,InputData,logFile);
+	//PODCalcTest_readFile(fullMatrix,InputData,logFile);
+
+	int size = -1;
+	fullMatrix = createRandomMatrix(size,size,logFile);
 
 	printMatrix(fullMatrix,"fullMatrix",logFile);
 
@@ -288,37 +291,33 @@ void PODCalcTest(InputFileData* InputData, ofstream& logFile) {
 	logFile << "Using the SVD Method" << endl;
 	logFile << "--------------------" << endl;
 	InputData->setValue("PODCalculationType",1);
-//	PODCalc* PODCalculation_one
-//		= new PODCalc(fullMatrix,reducedMatrix_one,energy_Level,InputData,logFile);
 
-	PODCalc PODCalculation_one(fullMatrix,reducedMatrix_one,energy_Level,InputData,logFile);
+	PODCalc PODCalculation_SVD(fullMatrix,reducedMatrix_one,energy_Level,InputData,logFile);
 
 	// -------------------------------------------------------------------------
-	dbMatrix reducedMatrix_three;
+	dbMatrix reducedMatrix_two;
 	logFile << "Using the Snapshot Method" << endl;
 	logFile << "-------------------------" << endl;
 	InputData->setValue("PODCalculationType",3);
-//	PODCalc* PODCalculation_three
-//		= new PODCalc(fullMatrix,reducedMatrix_three,energy_Level,InputData,logFile);
 
-	PODCalc PODCalculation_three(fullMatrix,reducedMatrix_three,energy_Level,InputData,logFile);
+	PODCalc PODCalculation_SPS(fullMatrix,reducedMatrix_two,energy_Level,InputData,logFile);
 
+	// -------------------------------------------------------------------------
+	dbMatrix reducedMatrix_three;
+	logFile << "Using the KLD Method" << endl;
+	logFile << "-------------------------" << endl;
+	InputData->setValue("PODCalculationType",2);
 
-//	printMatrix(PODCalculation_one->getPOMs(),"POMs_one",logFile);
-//	printVector(PODCalculation_one->getPOVs(),"POVs_one",logFile);
-
-//	printMatrix(PODCalculation_three->getPOMs(),"POMs_three",logFile);
-//	printVector(PODCalculation_three->getPOVs(),"POVs_three",logFile);
-
-	printMatrix(PODCalculation_one.getPOMs(),"POMs_one",logFile);
-	printMatrix(PODCalculation_three.getPOMs(),"POMs_three",logFile);
-
-	printVector(PODCalculation_one.getPOVs(),"POVs_one",logFile);
-	printVector(PODCalculation_three.getPOVs(),"POVs_three",logFile);
+	PODCalc PODCalculation_KLD(fullMatrix,reducedMatrix_three,energy_Level,InputData,logFile);
 
 
-//	delete PODCalculation_one;
-//	delete PODCalculation_three;
+	printMatrix(PODCalculation_SVD.getPOMs(),"POMs_SVD",logFile);
+	printMatrix(PODCalculation_SPS.getPOMs(),"POMs_SPS",logFile);
+	printMatrix(PODCalculation_SPS.getPOMs(),"POMs_KLD",logFile);
+
+	printVector(PODCalculation_SVD.getPOVs(),"POVs_SVD",logFile);
+	printVector(PODCalculation_SPS.getPOVs(),"POVs_SPS",logFile);
+	printVector(PODCalculation_SPS.getPOVs(),"POVs_KLD",logFile);
 
 }
 
@@ -1442,3 +1441,35 @@ void printSnapshotPOMs(InputFileData* InputData,ofstream& logFile){
 //
 //cout << "Duration: seska["<< sTimer
 //		<<" clicks] v/s myMatrix["<< mTimer <<" clicks]" << endl;
+
+dbMatrix createRandomMatrix(int row,int col,ofstream& logFile){
+
+	srand (time(NULL));
+
+	int maxRow = 10;
+	int maxCol = 10;
+
+	int nRow = 0;
+	int nCol = 0;
+
+	if(row == -1){
+		nRow = rand() % maxRow + (0.5*maxRow);
+	}
+
+	if(col == -1){
+		nCol = rand() % maxCol + (0.5*maxCol);
+	}
+
+	dbMatrix randomMat(nRow,dbVector(nCol,0));
+	int maxValue = 100000;
+	for(int r = 0; r < nRow; r++){
+		for(int c = 0 ; c < nCol; c++){
+			randomMat[r][c] = rand() % maxValue;
+		}
+	}
+
+	printMatrix(randomMat,"randomMat",logFile);
+
+	return randomMat;
+
+}

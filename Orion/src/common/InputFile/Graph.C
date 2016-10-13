@@ -41,6 +41,48 @@ Graph::~Graph() {
 
 /***********************************************************************/
 /***********************************************************************/
+// set the axis labels of the graph
+void Graph::setLabels(std::map<std::string,double>& calcData,
+                           std::map<std::string,double>& modelData,
+                           std::ofstream& logFile) {
+
+
+  using namespace std;
+
+  bool extend = (bool) calcData["restartFileID"];
+
+  // set label of axes
+  char* cstr = new char[type.length() + 1];
+  strcpy(cstr,type.c_str());
+
+  char* p = strtok(cstr,"_");
+
+  if(p != 0) ordinateLabel = p;
+  else {
+    logFile << "In Graph::initPtcleGraph axis initialization failed." << endl;
+    MPI_Abort(MPI_COMM_WORLD,1);
+  }
+
+  p = strtok(NULL," ");
+  if(p != 0) abscissaLabel = p;
+  else {
+    logFile << "In Graph::initPtcleGraph axis initialization failed." << endl;
+    MPI_Abort(MPI_COMM_WORLD,1);
+  }
+
+  delete cstr;
+
+#ifdef _postProcDebugMode_
+  logFile<<"*****************************************************"<<endl;
+  logFile<<"**************** Graph::setLabels *******************"<<endl;
+  logFile<<type<<" "<<ID<<": "<<ordinateLabel<<" vs. "
+      <<abscissaLabel<<endl;
+#endif
+
+}
+
+/***********************************************************************/
+/***********************************************************************/
 // initialize the graph illustrating a result at particle (open graph-file etc.)
 void Graph::initPtcleGraph(std::map<std::string,double>& calcData,
                            std::map<std::string,double>& modelData,
@@ -54,36 +96,36 @@ void Graph::initPtcleGraph(std::map<std::string,double>& calcData,
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  // set label of axes
-  char* cstr = new char[type.length() + 1];
-  strcpy(cstr,type.c_str());
-
-  char* p = strtok(cstr,"_");
-
-  if(p != 0)
-    ordinateLabel = p;
-  else {
-    logFile << "In Graph::initPtcleGraph axis initialization failed." << endl;
-    MPI_Abort(MPI_COMM_WORLD,1);
-  }
-
-  p = strtok(NULL," ");
-  if(p != 0)
-    abscissaLabel = p;
-  else {
-    logFile << "In Graph::initPtcleGraph axis initialization failed." << endl;
-    MPI_Abort(MPI_COMM_WORLD,1);
-  }
-
-  delete cstr;
-
-
-#ifdef _postProcDebugMode_
-  logFile<<"*****************************************************"<<endl;
-  logFile<<"*********** Graph::initPtcleGraph *******************"<<endl;
-  logFile<<type<<" "<<ID<<": "<<ordinateLabel<<" vs. "
-      <<abscissaLabel<<endl;
-#endif
+//  // set label of axes
+//  char* cstr = new char[type.length() + 1];
+//  strcpy(cstr,type.c_str());
+//
+//  char* p = strtok(cstr,"_");
+//
+//  if(p != 0)
+//    ordinateLabel = p;
+//  else {
+//    logFile << "In Graph::initPtcleGraph axis initialization failed." << endl;
+//    MPI_Abort(MPI_COMM_WORLD,1);
+//  }
+//
+//  p = strtok(NULL," ");
+//  if(p != 0)
+//    abscissaLabel = p;
+//  else {
+//    logFile << "In Graph::initPtcleGraph axis initialization failed." << endl;
+//    MPI_Abort(MPI_COMM_WORLD,1);
+//  }
+//
+//  delete cstr;
+//
+//
+//#ifdef _postProcDebugMode_
+//  logFile<<"*****************************************************"<<endl;
+//  logFile<<"*********** Graph::initPtcleGraph *******************"<<endl;
+//  logFile<<type<<" "<<ID<<": "<<ordinateLabel<<" vs. "
+//      <<abscissaLabel<<endl;
+//#endif
 
   /*********************************************************************/
   // flag graph type to be active
@@ -352,6 +394,17 @@ void Graph::writeValuePairs(std::ofstream& logFile) {
 bool Graph::isLoadingPlotting() {
 
   if(abscissaLabel == "load" || ordinateLabel == "load")
+    return true;
+  else
+    return false;
+}
+
+/***********************************************************************/
+/***********************************************************************/
+// check whether graph is plotting Dirichlet control conditions
+bool Graph::isDirichletControlConditionPlotting() {
+
+  if(abscissaLabel == "volume" || ordinateLabel == "volume")
     return true;
   else
     return false;

@@ -232,25 +232,30 @@ void ErrorCalc::grfErrorCalc(DataContainer* problemData,
 		return;
 	}
 
-	cout << "Reading: " << fileList[0] << endl;
-	logFile << "Reading: " << fileList[0] << endl;
+	if(fileList.size() % 2 != 0){
+		cout << "ERROR:Number of GRF files should be even." << endl;
+		logFile << "ERROR:Number of GRF files should be even." << endl;
+		MPI_Abort(MPI_COMM_WORLD,1);
+	}
 
-	dbMatrix exactGrfMatrix;
+	int nGRFPairs = fileList.size() / 2 ;
 
 	Data* grfReadData = new Data();
-	grfReadData->readGraphFile_grfFormat(fileList[0], exactGrfMatrix, logFile);
 
-	for (int i = 1; i < fileList.size(); i++) {
+	for (int i = 0; i < nGRFPairs; i++) {
 
 		cout << "*************************************************" << endl;
 		logFile << "*************************************************" << endl;
 
-		dbMatrix approxGrfMatrix;
+		dbMatrix exactGrfMatrix, approxGrfMatrix;
 
-		cout << "Reading: " << fileList[i] << endl;
-		logFile << "Reading: " << fileList[i] << endl;
+		cout << "Reading: " << fileList[(i*2)] << endl;
+		logFile << "Reading: " << fileList[(i*2)] << endl;
+		grfReadData->readGraphFile_grfFormat(fileList[(i*2)], exactGrfMatrix, logFile);
 
-		grfReadData->readGraphFile_grfFormat(fileList[i], approxGrfMatrix, logFile);
+		cout << "Reading: " << fileList[(i*2)+1] << endl;
+		logFile << "Reading: " << fileList[(i*2)+1] << endl;
+		grfReadData->readGraphFile_grfFormat(fileList[(i*2)+1], approxGrfMatrix, logFile);
 
 		calculateErrors_grf_Format(exactGrfMatrix, approxGrfMatrix,
 						InputData, logFile);
@@ -397,6 +402,9 @@ double ErrorCalc::relativeL2norm(dbMatrix& exactMat, dbMatrix& approxMat,
 
 	double sum_sqr_diff = 0;
 	double sum_sqr_exact = 0;
+
+//	cout << "Size of exactMat: " << exactMat.size() << " x " << exactMat[0].size() << endl;
+//	cout << "Size of approxMat: " << approxMat.size() << " x " << approxMat[0].size() << endl;
 
 	for(int i=0;i<exactMat.size();i++){
 		for(int j=0; j<exactMat[i].size();j++){

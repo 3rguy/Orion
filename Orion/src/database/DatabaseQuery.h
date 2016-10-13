@@ -56,6 +56,11 @@ public:
 	/*!************************************************************************/
 	void databaseQueryAlgorithm_three(DataContainer* problemData,
 			Database& myDatabase, InputFileData* InputData, ofstream& logFile);
+
+	/*!************************************************************************/
+	/*!************************************************************************/
+	void databaseQueryAlgorithm_four(DataContainer* problemData,
+			Database& myDatabase, InputFileData* InputData, ofstream& logFile);
 };
 
 #endif /* DATABASEQUERY_H_ */

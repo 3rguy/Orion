@@ -459,6 +459,57 @@ Particle::getInitialElectricBoundConds(int ID) {
 }
 
 // ----------------------------------------------------------------------
+// TPM boundary conditions
+
+blVector&
+Particle::getTPMBoundDOF(int ID) {
+
+  if(ID < TPMBoundDOF.size()) return TPMBoundDOF[ID];
+
+  else {
+    TPMBoundDOF.resize(ID + 1);
+    return TPMBoundDOF[ID];
+  }
+
+}
+
+dbVector&
+Particle::getTPMBoundConds(int ID) {
+
+  if(ID < TPMBoundConds.size()) return TPMBoundConds[ID];
+
+  else {
+    TPMBoundConds.resize(ID + 1);
+    return TPMBoundConds[ID];
+  }
+
+}
+
+dbVector&
+Particle::getDeltaTPMBoundConds(int ID) {
+
+  if(ID < deltaTPMBoundConds.size()) return deltaTPMBoundConds[ID];
+
+  else {
+    deltaTPMBoundConds.resize(ID + 1);
+    return deltaTPMBoundConds[ID];
+  }
+
+}
+
+dbVector&
+Particle::getInitialTPMBoundConds(int ID) {
+
+  if(ID < initialTPMBoundConds.size()) return initialTPMBoundConds[ID];
+
+  else {
+    initialTPMBoundConds.resize(ID + 1);
+    return initialTPMBoundConds[ID];
+  }
+
+}
+
+// ----------------------------------------------------------------------
 // depolarisation boundary conditions
 
 blVector&

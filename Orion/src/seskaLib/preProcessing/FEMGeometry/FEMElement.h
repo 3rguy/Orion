@@ -86,6 +86,11 @@ class FEMElement : public ElementTemplate {
     blVector& getTractionDOF() { return getTractionDOF(0); };
     dbVector& getTraction() { return getTraction(0); };
 
+    blVector& getFluidVolumeFluxDOF(int ID);
+    dbVector& getFluidVolumeFlux(int ID);
+    blVector& getFluidVolumeFluxDOF() { return getFluidVolumeFluxDOF(0); };
+    dbVector& getFluidVolumeFlux() { return getFluidVolumeFlux(0); };
+
     blVector& getLineForceDOF(int ID);
     dbVector& getLineForce(int ID);
     blVector& getLineForceDOF() { return getLineForceDOF(0); };
@@ -139,6 +144,13 @@ class FEMElement : public ElementTemplate {
     blVector& getSurfaceElectricBoundDOF() { return getSurfaceElectricBoundDOF(0); };
     dbVector& getSurfaceElectricBoundConds() { return getSurfaceElectricBoundConds(0); };
 
+    /// TPM boundary condition
+
+    blVector& getPorePressureBoundDOF(int ID);
+    dbVector& getPorePressureBoundConds(int ID);
+    blVector& getPorePressureBoundDOF() { return getPorePressureBoundDOF(0); };
+    dbVector& getPorePressureBoundConds() { return getPorePressureBoundConds(0); };
+
     /// depolarisation boundary condition (depolarisation time)
     blVector& getLineDepolarisationBoundDOF(int ID);
     dbVector& getLineDepolarisationBoundConds(int ID);
@@ -184,6 +196,8 @@ class FEMElement : public ElementTemplate {
     dbMatrix tractionLoads;
     blMatrix lineForceDOF;
     dbMatrix lineForceLoads;
+    blMatrix fluidVolumeFluxDOF;
+    dbMatrix fluidVolumeFluxLoads;
 
     dbMatrix bodyMomentLoads;
     blMatrix bodyMomentDOF;
@@ -206,6 +220,10 @@ class FEMElement : public ElementTemplate {
     dbMatrix lineElectricBoundConds;
     blMatrix surfaceElectricBoundDOF;
     dbMatrix surfaceElectricBoundConds;
+
+    /// TPM boundary conditions
+    blMatrix porePressureBoundDOF;
+    dbMatrix porePressureBoundConds;
 
     /// depolarisation boundary conditions (depolarisation time)
     blMatrix lineDepolarisationBoundDOF;

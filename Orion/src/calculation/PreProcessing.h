@@ -100,13 +100,23 @@ public:
 
 	/*!************************************************************************/
 	/*!************************************************************************/
-	void stepStandardisation(DataContainer* problemData,
+	void standardiseStep(DataContainer* problemData,
+			InputFileData* InputData, ofstream& logFile);
+
+	/*!************************************************************************/
+	/*!************************************************************************/
+	void assembleResultsOnly(DataContainer* problemData,
 			InputFileData* InputData, ofstream& logFile);
 
 	/*!************************************************************************/
 	/*!************************************************************************/
 	virtual void preROMCalculationFunctions(DataContainer* problemData,
 								InputFileData* InputData, ofstream& logFile){};
+
+	/*!************************************************************************/
+	/*!************************************************************************/
+	void interpolateStandardSteps(DataContainer* problemData,
+			InputFileData* InputData, ofstream& logFile);
 
 	/*!************************************************************************/
 	/*!************************************************************************/

@@ -37,6 +37,11 @@ class Graph {
     Graph();
     ~Graph();
 
+    // set the axis labels of the graph
+    void setLabels(std::map<std::string,double>& calcData,
+                   std::map<std::string,double>& modelData,
+                   std::ofstream& logFile);
+
     /// initialize the graph plotting the result at a particle (open graph-file etc.)
     void initPtcleGraph(std::map<std::string,double>& calcData,
                         std::map<std::string,double>& modelData,
@@ -53,6 +58,9 @@ class Graph {
 
     /// check whether graph is plotting loading
     bool isLoadingPlotting();
+
+    /// check whether graph is plotting Dirichlet control conditions
+    bool isDirichletControlConditionPlotting();
 
     /// assign to the graph a loading or internal reaction
     void setLoadingCondition(Condition& condition);

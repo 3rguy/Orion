@@ -43,11 +43,13 @@ public:
     void setEnergyLevel(double enLev){energyLevel=enLev;};
 
     // Set data matrix
-    void setDataMatrix(dbMatrix mat){dataMat=mat;};
+    void setDataMatrix(dbMatrix& mat,InputFileData* InputData, ofstream& logFile);
 
     void setPOVsandPOMs(InputFileData* InputData,ofstream& logFile);
     dbMatrix& getPOMs(){return POMs;};
     dbVector& getPOVs(){return POVs;};
+
+    dbVector& getMeanVec(){return meanVec;};
 
     void SVDCalc(ofstream& logFile);
     void SVD(dbMatrix& A,dbMatrix& U,dbMatrix& V,dbVector& S,
@@ -56,6 +58,9 @@ public:
     void KLD(ofstream& logFile); //Not yet implemented
 
     void snapshotCalc(ofstream& logFile);
+    void snapshotCalc_two(ofstream& logFile);
+
+    void cleanPOVsAndPOMs(dbVector& vec,dbMatrix& mat,ofstream& logFile);
 
     dbMatrix& getPOMsConserved(ofstream& logFile);
     dbVector& getPOVsConserved(ofstream& logFile);
@@ -63,7 +68,7 @@ public:
     int& getNumPOVConserved(){return numOfPOVsConserved;}
 
     void energyConservCalc(ofstream& logFile);
-    double getEnergyConserved(){return energyConserved;};
+    double& getEnergyConserved(){return energyConserved;};
 
     // Compression functions
     void compressMatrix(dbMatrix& reducedMatrix,InputFileData* InputData,
@@ -84,6 +89,7 @@ public:
 private:
 
     dbMatrix dataMat;
+    dbVector meanVec;
 
     double energyLevel;
     double energyConserved;

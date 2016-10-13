@@ -87,7 +87,7 @@ void GridNodesTest::DOFStandardisation(InputFileData* InputData, ofstream& logFi
 	cout << "OK" << endl;
 
 	cout << "Writting to fem.res file ... ";
-	tData.saveResultsToFile(logFile);
+	tData.saveResultsToFile(InputData,logFile);
 	cout << "OK" << endl;
 }
 

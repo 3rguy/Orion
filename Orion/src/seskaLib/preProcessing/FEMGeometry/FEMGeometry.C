@@ -319,54 +319,54 @@ void FEMGeometry::readMeshFile(InputFileData* InputData,
 
   /*********************************************************************/
   // Write the FEM reference mesh.
-//  int rank;
-//  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-//
-//  ofstream femMeshFile;
-//
-//  if(rank == 0) {
-//
-//    femMeshFile.open("fem.msh");
-//    femMeshFile.precision(12);
-//    femMeshFile.setf(ios_base::scientific,ios_base::floatfield);
-//
-//    if((int) backGroundMeshInfo["elemType"] == 1) femMeshFile
-//        << "MESH  dimension 3  ElemType Tetrahedra Nnode "
-//        << (int) backGroundMeshInfo["nodesPerVolumeElement"] << endl;
-//
-//    else if((int) backGroundMeshInfo["elemType"] == 2) femMeshFile
-//        << "MESH  dimension 3  ElemType Hexahedra Nnode "
-//        << (int) backGroundMeshInfo["nodesPerVolumeElement"] << endl;
-//
-//    // Write nodes coordinates of reference mesh.
-//    femMeshFile << "Coordinates" << endl;
-//
-//    for(int i = 0;i < nodesNum;i++)
-//      femMeshFile << i + 1 << " " << particles[newIdx[i]].getCoord(0) << " "
-//          << particles[newIdx[i]].getCoord(1) << " "
-//          << particles[newIdx[i]].getCoord(2) << endl;
-//
-//    femMeshFile << "end coordinates\n" << endl;
-//
-//    femMeshFile << "Elements" << endl;
-//
-//    // Loop over all global elements.
-//    for(int i = 0;i < globalElemNum;i++) {
-//      int& elemType = allNodesElements[i].getElemType();
-//
-//      int& matID = allNodesElements[i].getMaterialID();
-//      intVector& nodes = allNodesElements[i].getNodes();
-//
-//      femMeshFile << i + 1 << " ";
-//
-//      for(int j = 0;j < nodes.size();j++)
-//        femMeshFile << oldIdx[nodes[j] - 1] + 1 << " ";
-//
-//      femMeshFile << matID << endl;
-//    }
-//
-//    femMeshFile << "end elements" << endl;
-//  }
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  ofstream femMeshFile;
+
+  if(rank == 0) {
+
+    femMeshFile.open("fem.msh");
+    femMeshFile.precision(12);
+    femMeshFile.setf(ios_base::scientific,ios_base::floatfield);
+    
+    if((int) backGroundMeshInfo["elemType"] == 1) femMeshFile
+        << "MESH  dimension 3  ElemType Tetrahedra Nnode "
+        << (int) backGroundMeshInfo["nodesPerVolumeElement"] << endl;
+    
+    else if((int) backGroundMeshInfo["elemType"] == 2) femMeshFile
+        << "MESH  dimension 3  ElemType Hexahedra Nnode "
+        << (int) backGroundMeshInfo["nodesPerVolumeElement"] << endl;
+    
+    // Write nodes coordinates of reference mesh.
+    femMeshFile << "Coordinates" << endl;
+    
+    for(int i = 0;i < nodesNum;i++)
+      femMeshFile << i + 1 << " " << particles[newIdx[i]].getCoord(0) << " "
+          << particles[newIdx[i]].getCoord(1) << " "
+          << particles[newIdx[i]].getCoord(2) << endl;
+    
+    femMeshFile << "end coordinates\n" << endl;
+    
+    femMeshFile << "Elements" << endl;
+    
+    // Loop over all global elements.
+    for(int i = 0;i < globalElemNum;i++) {
+      int& elemType = allNodesElements[i].getElemType();
+      
+      int& matID = allNodesElements[i].getMaterialID();
+      intVector& nodes = allNodesElements[i].getNodes();
+      
+      femMeshFile << i + 1 << " ";
+      
+      for(int j = 0;j < nodes.size();j++)
+        femMeshFile << oldIdx[nodes[j] - 1] + 1 << " ";
+      
+      femMeshFile << matID << endl;
+    }
+    
+    femMeshFile << "end elements" << endl;
+  }
   
 #ifdef _FEdebugMode_
   logFile << "************** all unsorted elements *****************" << endl;
@@ -979,6 +979,7 @@ void FEMGeometry::createSurfaceElems(InputFileData* InputData,
   int rotDOF = (int) modelData["rotationDegreesOfFreedom"];
   int stressDOF = (int) modelData["stressDegreesOfFreedom"];
   int electricDOF = (int) modelData["electricDegreesOfFreedom"];
+  int porePressureDOF = (int) modelData["porePressureDegreesOfFreedom"];
   int depolarisationDOF = (int) modelData["depolarisationDegreesOfFreedom"];
   int microDOF = (int) modelData["microDegreesOfFreedom"];
   int usedDims = (int) modelData["usedDimensions"];
@@ -989,6 +990,7 @@ void FEMGeometry::createSurfaceElems(InputFileData* InputData,
     InputData->getDirichletConditions();
   std::vector<Condition>& dirichletControlConditions =
     InputData->getDirichletControlConditions();
+  vector<ResultantReactionCondition>& resultantReactions = InputData->getResultantReactions();
 
   /**********************************************************************/
   // Create the vector containing all boundary elements.
@@ -1014,6 +1016,13 @@ void FEMGeometry::createSurfaceElems(InputFileData* InputData,
     Condition& condition = dirichletControlConditions[i];
 
     if(condition.isSurfaceDirichletControlCondition()) surfaceElemNum +=
+      condition.getElements().size();
+
+  }
+  for(int i = 0;i < resultantReactions.size();i++) {
+    ResultantReactionCondition& condition = resultantReactions[i];
+
+    if(condition.isSurfaceResultantReaction()) surfaceElemNum +=
       condition.getElements().size();
 
   }
@@ -1196,6 +1205,36 @@ void FEMGeometry::createSurfaceElems(InputFileData* InputData,
           indexSet[1] = 0; // weight ID
           indexSet[2] = i; // condition ID
           pushBackVector(elasticSurfaceForceElemIdx,indexSet);
+          pushBackVector(elemIdx,elem);
+        }
+
+        // --------------------------------------------------------------
+        // Store the fluid volume flux.
+        else if(condition.getType() == "Fluid-Volume-Flux") {
+
+          // store the element's nodes
+          intVector& nodes = surfaceNodesElems[currentIdx].getNodes();
+          resizeArray(nodes,condNodes.size());
+
+          for(int j = 0;j < condNodes.size();j++)
+            nodes[j] = newIdx[(int) condNodes[j] - 1] + 1;
+
+          // set the element's material, type (tetrahedra,cube)
+          // and order (linear/quadratic)
+
+          if( !swapVolToFaceElemInfo(InputData,surfaceNodesElems[currentIdx],
+                                     modelData,logFile)) {
+            logFile
+                << "In function FEMGeometry::createSurfaceElems no corresponding\n"
+                << "volume element can be found for surface element '" << elem
+                << "'!" << endl;
+            MPI_Abort(MPI_COMM_WORLD,1);
+          }
+
+          indexSet[0] = currentIdx;
+          indexSet[1] = 0; // weight ID
+          indexSet[2] = i; // condition ID
+          pushBackVector(fluidVolumeFluxElemIdx,indexSet);
           pushBackVector(elemIdx,elem);
         }
 
@@ -1405,6 +1444,68 @@ void FEMGeometry::createSurfaceElems(InputFileData* InputData,
               indexSet[1] = 0; // weight ID
               indexSet[2] = i; // condition ID
               pushBackVector(surfaceElectricBoundElemIdx,indexSet);
+            }
+          }
+        }
+        // --------------------------------------------------------------
+        // Store the pore pressure constraint
+        else if(condition.getType() == "Pore-Pressure-Constraint") {
+
+          pos = findIntVecPos(elem,0,elemIdx.size(),elemIdx);
+
+          // no loading is already applied
+          if(pos == -1) {
+
+            currentIdx = elemIdx.size();
+            surfaceNodesElems[currentIdx].setGlobalID(elem);
+
+            // store the element's nodes
+            intVector& nodes = surfaceNodesElems[currentIdx].getNodes();
+            resizeArray(nodes,condNodes.size());
+
+            for(int j = 0;j < condNodes.size();j++)
+              nodes[j] = newIdx[(int) condNodes[j] - 1] + 1;
+
+            // set the element's material, type (tetrahedra,cube)
+            // and order (linear/quadratic)
+
+            if( !swapVolToFaceElemInfo(InputData,surfaceNodesElems[currentIdx],
+                                       modelData,logFile)) {
+              logFile
+                  << "In function FEMGeometry::createSurfaceElems no corresponding\n"
+                  << "volume element can be found for surface element '" << elem
+                  << "'!" << endl;
+              MPI_Abort(MPI_COMM_WORLD,1);
+            }
+
+            indexSet[0] = currentIdx;
+            indexSet[1] = 0; // weight ID
+            indexSet[2] = i; // condition ID
+            pushBackVector(porePressureBoundElemIdx,indexSet);
+            pushBackVector(elemIdx,elem);
+          }
+          // a loading is already applied
+          else {
+            currentIdx = pos;
+
+            // Check if a boundary conditions is already
+            // applied to current element.
+            pos = findIntMatPos(currentIdx,0,porePressureBoundElemIdx.size(),
+                                0,porePressureBoundElemIdx);
+
+            if(pos != -1) {
+              logFile
+                  << "In function FEMGeometry::createSurfaceElems repetetive "
+                  << "boundary conditions!" << endl;
+              MPI_Abort(MPI_COMM_WORLD,1);
+            }
+
+            else {
+
+              indexSet[0] = currentIdx;
+              indexSet[1] = 0; // weight ID
+              indexSet[2] = i; // condition ID
+              pushBackVector(porePressureBoundElemIdx,indexSet);
             }
           }
         }
@@ -1628,6 +1729,90 @@ void FEMGeometry::createSurfaceElems(InputFileData* InputData,
 
   }
 
+  /**********************************************************************/
+  // resultant surface reactions
+  //
+  // loop over all surface reactions
+  for(int i = 0;i < resultantReactions.size();i++) {
+    ResultantReactionCondition& condition = resultantReactions[i];
+    blVector& conditionDOFs = condition.getConditionDOFs();
+    dbVector& conditionValues = condition.getConditionValues();
+    vector<ConditionElement>& condElems = condition.getElements();
+
+    for(int k = 0;k < condElems.size();k++) {
+
+      elem = condElems[k].getID() - 1;
+      intVector& condNodes = condElems[k].getNodes();
+
+      // --------------------------------------------------------------
+      // Store the condition
+      if(condition.getType() == "Resultant-Internal-Traction") {
+
+        pos = findIntVecPos(elem,0,elemIdx.size(),elemIdx);
+
+        // no loading or Dirichlet boundary condition is already applied
+        if(pos == -1) {
+
+          currentIdx = elemIdx.size();
+          surfaceNodesElems[currentIdx].setGlobalID(elem);
+
+          // store the element's nodes
+          intVector& nodes = surfaceNodesElems[currentIdx].getNodes();
+          resizeArray(nodes,condNodes.size());
+
+          for(int j = 0;j < condNodes.size();j++)
+            nodes[j] = newIdx[(int) condNodes[j] - 1] + 1;
+
+          // set the element's material, type (tetrahedra,cube)
+          // and order (linear/quadratic)
+
+          if( !swapVolToFaceElemInfo(InputData,surfaceNodesElems[currentIdx],
+                                     modelData,logFile)) {
+            logFile
+                << "In function FEMGeometry::createSurfaceElems no corresponding\n"
+                << "volume element can be found for surface element '" << elem
+                << "'!" << endl;
+            MPI_Abort(MPI_COMM_WORLD,1);
+          }
+
+          indexSet[0] = currentIdx;
+          indexSet[1] = 0; // weight ID
+          indexSet[2] = i; // condition ID
+          pushBackVector(resultantReactionBoundElemPtsIdx,indexSet);
+          pushBackVector(elemIdx,elem);
+        }
+        // a loading is already applied
+        else {
+          currentIdx = pos;
+
+          // Check if a resultant reaction conditions is already
+          // applied to current element.
+          pos = findIntMatPos(currentIdx,0,
+                              resultantReactionBoundElemPtsIdx.size(),0,
+                              resultantReactionBoundElemPtsIdx);
+
+          if(pos != -1) {
+            logFile << "In function FEMGeometry::createSurfaceElems repetetive "
+                << "surface reaction conditions!" << endl;
+            MPI_Abort(MPI_COMM_WORLD,1);
+          }
+
+          else {
+
+            indexSet[0] = currentIdx;
+            indexSet[1] = 0; // weight ID
+            indexSet[2] = i; // condition ID
+            pushBackVector(resultantReactionBoundElemPtsIdx,indexSet);
+          }
+
+        }
+
+      }
+
+    }
+
+  }
+
   surfaceNodesElems.resize(elemIdx.size(),FEMElement(usedDOF));
 
 #ifdef _FEdebugMode_
@@ -1652,6 +1837,11 @@ void FEMGeometry::createSurfaceElems(InputFileData* InputData,
   logFile << "***************** traction loads *********************" << endl;
   for(int i = 0;i < tractionElemIdx.size();i++) {
     int& idx = tractionElemIdx[i][0];
+    logFile << "SURFACE ELEMENT " << surfaceNodesElems[idx].getGlobalID()<< endl;
+  }
+  logFile << "*************** fluid volume flux ********************" << endl;
+  for(int i = 0;i < fluidVolumeFluxElemIdx.size();i++) {
+    int& idx = fluidVolumeFluxElemIdx[i][0];
     logFile << "SURFACE ELEMENT " << surfaceNodesElems[idx].getGlobalID()<< endl;
   }
   logFile << "************** surface pressure loads ****************" << endl;
@@ -1704,6 +1894,11 @@ void FEMGeometry::createSurfaceElems(InputFileData* InputData,
   logFile << "********** cavity volume control conditions **********" << endl;
   for(int i = 0;i < cavityVolumeControlBoundElemIdx.size();i++) {
     int& idx = cavityVolumeControlBoundElemIdx[i][0];
+    logFile << "SURFACE ELEMENT " << surfaceNodesElems[idx].getGlobalID()<<endl;
+  }
+  logFile << "************* resultant surface reactions *************" << endl;
+  for(int i = 0;i < resultantReactionBoundElemPtsIdx.size();i++) {
+    int& idx = resultantReactionBoundElemPtsIdx[i][0];
     logFile << "SURFACE ELEMENT " << surfaceNodesElems[idx].getGlobalID()<<endl;
   }
 #endif
@@ -3818,6 +4013,26 @@ void FEMGeometry::setSurfaceGaussPoints(InputFileData* InputData,
     
   }
 
+  /**********************************************************************/
+  // Store the fluid volume flux on all boundary gauss points and the
+  // (local) indices of these boundary Gauss points.
+
+  for(int i = 0;i < fluidVolumeFluxElemIdx.size();i++) {
+    int& currentElem = fluidVolumeFluxElemIdx[i][0];
+    int& condID = fluidVolumeFluxElemIdx[i][2];
+    intVector& intPts = bElems[currentElem].getSurfaceIntegrationPts();
+
+    for(int j = 0;j < intPts.size();j++) {
+      idx = intPts[j];
+
+      indexSet[0] = idx; // Gauss point ID
+      indexSet[1] = 0; // weight ID
+      indexSet[2] = condID; // load ID
+      pushBackVector(fluidVolumeFluxBoundGaussPtsIdx,indexSet);
+    }
+
+  }
+
   /*********************************************************************/
   // Store the surface pressure loads on all boundary gauss points and 
   // the (local) indices of these boundary Gauss points.
@@ -3951,6 +4166,24 @@ void FEMGeometry::setSurfaceGaussPoints(InputFileData* InputData,
   }
 
   /*********************************************************************/
+  // pore pressure boundary constraints on surfaces
+  for(int i = 0;i < porePressureBoundElemIdx.size();i++) {
+    int& currentElem = porePressureBoundElemIdx[i][0];
+    int& condID = porePressureBoundElemIdx[i][2];
+    intVector& intPts = bElems[currentElem].getSurfaceIntegrationPts();
+
+    for(int j = 0;j < intPts.size();j++) {
+      idx = intPts[j];
+
+      indexSet[0] = idx; // Gauss point ID
+      indexSet[1] = 0; // weight ID
+      indexSet[2] = condID; // condition ID
+      pushBackVector(porePressureBoundGaussPtsIdx,indexSet);
+    }
+
+  }
+
+  /*********************************************************************/
   // depolarisation boundary constraints on surfaces
   for(int i = 0;i < surfaceDepolarisationBoundElemIdx.size();i++) {
     int& currentElem = surfaceDepolarisationBoundElemIdx[i][0];
@@ -4004,6 +4237,24 @@ void FEMGeometry::setSurfaceGaussPoints(InputFileData* InputData,
     
   }
 
+  /*********************************************************************/
+  // resultant surface reactions
+  for(int i = 0;i < resultantReactionBoundElemPtsIdx.size();i++) {
+    int& currentElem = resultantReactionBoundElemPtsIdx[i][0];
+    int& condID = resultantReactionBoundElemPtsIdx[i][2];
+    intVector& intPts = bElems[currentElem].getSurfaceIntegrationPts();
+
+    for(int j = 0;j < intPts.size();j++) {
+      idx = intPts[j];
+
+      indexSet[0] = idx; // Gauss point ID
+      indexSet[1] = 0; // weight ID
+      indexSet[2] = condID; // condition ID
+      pushBackVector(resultantReactionBoundGaussPtsIdx,indexSet);
+    }
+
+  }
+
   // Calculate for all boundary gauss points their weights and their
   // surface normal vector.
   setSGaussWeightsNormals(InputData,modelData,logFile);
@@ -4015,6 +4266,24 @@ void FEMGeometry::setSurfaceGaussPoints(InputFileData* InputData,
     idx = tractionBoundGaussPtsIdx[i][0];
     int& weightID = tractionBoundGaussPtsIdx[i][1];
     int& loadID = tractionBoundGaussPtsIdx[i][2];
+    double& weight = boundGaussPoints[idx].getIntWeight(weightID);
+    dbVector& normal = boundGaussPoints[idx].getSurfaceNormal();
+    logFile << i << ".) BOUND GAUSSPOINT "
+    << boundGaussPoints[idx].getGlobalID() << ": ";
+    logFile << boundGaussPoints[idx].getCoord(0) << " "
+    << boundGaussPoints[idx].getCoord(1) << " "
+    << boundGaussPoints[idx].getCoord(2) << " ";
+    logFile << "normal: ";
+    for(int j = 0;j < normal.size();j++)
+    logFile << normal[j] << " ";
+    logFile << "weight = " << weight << endl;
+  }
+  logFile << "*****************************************************" << endl;
+  logFile << "******* fluid volume flux boundary gauss points *****" << endl;
+  for(int i = 0;i < fluidVolumeFluxBoundGaussPtsIdx.size();i++) {
+    idx = fluidVolumeFluxBoundGaussPtsIdx[i][0];
+    int& weightID = fluidVolumeFluxBoundGaussPtsIdx[i][1];
+    int& loadID = fluidVolumeFluxBoundGaussPtsIdx[i][2];
     double& weight = boundGaussPoints[idx].getIntWeight(weightID);
     dbVector& normal = boundGaussPoints[idx].getSurfaceNormal();
     logFile << i << ".) BOUND GAUSSPOINT "
@@ -4154,6 +4423,24 @@ void FEMGeometry::setSurfaceGaussPoints(InputFileData* InputData,
     logFile << "weight = " << weight << endl;
   }
   logFile << "*****************************************************" << endl;
+  logFile << "***** pore pressure boundary gauss points ***********" << endl;
+  for(int i = 0;i < porePressureBoundGaussPtsIdx.size();i++) {
+    idx = porePressureBoundGaussPtsIdx[i][0];
+    int& weightID = porePressureBoundGaussPtsIdx[i][1];
+    int& conditionID = porePressureBoundGaussPtsIdx[i][2];
+    double& weight = boundGaussPoints[idx].getIntWeight(weightID);
+    dbVector& normal = boundGaussPoints[idx].getSurfaceNormal();
+    logFile << i << ".) BOUND GAUSSPOINT "
+    << boundGaussPoints[idx].getGlobalID() << ": ";
+    logFile << boundGaussPoints[idx].getCoord(0) << " "
+    << boundGaussPoints[idx].getCoord(1) << " "
+    << boundGaussPoints[idx].getCoord(2) << " ";
+    logFile << "normal: ";
+    for(int j = 0;j < normal.size();j++)
+    logFile << normal[j] << " ";
+    logFile << "weight = " << weight << endl;
+  }
+  logFile << "*****************************************************" << endl;
   logFile << "********* depolarisation boundary gauss points ************"
   << endl;
   for(int i = 0;i < surfaceDepolarisationBoundGaussPtsIdx.size();i++) {
@@ -4196,6 +4483,24 @@ void FEMGeometry::setSurfaceGaussPoints(InputFileData* InputData,
     idx = cavityVolumeControlBoundGaussPtsIdx[i][0];
     int& weightID = cavityVolumeControlBoundGaussPtsIdx[i][1];
     int& conditionID = cavityVolumeControlBoundGaussPtsIdx[i][2];
+    double& weight = boundGaussPoints[idx].getIntWeight(weightID);
+    dbVector& normal = boundGaussPoints[idx].getSurfaceNormal();
+    logFile << i << ".) BOUND GAUSSPOINT "
+    << boundGaussPoints[idx].getGlobalID() << ": ";
+    logFile << boundGaussPoints[idx].getCoord(0) << " "
+    << boundGaussPoints[idx].getCoord(1) << " "
+    << boundGaussPoints[idx].getCoord(2) << " ";
+    logFile << "normal: ";
+    for(int j = 0;j < normal.size();j++)
+    logFile << normal[j] << " ";
+    logFile << "weight = " << weight << endl;
+  }
+  logFile << "********************************************************" << endl;
+  logFile << "*** resultant surface reaction boundary gauss points ***" << endl;
+  for(int i = 0;i < resultantReactionBoundGaussPtsIdx.size();i++) {
+    idx = resultantReactionBoundGaussPtsIdx[i][0];
+    int& weightID = resultantReactionBoundGaussPtsIdx[i][1];
+    int& conditionID = resultantReactionBoundGaussPtsIdx[i][2];
     double& weight = boundGaussPoints[idx].getIntWeight(weightID);
     dbVector& normal = boundGaussPoints[idx].getSurfaceNormal();
     logFile << i << ".) BOUND GAUSSPOINT "
@@ -6736,11 +7041,17 @@ intMatrix& FEMGeometry::getAllSurfaceGaussPtsIdx(std::ofstream& logFile) {
     mat.insert(mat.begin(),surfaceElectricBoundGaussPtsIdx.begin(),
                surfaceElectricBoundGaussPtsIdx.end());
 
+    mat.insert(mat.begin(),porePressureBoundGaussPtsIdx.begin(),
+               porePressureBoundGaussPtsIdx.end());
+
     mat.insert(mat.begin(),surfaceDepolarisationBoundGaussPtsIdx.begin(),
                surfaceDepolarisationBoundGaussPtsIdx.end());
 
     mat.insert(mat.begin(),tractionBoundGaussPtsIdx.begin(),
                tractionBoundGaussPtsIdx.end());
+
+    mat.insert(mat.begin(),fluidVolumeFluxBoundGaussPtsIdx.begin(),
+               fluidVolumeFluxBoundGaussPtsIdx.end());
 
     mat.insert(mat.begin(),surfacePressureBoundGaussPtsIdx.begin(),
                surfacePressureBoundGaussPtsIdx.end());
@@ -6753,6 +7064,13 @@ intMatrix& FEMGeometry::getAllSurfaceGaussPtsIdx(std::ofstream& logFile) {
 
     mat.insert(mat.begin(),surfaceElectricChargeBoundGaussPtsIdx.begin(),
                surfaceElectricChargeBoundGaussPtsIdx.end());
+
+    mat.insert(mat.begin(),cavityVolumeControlBoundGaussPtsIdx.begin(),
+               cavityVolumeControlBoundGaussPtsIdx.end());
+
+    mat.insert(mat.begin(),resultantReactionBoundGaussPtsIdx.begin(),
+               resultantReactionBoundGaussPtsIdx.end());
+
 
 #ifdef _FEdebugMode_
     logFile << "------------------------------------------------------" << endl;

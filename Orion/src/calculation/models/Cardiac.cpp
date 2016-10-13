@@ -62,6 +62,8 @@ void Cardiac::loadSelectedData(DataContainer* problemData,
 
 	cout << "Cardiac::loadSelectedData" << endl;
 
+	int isRV = InputData->getValue("isRightVentriclePresent");
+
 	intVector& supportDataID = problemData->getIntVector("supportDataID");
 
 	dbMatrix& dataParametersList = problemData->getDbMatrix("dataParametersList");
@@ -104,30 +106,22 @@ void Cardiac::loadSelectedData(DataContainer* problemData,
 		mainData.readResultFile(InputData, logFile);
 
 		mainData.insertZeroResultFields(InputData, logFile);
+		InputData->setValue("insertZeroResultFields",1);
 
-
-		logFile <<"readVentriclesPVGraphResultFile" << endl;
-		mainData.readVentriclesPVGraphResultFile(InputData,logFile);
-
-		// Re-calculate the cavity volumes and write to graph file
-		logFile <<"calcLeftAndRightCavityVolumes" << endl;
-		mainData.calcLeftAndRightCavityVolumes(InputData,logFile);
-
-		// Store the cavity volumes
-		logFile << "leftCavityVolumesList.size(): " << leftCavityVolumesList.size() << endl;
-		logFile << "leftCavityPressuresList.size(): " << leftCavityPressuresList.size() << endl;
-		logFile << "rightCavityVolumesList.size(): " << rightCavityVolumesList.size() << endl;
-		logFile << "rightCavityPressuresList.size(): " << rightCavityPressuresList.size() << endl;
-
-
+		mainData.readLeftVentriclePVGraphResultFile(InputData,logFile);
+		mainData.calcLeftCavityVolumes(InputData,logFile);
 		leftCavityVolumesList[i] = mainData.getLeftCavityVolumes();
 		leftCavityPressuresList[i] = mainData.getLeftCavityPressures();
 
-		rightCavityVolumesList[i] = mainData.getRightCavityVolumes();
-		rightCavityPressuresList[i] = mainData.getRightCavityPressures();
+		if(isRV == 1){
+			mainData.readRightVentriclePVGraphResultFile(InputData,logFile);
+			mainData.calcRightCavityVolumes(InputData,logFile);
+			rightCavityVolumesList[i] = mainData.getRightCavityVolumes();
+			rightCavityPressuresList[i] = mainData.getRightCavityPressures();
+		}
 
-
-		mainData.syncCardiacTimeStepsAndResults(InputData,logFile);
+		if(InputData->getValue("standardiseStep") == 1)
+			mainData.syncCardiacTimeStepsAndResults(InputData,logFile);
 
 		//! Free memory
 //		mainData.delMeshData();
@@ -141,13 +135,43 @@ void Cardiac::loadSelectedData(DataContainer* problemData,
 		stepHistoryList[i] = mainData.getStepValueVec();
 
 		// Standardise the degrees of Freedom
-		if (InputData->getValue("standardiseDOF") == 1){
-			standardiseDOF(mainData, problemData, InputData, logFile);
-		}
-
+//		if (InputData->getValue("standardiseDOF") == 1){
+//			standardiseDOF(mainData, problemData, InputData, logFile);
+//		}
 	}
+
 	cout << "-----------------------------" << endl;
 
+
+	if(InputData->getValue("standardiseDOF") == 1){
+
+//		cout << endl;
+//		logFile << endl;
+
+		cout << "DOF Standardisation activated" << endl;
+		logFile << "DOF Standardisation activated" << endl;
+
+		logFile << "******* DOF Standardisation  *******" << endl;
+
+		if(InputData->getValue("gridNodesType") == 1 ){
+
+			DOFStandard->setData(myData);
+
+			DOFStandard->initDOFStandardisation(problemData, myDatabase,InputData,
+					logFile);
+
+			myGrid = DOFStandard->getGrid();
+		}
+
+		for (int i = 0; i < supportDataID.size(); i++) {
+			Data& mainData = myDatabase.getDataId(supportDataID[i]);
+
+			cout << "Standardising Data: " << i << endl;
+			logFile << "Standardising Data: " << i << endl;
+
+			standardiseDOF(mainData, problemData, InputData, logFile);
+		}
+	}
 }
 
 /*!****************************************************************************/
@@ -242,7 +266,12 @@ void Cardiac::loadSelectedData(DataContainer* problemData,
 void Cardiac::additionalPostProcessingFunctions(DataContainer* problemData,
 			InputFileData* InputData, ofstream& logFile){
 
-	myData.calcLeftAndRightCavityVolumes(InputData,logFile);
+	myData.calcLeftCavityVolumes(InputData,logFile);
+
+	int isRV = InputData->getValue("isRightVentriclePresent");
+	if(isRV == 1){
+		myData.calcRightCavityVolumes(InputData,logFile);
+	}
 
 }
 
@@ -251,8 +280,7 @@ void Cardiac::additionalPostProcessingFunctions(DataContainer* problemData,
 void Cardiac::preROMCalculationFunctions(DataContainer* problemData,
 		InputFileData* InputData, ofstream& logFile) {
 
-//	cout << "In Cardiac::preROMCalculationFunctions" << endl;
-//	logFile << "In Cardiac::preROMCalculationFunctions" << endl;
+	// Standardise the left and right cavity pressures
 
 	// =========================================================================
 	// Left cavity pressure
@@ -267,7 +295,8 @@ void Cardiac::preROMCalculationFunctions(DataContainer* problemData,
 		problemData->getDbMatrixVec("resultList").push_back(lpMat);
 	}
 
-	StepStandard->standardise(problemData, InputData, logFile);
+	if(InputData->getValue("standardiseStep") == 1)
+		StepStandard->standardise(problemData, InputData, logFile);
 
 	dbMatrix leftCavityPressuresList(supportDataID.size(), dbVector());
 	for (int i = 0; i < supportDataID.size(); i++) {
@@ -298,41 +327,46 @@ void Cardiac::preROMCalculationFunctions(DataContainer* problemData,
 	// =========================================================================
 	// Right cavity pressure
 	// =========================================================================
-	vector<dbMatrix>().swap(problemData->getDbMatrixVec("resultList"));
-	dbVector rightPressure;
-	for (int i = 0; i < supportDataID.size(); i++) {
-		rightPressure =
-				myDatabase.getDataId(supportDataID[i]).getRightCavityPressures();
-		dbMatrix rpMat(1, rightPressure);
-		problemData->getDbMatrixVec("resultList").push_back(rpMat);
-	}
-
-	StepStandard->standardise(problemData, InputData, logFile);
-
-	dbMatrix rightCavityPressuresList(supportDataID.size(), dbVector());
-	for (int i = 0; i < supportDataID.size(); i++) {
-		myDatabase.getDataId(supportDataID[i]).getRightCavityPressures() =
-				problemData->getDbMatrixVec("resultList")[i][0];
-
-		rightCavityPressuresList[i] =
-				problemData->getDbMatrixVec("resultList")[i][0];
-		printVector(
-				myDatabase.getDataId(supportDataID[i]).getRightCavityPressures(),
-				"getRightCavityPressures", logFile);
-	}
-	vector<dbMatrix>().swap(problemData->getDbMatrixVec("resultList"));
-
-	dbVector interplrightCavityPressures;
-	for (int i = 0; i < rightCavityPressuresList[0].size(); i++) {
-		double sum = 0;
-		for (int j = 0; j < rightCavityPressuresList.size(); j++) {
-			sum += rightCavityPressuresList[j][i] * myData.getInterpolants()[j];
+	int isRV = InputData->getValue("isRightVentriclePresent");
+	if(isRV == 1){
+		vector<dbMatrix>().swap(problemData->getDbMatrixVec("resultList"));
+		dbVector rightPressure;
+		for (int i = 0; i < supportDataID.size(); i++) {
+			rightPressure =
+					myDatabase.getDataId(supportDataID[i]).getRightCavityPressures();
+			dbMatrix rpMat(1, rightPressure);
+			problemData->getDbMatrixVec("resultList").push_back(rpMat);
 		}
-		interplrightCavityPressures.push_back(sum);
-	}
-	myData.getRightCavityPressures() = interplrightCavityPressures;
 
-	printVector(myData.getRightCavityPressures(),
-			"myData.getRightCavityPressures()", logFile);
+		if(InputData->getValue("standardiseStep") == 1)
+			StepStandard->standardise(problemData, InputData, logFile);
+
+		dbMatrix rightCavityPressuresList(supportDataID.size(), dbVector());
+		for (int i = 0; i < supportDataID.size(); i++) {
+			myDatabase.getDataId(supportDataID[i]).getRightCavityPressures() =
+					problemData->getDbMatrixVec("resultList")[i][0];
+
+			rightCavityPressuresList[i] =
+					problemData->getDbMatrixVec("resultList")[i][0];
+			printVector(
+					myDatabase.getDataId(supportDataID[i]).getRightCavityPressures(),
+					"getRightCavityPressures", logFile);
+		}
+
+		dbVector interplrightCavityPressures;
+		for (int i = 0; i < rightCavityPressuresList[0].size(); i++) {
+			double sum = 0;
+			for (int j = 0; j < rightCavityPressuresList.size(); j++) {
+				sum += rightCavityPressuresList[j][i] * myData.getInterpolants()[j];
+			}
+			interplrightCavityPressures.push_back(sum);
+		}
+		myData.getRightCavityPressures() = interplrightCavityPressures;
+
+		printVector(myData.getRightCavityPressures(),
+				"myData.getRightCavityPressures()", logFile);
+	}
+
+	vector<dbMatrix>().swap(problemData->getDbMatrixVec("resultList"));
 
 }

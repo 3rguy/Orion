@@ -1,4 +1,4 @@
-// Stores all properties of a single integration point.
+/// Stores all properties of a single integration point.
 
 #ifndef IntegrationPoint_h_
 #define IntegrationPoint_h_
@@ -17,50 +17,50 @@ class IntegrationPoint {
     IntegrationPoint();
     ~IntegrationPoint() {};
 
-    // Global index datum manipulating 
+    /// Global index datum manipulating
     void setGlobalID(int idx);
     int& getGlobalID() { return globalID; };
 
     int& getMaterialID() { return materialID; };
 
-    // info relating the element this Gauss point belongs to
+    /// info relating the element this Gauss point belongs to
     intVector& getElementInfo() { return elementInfo; };
 
-    // Weight data manipulating 
+    /// Weight data manipulating
     dbVector& getAllIntWeights() { return weights; };
     double& getIntWeight(int ID);
     double& getWeight() { return getIntWeight(0); };
     void setWeight(int ID,double value);
     void setWeight(double value) { setWeight(0,value); };
 
-    // Coordinates data manipulating 
+    /// Coordinates data manipulating
     void setCoords(double coord1,double coord2,double coord3);
     void setCoords(dbVector& vec) { coords = vec; };
     double& getCoord(int idx) { return coords[idx]; };
     dbVector& getCoords() { return coords; };
 
-    // Supporting particle data manipulating
+    /// Supporting particle data manipulating
     void setSupportPtcle(int particle);
     void checkSuppPtclsSize(int size);
     int& getSupportPtcle(int idx) { return supportingPtcls[idx]; };
     intVector& getSupportPtcls() { return supportingPtcls; };
     int getSupportCounts() { return supportingPtcls.size(); };
 
-    // MaxEnt stuff
+    /// MaxEnt stuff
 
-    // Local Minimum Distance between particles
+    /// Local Minimum Distance between particles
     void setLocalMinPtcleDistance(double localMinPtcleDist);
     double& getLocalMinPtcleDistance(){ return localMinPtcleDistance;};
 
     dbMatrix& getFEShapeFuncDerivs() { return feShapeFuncDerivs; };
 
-    // Shape functions data manipulating 
+    /// Shape functions data manipulating
     void setShapeFuncsSize(int& size);
     void setShapeFuncs(int& size,dbVector& sFuncs);
     double& getShapeFunc(int idx) { return shapeFuncs[idx]; };
     dbVector& getShapeFuncs() { return shapeFuncs; };
 
-    // Derivated shape functions data manipulating 
+    /// Derivated shape functions data manipulating
     void setFirstDerivShapesSize(int& size);
     void setSecondDerivShapesSize(int& size);
     void setFirstDerivShapes(int& size,dbMatrix& firstDerivShapes);
@@ -73,13 +73,13 @@ class IntegrationPoint {
     dbMatrix& getFirstDerivShapes() { return firstDerivShapeFuncs; };
     dbMatrix& getSecondDerivShapes() { return secondDerivShapeFuncs; };
 
-    // Idenfification from local to global degrees of freedom.
+    /// Idenfification from local to global degrees of freedom.
     void setGlobalDOF(int idx,int value);
     int& getGlobalDOF(int idx) { return globalDOF[idx]; };
     intVector& getAllGlobalDOF() { return globalDOF; };
     void setGlobalDOFSize(int size);
 
-    // Load data manipulating.
+    /// Load data manipulating.
     double& getSurfacePressure(int ID);
     double& getSurfacePressure() { return getSurfacePressure(0); };
 
@@ -92,6 +92,11 @@ class IntegrationPoint {
     dbVector& getTraction(int ID);
     blVector& getTractionDOF() { return getTractionDOF(0); };
     dbVector& getTraction() { return getTraction(0); };
+
+    blVector& getFluidVolumeFluxDOF(int ID);
+    dbVector& getFluidVolumeFlux(int ID);
+    blVector& getFluidVolumeFluxDOF() { return getFluidVolumeFluxDOF(0); };
+    dbVector& getFluidVolumeFlux() { return getFluidVolumeFlux(0); };
 
     blVector& getBodyForceDOF(int ID);
     dbVector& getBodyForce(int ID);
@@ -118,7 +123,7 @@ class IntegrationPoint {
     blVector& getBodyElectricChargeDOF() { return getBodyElectricChargeDOF(0); };
     dbVector& getBodyElectricCharge() { return getBodyElectricCharge(0); };
 
-    // Dirichlet boundary conditions
+    /// Dirichlet boundary conditions
     blVector& getDeformationBoundDOF(int ID);
     dbVector& getDeformationBoundConds(int ID);
     blVector& getDeformationBoundDOF() { return getDeformationBoundDOF(0); };
@@ -126,7 +131,7 @@ class IntegrationPoint {
     dbVector& getDeltaDeformationBoundConds(int ID);
     dbVector& getInitialDeformationBoundConds(int ID);
 
-    // electric boundary conditions
+    /// electric boundary conditions
     blVector& getElectricBoundDOF(int ID);
     dbVector& getElectricBoundConds(int ID);
     blVector& getElectricBoundDOF() { return getElectricBoundDOF(0); };
@@ -134,7 +139,15 @@ class IntegrationPoint {
     dbVector& getDeltaElectricBoundConds(int ID);
     dbVector& getInitialElectricBoundConds(int ID);
 
-    // depolarization time boundary conditions
+    /// TPM boundary conditions
+    blVector& getTPMBoundDOF(int ID);
+    dbVector& getTPMBoundConds(int ID);
+    blVector& getTPMBoundDOF() { return getTPMBoundDOF(0); };
+    dbVector& getTPMBoundConds() { return getTPMBoundConds(0); };
+    dbVector& getDeltaTPMBoundConds(int ID);
+    dbVector& getInitialTPMBoundConds(int ID);
+
+    /// depolarization time boundary conditions
     blVector& getDepolarisationBoundDOF(int ID);
     dbVector& getDepolarisationBoundConds(int ID);
     blVector& getDepolarisationBoundDOF() { return getElectricBoundDOF(0); };
@@ -142,7 +155,7 @@ class IntegrationPoint {
     dbVector& getDeltaDepolarisationBoundConds(int ID);
     dbVector& getInitialDepolarisationBoundConds(int ID);
 
-    // Surface normal for boundary Gauss points only.
+    /// Surface normal for boundary Gauss points only.
     void setSurfaceNormal(dbVector& normal);
     dbVector& getSurfaceNormal() { return surfaceNormal; }; 
 
@@ -151,53 +164,53 @@ class IntegrationPoint {
 
 
     /*******************************************************************/
-    // history variables
+    /// history variables
 
     dbVector& getStepDisplacement() { return stepDisplacement; };
     dbVector& getStepRotation() { return stepRotation; };
     dbVector& getVelocity() { return velocity; };
 
-    // needed for energy conserving dynamics (Sansour)
+    /// needed for energy conserving dynamics (Sansour)
     dbMatrix& getDeformationGradient();
 
-    // Return the intermediate deformation gradient which is a history
-    // variable needed when undeformed configuration is unknown; transfers
-    // undeformed to deformed configuration
+    /// Return the intermediate deformation gradient which is a history
+    /// variable needed when undeformed configuration is unknown; transfers
+    /// undeformed to deformed configuration
     dbMatrix& getIntermediateDefGradient();
     double& getIntermediateJacobian();
 
-    // Cosserat continuum
+    /// Cosserat continuum
     dbMatrix& getRotationTens() { return rotationTensor; };
     dbMatrix& getOldRotationTens() { return oldRotationTensor; };
 
     dbMatrix& getSecondStrainTens() { return  secondStrainTens; };
     dbMatrix& getOldSecondStrainTens() { return oldSecondStrainTens; };
 
-    // plasticity history variables
+    /// plasticity history variables
     dbMatrix& getPlasticityHistory() { return plasticityHistory; };
 
-    // logarithmic strain computation via Taylor expansion
+    /// logarithmic strain computation via Taylor expansion
     dbMatrix& getStrainTens() { return strainTens; };
     dbMatrix& getLogStrainTens() { return logStrainTens; };
     
 
     /*******************************************************************/
-    // Ghost boundary
+    /// Ghost boundary
     intVector& getSupportBoundGhostPtcls() 
       { return supportBoundGhostPtcls; };
 
-    // get the penalty parameters for this Gauss point for all three
-    // coordinate directions
+    /// get the penalty parameters for this Gauss point for all three
+    /// coordinate directions
     dbVector& getPenaltyParameters() { return penaltyParameters; }; 
 
     /*******************************************************************/
-    // anisotropy
-    dbMatrix& getMaterialDirections() { return materialDirections; };
+    /// anisotropy
+    dbMatrix3& getMaterialDirections() { return materialDirections; };
 
     /*******************************************************************/
-    // cardiac mechanics 
+    /// cardiac mechanics
 
-    // active tension (kerckhoffs)
+    /// active tension (kerckhoffs)
     double& getLc0() { return lc0; };
     double& getSarcomereLength() { return sarcomereLength; };
 
@@ -207,13 +220,13 @@ class IntegrationPoint {
     dbVector& getContractileLengthHistory()
     { return contractileLengthHistory;};
 
-    //active tension for the current calculation step.
-    //set at step 0 and not changed throughout.
+    ///active tension for the current calculation step.
+    ///set at step 0 and not changed throughout.
     double& getActiveTension() { return activeTension;};
     double& getActiveTensionVariation()
       { return activeTensionVariation;};
 
-    double& getLR() { return lR;};
+    double& getRestSarcomereLength() { return restSarcomereLength;};
 
     double& getDepolarisationTime() { return depolarisationTime;};
 
@@ -233,32 +246,39 @@ class IntegrationPoint {
 
     intVector supportingPtcls;
 
-    // MaxEnt stuff
+    /// MaxEnt stuff
     double localMinPtcleDistance;
     dbMatrix feShapeFuncDerivs;
 
-    // meshfree shape functions
+    /// meshfree shape functions
     dbVector shapeFuncs;
     dbMatrix firstDerivShapeFuncs;
     dbMatrix secondDerivShapeFuncs;
 
     intVector globalDOF;
 
-    // deformation boundary conditions
+    /// deformation boundary conditions
     blMatrix deformationBoundDOF;
     dbMatrix deformationBoundConds;
 
     dbMatrix deltaDeformationBoundConds;
     dbMatrix initialDeformationBoundConds;
 
-    // electric boundary conditions
+    /// electric boundary conditions
     blMatrix electricBoundDOF;
     dbMatrix electricBoundConds;
 
     dbMatrix deltaElectricBoundConds;
     dbMatrix initialElectricBoundConds;
 
-    // depolarisation boundary conditions
+    /// TPM boundary consitions
+    blMatrix TPMBoundDOF;
+    dbMatrix TPMBoundConds;
+
+    dbMatrix deltaTPMBoundConds;
+    dbMatrix initialTPMBoundConds;
+
+    /// depolarisation boundary conditions
     blMatrix depolarisationBoundDOF;
     dbMatrix depolarisationBoundConds;
 
@@ -268,12 +288,14 @@ class IntegrationPoint {
 
 
     /*******************************************************************/
-    // loading
+    /// loading
     dbVector surfacePressureLoads;
     blMatrix lineForceDOF;
     dbMatrix lineForceLoads;
     blMatrix tractionDOF;
     dbMatrix tractionLoads;
+    blMatrix fluidVolumeFluxDOF;
+    dbMatrix fluidVolumeFluxLoads;
     blMatrix bodyForceDOF;
     dbMatrix bodyForceLoads;
 
@@ -291,13 +313,13 @@ class IntegrationPoint {
     dbMatrix surfaceTangents;
 
     /*******************************************************************/
-    // history variables
+    /// history variables
     dbVector stepDisplacement,stepRotation;
     dbVector velocity;
     dbMatrix deformationGradient;
 
-    // needed when undeformed configuration is unknown; transfers
-    // undeformed to deformed configuration
+    /// needed when undeformed configuration is unknown; transfers
+    /// undeformed to deformed configuration
     dbMatrix intermediateDefGradient;
     double intermediateJacobian;
 
@@ -306,36 +328,36 @@ class IntegrationPoint {
     dbMatrix oldRotationTensor;
     dbMatrix oldSecondStrainTens;
 
-    // plasticity history variables
+    /// plasticity history variables
     dbMatrix plasticityHistory;
 
-    // logarithmic strain computation via Taylor expansion
+    /// logarithmic strain computation via Taylor expansion
     dbMatrix strainTens;
     dbMatrix logStrainTens;
 
     /*******************************************************************/
-    // Ghost boundary
+    /// Ghost boundary
     intVector supportBoundGhostPtcls;
 
     dbVector penaltyParameters;
 
     /********************************************************************/
-    // anisotropy
-    dbMatrix materialDirections;
+    /// anisotropy
+    dbMatrix3 materialDirections;
 
     /********************************************************************/
-    // active tension (kerckhoffs)
-    double lc0;  //length of contractile element
-    double sarcomereLength; //sarcomere length
+    /// active tension (kerckhoffs)
+    double lc0;  ///length of contractile element
+    double sarcomereLength; ///sarcomere length
     dbVector sarcomereLengthHistory;
     dbVector contractileLengthHistory;
-    double activeTension; // active tension for current calculation step
+    double activeTension; /// active tension for current calculation step
     double activeTensionVariation;
-    double lR;
+    double restSarcomereLength;
 
 
     /********************************************************************/
-    // electrophysiology
+    /// electrophysiology
 
     double depolarisationTime;
 

@@ -65,7 +65,8 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
   while(inputFile >> name && name != "END") {
 
     if(name == "FEM_GEOMETRY" || name == "MESHLESS_GEOMETRY"
-      || name == "MODEL_INPUT" || name == "SIMULATION_CONTROL_INPUT" || name == "CALCULATION_CONTROL_INPUT"
+      || name == "MODEL_INPUT" || name == "SIMULATION_CONTROL_INPUT"
+      || name == "CALCULATION_CONTROL_INPUT"
       || name == "EQUATION_SOLVER_CONTROL_INPUT"
       || name == "POSTPROCESSING_INPUT" || name == "GRAPHS_INPUT"
       || name == "RESULTANT_REACTION_INPUT") {
@@ -134,7 +135,8 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
   while(inputFile >> name && name != "END") {
 
     if(name == "MESHLESS_GEOMETRY" || name == "MODEL_INPUT"
-      || name == "SIMULATION_CONTROL_INPUT"  || name == "CALCULATION_CONTROL_INPUT"
+      || name == "SIMULATION_CONTROL_INPUT"
+      || name == "CALCULATION_CONTROL_INPUT"
       || name == "EQUATION_SOLVER_CONTROL_INPUT"
       || name == "POSTPROCESSING_INPUT" || name == "GRAPHS_INPUT"
       || name == "RESULTANT_REACTION_INPUT"
@@ -210,7 +212,8 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
   while(name != "GRAPHS_INPUT" && name != "RESULTANT_REACTION_INPUT"
     && name != "BOUNDARY_CONDITIONS_INPUT" && name != "END") {
 
-    while(getline(inputFile,line) && line.empty());
+    while(getline(inputFile,line) && line.empty())
+      ;
 
     stringstream ss(line);
     ss >> name;
@@ -219,7 +222,8 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       || name == "BOUNDARY_CONDITIONS_INPUT" || name == "END") break;
 
     else if(name == "MESHLESS_GEOMETRY" || name == "MODEL_INPUT"
-      || name == "SIMULATION_CONTROL_INPUT"  || name == "CALCULATION_CONTROL_INPUT"
+      || name == "SIMULATION_CONTROL_INPUT"
+      || name == "CALCULATION_CONTROL_INPUT"
       || name == "EQUATION_SOLVER_CONTROL_INPUT"
       || name == "POSTPROCESSING_INPUT") {
 
@@ -250,14 +254,15 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
   while(name != "RESULTANT_REACTION_INPUT"
     && name != "BOUNDARY_CONDITIONS_INPUT" && name != "END") {
 
-    while(getline(inputFile,line) && line.empty());
+    while(getline(inputFile,line) && line.empty())
+      ;
     stringstream ss(line);
     ss >> name;
 
     if(name == "RESULTANT_REACTION_INPUT" || name == "BOUNDARY_CONDITIONS_INPUT"
       || name == "END") break;
 
-    else if(name == "GRAPHS_INPUT" && ss.rdstate() == ios::failbit) {
+    else if(name == "GRAPHS_INPUT" && ss.rdstate() != ios::failbit) {
 
       //logFile << "*****************************************************" << endl;
       //logFile << name << endl;
@@ -394,46 +399,47 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
   }
   
   // Write output in the log file.
-  logFile << "**************************************************" << endl;
-  logFile << "GRAPHS_INPUT" << endl;
-  for(int i = 0;i < graphs.size();i++) {
-    int& ID = graphs[i].getID();
-    string& type = graphs[i].getType();
-    logFile << i << ".) " << type << " ID=" << ID << ": " << endl;
-    logFile << "abscissa-" << graphs[i].getAbscissaLabel() << "scaling="
-        << graphs[i].getAbscissaScaling() << endl;
-    logFile << "ordinate-" << graphs[i].getOrdinateLabel() << "scaling="
-        << graphs[i].getOrdinateScaling() << endl;
-    if(graphs[i].getLoadingConditionID() != -1) logFile << "loadCondID="
-        << graphs[i].getLoadingConditionID() << endl;
-    if(graphs[i].getDirichletConditionID() != -1) logFile << "DirichletCondID="
-        << graphs[i].getDirichletConditionID() << endl;
-    if(graphs[i].getDirichletControlID() != -1) logFile << "DirichletControlID="
-        << graphs[i].getDirichletControlID() << endl;
-    logFile << "node=" << graphs[i].getNode() << endl;
-    logFile << "DOF=" << graphs[i].getDOF() << endl;
-  }
+//  logFile << "**************************************************" << endl;
+//  logFile << "GRAPHS_INPUT" << endl;
+//  for(int i = 0;i < graphs.size();i++) {
+//    int& ID = graphs[i].getID();
+//    string& type = graphs[i].getType();
+//    logFile << i << ".) " << type << " ID=" << ID << ": " << endl;
+//    logFile << "abscissa-" << graphs[i].getAbscissaLabel() << "scaling="
+//        << graphs[i].getAbscissaScaling() << endl;
+//    logFile << "ordinate-" << graphs[i].getOrdinateLabel() << "scaling="
+//        << graphs[i].getOrdinateScaling() << endl;
+//    if(graphs[i].getLoadingConditionID() != -1) logFile << "loadCondID="
+//        << graphs[i].getLoadingConditionID() << endl;
+//    if(graphs[i].getDirichletConditionID() != -1) logFile << "DirichletCondID="
+//        << graphs[i].getDirichletConditionID() << endl;
+//    if(graphs[i].getDirichletControlID() != -1) logFile << "DirichletControlID="
+//        << graphs[i].getDirichletControlID() << endl;
+//    logFile << "node=" << graphs[i].getNode() << endl;
+//    logFile << "DOF=" << graphs[i].getDOF() << endl;
+//  }
 
   /*********************************************************************/
   // resultant force and torque on the specified surfaces
-  //int currentElem,currentSurface,currentVolume,elem,volume;
   bool resultantInternalTraction = false;
   bool resultantInternalSurfaceTorque = false;
 
   int currentElem,ID,dof,count;
   int usedDims = 3;
 
-  Condition* condition;
+  ResultantReactionCondition* reactionCondition;
   intVector* condElemNodes;
 
-  Condition dummyCond;
+  ResultantReactionCondition reactionDummyCond;
+  double vecNorm;
 
   while(name != "LOAD_CONDITIONS_INPUT" && name != "BOUNDARY_CONDITIONS_INPUT"
     && name != "END") {
 
-    if(dummyCond.isReactionType(name)) {
+    if(reactionDummyCond.isResultantReactionType(name)) {
 
-      while(getline(inputFile,line) && line.empty());
+      while(getline(inputFile,line) && line.empty())
+        ;
       stringstream ss2(line);
       ss2 >> tag >> ID; // ID
       ID -= 1;
@@ -450,11 +456,11 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       else if(ID >= resultantReactions.size()) resultantReactions.resize(
           ID + 1);
 
-      condition = &resultantReactions[ID];
+      reactionCondition = &resultantReactions[ID];
     }
 
     else if(name != "END" && name != "BOUNDARY_CONDITIONS_INPUT"
-      && !dummyCond.isReactionType(name)) {
+      && !reactionDummyCond.isResultantReactionType(name)) {
 
       while(getline(inputFile,line) && line.empty())
         ;
@@ -471,11 +477,11 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
     
     // ================================================================
     // read-in the properties of the current condition
-    int& condID = ( *condition).getID();
-    string& condType = ( *condition).getType();
+    int& condID = ( *reactionCondition).getID();
+    string& condType = ( *reactionCondition).getType();
 
-    vector<ConditionElement>& condElems = ( *condition).getElements();
-    blVector& condDOFs = ( *condition).getConditionDOFs();
+    vector<ConditionElement>& condElems = ( *reactionCondition).getElements();
+    blVector& condDOFs = ( *reactionCondition).getConditionDOFs();
 
     conditionSet[name] = true;
     condID = ID;
@@ -492,8 +498,10 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       stringstream ss2(line);
       ss2 >> tag;
 
-      if(( *condition).isReactionType(tag) || tag == "BOUNDARY_CONDITIONS_INPUT"
-        || tag == "LOAD_CONDITIONS_INPUT" || tag == "END") {
+      if(( *reactionCondition).isResultantReactionType(tag)
+        || tag == "BOUNDARY_CONDITIONS_INPUT" || tag == "LOAD_CONDITIONS_INPUT"
+        || tag == "ANISOTROPY_INPUT" || tag == "CARDIAC_INPUT"
+        || tag == "END") {
         name = tag;
         break; // new reaction or end of reaction block
       }
@@ -534,18 +542,21 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
 
   /**********************************************************************/
   // Read the Dirichlet and loading conditions.
+  Condition* dirichletCondition;
+  Condition dirichletDummyCond;
+
   while(name != "END") {
 
-    if(dummyCond.isDirichletType(name)) {
+    if(dirichletDummyCond.isDirichletType(name)) {
 
-      while(getline(inputFile,line) && line.empty());
+      while(getline(inputFile,line) && line.empty())
+        ;
       stringstream ss2(line);
       ss2 >> tag >> ID; // ID
       ID -= 1;
 
-      if(ID >= dirichletConditions.size()) dirichletConditions.resize(
-          ID + 1);
-      condition = &dirichletConditions[ID];
+      if(ID >= dirichletConditions.size()) dirichletConditions.resize(ID + 1);
+      dirichletCondition = &dirichletConditions[ID];
 
       if(dirichletConditions[ID].getType() != "none") {
         logFile << "In InputFileData::readInputFile condition '" << name
@@ -554,15 +565,16 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       }
     }
 
-    else if(dummyCond.isLoadingType(name)) {
+    else if(dirichletDummyCond.isLoadingType(name)) {
 
-      while(getline(inputFile,line) && line.empty());
+      while(getline(inputFile,line) && line.empty())
+        ;
       stringstream ss2(line);
       ss2 >> tag >> ID; // ID
       ID -= 1;
 
       if(ID >= loadingConditions.size()) loadingConditions.resize(ID + 1);
-      condition = &loadingConditions[ID];
+      dirichletCondition = &loadingConditions[ID];
 
       if(loadingConditions[ID].getType() != "none") {
         logFile << "In InputFileData::readInputFile condition '" << name
@@ -571,15 +583,17 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       }
 
     }
-    else if(dummyCond.isDirichletControlType(name)) {
+    else if(dirichletDummyCond.isDirichletControlType(name)) {
 
-      while(getline(inputFile,line) && line.empty());
+      while(getline(inputFile,line) && line.empty())
+        ;
       stringstream ss2(line);
       ss2 >> tag >> ID; // ID
       ID -= 1;
 
-      if(ID >= dirichletControlConditions.size()) dirichletControlConditions.resize(ID + 1);
-      condition = &dirichletControlConditions[ID];
+      if(ID >= dirichletControlConditions.size()) dirichletControlConditions.resize(
+          ID + 1);
+      dirichletCondition = &dirichletControlConditions[ID];
 
       if(dirichletControlConditions[ID].getType() != "none") {
         logFile << "In InputFileData::readInputFile condition '" << name
@@ -588,16 +602,25 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       }
 
     }
-    else if(name != "END" && !dummyCond.isDirichletType(name)
-      && !dummyCond.isLoadingType(name)
-      && !dummyCond.isDirichletControlType(name)) {
+    else if(name != "END" && name != "ANISOTROPY_INPUT"
+      && name != "CARDIAC_INPUT" && !dirichletDummyCond.isDirichletType(name)
+      && !dirichletDummyCond.isLoadingType(name)
+      && !dirichletDummyCond.isDirichletControlType(name)) {
 
-      while(getline(inputFile,line) && line.empty());
+      while(getline(inputFile,line) && line.empty())
+        ;
       stringstream ss(line);
       ss >> name;
       continue;
     }
-    else if(name == "END") break;
+    else if(name == "END" || name == "ANISOTROPY_INPUT"
+      || name == "CARDIAC_INPUT") {
+
+//      while(getline(inputFile,line) && line.empty());
+//      stringstream ss(line);
+//      ss >> name;
+      break;
+    }
     else {
       logFile << "In InputFileData::readInputFile condition '" << name
           << "' is not supported." << endl;
@@ -606,13 +629,13 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
 
     // ================================================================
     // read-in the properties of the current condition
-    int& condID = ( *condition).getID();
-    string& condType = ( *condition).getType();
+    int& condID = ( *dirichletCondition).getID();
+    string& condType = ( *dirichletCondition).getType();
 
-    vector<ConditionElement>& condElems = ( *condition).getElements();
-    dbVector& condNormal = ( *condition).getSurfaceNormal();
-    blVector& condDOFs = ( *condition).getConditionDOFs();
-    dbVector& condValues = ( *condition).getConditionValues();
+    vector<ConditionElement>& condElems = ( *dirichletCondition).getElements();
+    dbVector& condNormal = ( *dirichletCondition).getSurfaceNormal();
+    blVector& condDOFs = ( *dirichletCondition).getConditionDOFs();
+    dbVector& condValues = ( *dirichletCondition).getConditionValues();
     allocateArray(condNormal,usedDims);
 
     conditionSet[name] = true;
@@ -630,9 +653,11 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       stringstream ss2(line);
       ss2 >> tag;
 
-      if(( *condition).isDirichletType(tag) || ( *condition).isLoadingType(tag)
-        || ( *condition).isDirichletControlType(tag)
-        || tag == "LOAD_CONDITIONS_INPUT" || tag == "END") {
+      if(( *dirichletCondition).isDirichletType(tag)
+        || ( *dirichletCondition).isLoadingType(tag)
+        || ( *dirichletCondition).isDirichletControlType(tag)
+        || tag == "LOAD_CONDITIONS_INPUT" || tag == "ANISOTROPY_INPUT"
+        || tag == "CARDIAC_INPUT" || tag == "END") {
         name = tag;
         break; // new condition or end of Dirichlet conditions
       }
@@ -644,7 +669,7 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       }
       else if(tag == "node") {
         ss2 >> particle;
-        ( *condition).getNodes(logFile).push_back(particle);
+        ( *dirichletCondition).getNodes(logFile).push_back(particle);
         continue;
       }
       else if(tag == "nodes") {
@@ -692,8 +717,8 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
       else if(tag == "function") {
 
         ss2 >> value;  // function ID
-        ( *condition).getFunction() = value;
-        dbVector& functionParams = ( *condition).getFunctionParams();
+        ( *dirichletCondition).getFunction() = value;
+        dbVector& functionParams = ( *dirichletCondition).getFunctionParams();
 
         // loop over all function parameters: a0, a1, etc.
         if(functionParams.size() == 0) {
@@ -704,121 +729,193 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
 
         }
         // already stored
-        else while(ss2 >> tag >> value && ss2.rdstate() != ios::failbit);
+        else while(ss2 >> tag >> value && ss2.rdstate() != ios::failbit)
+          ;
+
+      }
+      // rotation axis for rotating conditions
+      else if(tag == "rotation-axis") {
+
+        dbVector& rotationAxis = ( *dirichletCondition).getRotationAxis();
+
+        // loop over all 3 dimensions
+        if(rotationAxis.size() == 0) {
+
+          while(ss2 >> value && ss2.rdstate() != ios::failbit)
+            pushBackVector(rotationAxis,value);
+
+        }
+        // already stored
+        else while(ss2 >> value && ss2.rdstate() != ios::failbit)
+          ;
+
+        // normalize vector
+        vecNorm = computeNorm(rotationAxis,2,logFile);
+        for(int k = 0;k < rotationAxis.size();k++)
+          rotationAxis[k] /= vecNorm;
+      }
+      // rotation point for rotating conditions
+      else if(tag == "rotation-center") {
+
+        dbVector& rotationCenter = ( *dirichletCondition).getRotationCenter();
+
+        // loop over all 3 dimensions
+        if(rotationCenter.size() == 0) {
+
+          while(ss2 >> value && ss2.rdstate() != ios::failbit)
+            pushBackVector(rotationCenter,value);
+
+        }
+        // already stored
+        else while(ss2 >> value && ss2.rdstate() != ios::failbit)
+          ;
 
       }
       // some other parameters
       else {
         ss2 >> value;
-        ( *condition).setParam(tag,value);
+        ( *dirichletCondition).setParam(tag,value);
       }
 
     }
 
   }
 
-  // Write output in the log file.
-  logFile << "*****************************************************" << endl;
-  logFile << "BOUNDARY_CONDITIONS_INPUT" << endl;
+  // check user-specified conditionTimeIncrement
   for(int i = 0;i < dirichletConditions.size();i++) {
-    logFile << "---------------------------------------------------" << endl;
     Condition& condition = dirichletConditions[i];
-    logFile << condition.getType() << "ID=" << condition.getID() << endl;
-    logFile << "controlMode=" << condition.getControlMode() << endl;
-    logFile << "function=" << condition.getFunction() << endl;
-    for(int j = 0;j < condition.getFunctionParams().size();j++)
-      logFile << "a" << j << "=" << condition.getFunctionParams()[j] << " ";
-    logFile << endl;
-    logFile << "factor=" << condition.getFactor() << endl;
-    logFile << "previousFactor=" << condition.getPreviousFactor() << endl;
-    logFile << "maxFactor=" << condition.getMaxFactor() << endl;
-    logFile << "minFactor=" << condition.getMinFactor() << endl;
-    dbVector& condNormal = condition.getSurfaceNormal();
-    for(int k = 0;k < condNormal.size();k++)
-      logFile << "normal[" << k << "]=" << condNormal[k] << endl;
-    blVector& condDOFs = condition.getConditionDOFs();
-    dbVector& condValues = condition.getConditionValues();
-    for(int k = 0;k < condDOFs.size();k++) {
-      if(condDOFs[k]) logFile << "condition[" << k << "]: DOF=" << k
-          << " value=" << condValues[k] << endl;
-    }
-    vector<ConditionElement>& condElems = condition.getElements();
-    for(int k = 0;k < condElems.size();k++) {
-      logFile << "Element " << condElems[k].getID() << endl;
-      logFile << "nodes: ";
-      intVector& elemNodes = condElems[k].getNodes();
-      for(int l = 0;l < elemNodes.size();l++)
-        logFile << elemNodes[l] << " ";
-      logFile << endl;
-    }
+    condition.checkConditionTimeIncrementLimits(
+        condition.getConditionTimeIncrement(),logFile);
   }
-  logFile << "======================================================" <<endl;
+
   for(int i = 0;i < dirichletControlConditions.size();i++) {
-    logFile << "---------------------------------------------------" << endl;
     Condition& condition = dirichletControlConditions[i];
-    logFile << condition.getType() << "ID=" << condition.getID() << endl;
-    logFile << "controlMode=" << condition.getControlMode() << endl;
-    logFile << "function=" << condition.getFunction() << endl;
-    for(int j = 0;j < condition.getFunctionParams().size();j++)
-      logFile << "a" << j << "=" << condition.getFunctionParams()[j] << " ";
-    logFile << endl;
-    logFile << "factor=" << condition.getFactor() << endl;
-    logFile << "previousFactor=" << condition.getPreviousFactor() << endl;
-    logFile << "maxFactor=" << condition.getMaxFactor() << endl;
-    logFile << "minFactor=" << condition.getMinFactor() << endl;
-    dbVector& condNormal = condition.getSurfaceNormal();
-    for(int k = 0;k < condNormal.size();k++)
-      logFile << "normal[" << k << "]=" << condNormal[k] << endl;
-    blVector& condDOFs = condition.getConditionDOFs();
-    dbVector& condValues = condition.getConditionValues();
-    for(int k = 0;k < condDOFs.size();k++) {
-      if(condDOFs[k]) logFile << "condition[" << k << "]: DOF=" << k
-          << " value=" << condValues[k] << endl;
-    }
-    vector<ConditionElement>& condElems = condition.getElements();
-    for(int k = 0;k < condElems.size();k++) {
-      logFile << "Element " << condElems[k].getID() << endl;
-      logFile << "nodes: ";
-      intVector& elemNodes = condElems[k].getNodes();
-      for(int l = 0;l < elemNodes.size();l++)
-        logFile << elemNodes[l] << " ";
-      logFile << endl;
-    }
+    condition.checkConditionTimeIncrementLimits(
+        condition.getConditionTimeIncrement(),logFile);
   }
-  logFile << "*****************************************************" << endl;
-  logFile << "LOADING_CONDITIONS" << endl;
+
   for(int i = 0;i < loadingConditions.size();i++) {
-    logFile << "---------------------------------------------------" << endl;
     Condition& condition = loadingConditions[i];
-    logFile << condition.getType() << "ID=" << condition.getID() << endl;
-    logFile << "function=" << condition.getFunction() << endl;
-    logFile << "factor=" << condition.getFactor() << endl;
-    logFile << "previousFactor=" << condition.getPreviousFactor() << endl;
-    logFile << "maxFactor=" << condition.getMaxFactor() << endl;
-    logFile << "minFactor=" << condition.getMinFactor() << endl;
-    if((bool) problemData["cardiacMechanicsProblem"] && condition.getType() == "Surface-Pressure-Loading") {
-      logFile << "endDiastolicPressure=" << condition.getEndDiastolicPressure() << endl;
-      logFile << "endIVCPressure=" << condition.getEndIVCPressure() << endl;
-    }
-    dbVector& condNormal = condition.getSurfaceNormal();
-    for(int k = 0;k < condNormal.size();k++)
-      logFile << "normal[" << k << "]=" << condNormal[k] << endl;
-    blVector& condDOFs = condition.getConditionDOFs();
-    dbVector& condValues = condition.getConditionValues();
-    for(int k = 0;k < condDOFs.size();k++) {
-      if(condDOFs[k]) logFile << "condition[" << k << "]: DOF=" << k
-          << " value=" << condValues[k] << endl;
-    }
-    vector<ConditionElement>& condElems = condition.getElements();
-    for(int k = 0;k < condElems.size();k++) {
-      logFile << "Element " << condElems[k].getID() << endl;
-      logFile << "nodes: ";
-      intVector& elemNodes = condElems[k].getNodes();
-      for(int l = 0;l < elemNodes.size();l++)
-        logFile << elemNodes[l] << " ";
-      logFile << endl;
-    }
+    condition.checkConditionTimeIncrementLimits(
+        condition.getConditionTimeIncrement(),logFile);
   }
+
+  // Write output in the log file.
+//  logFile << "*****************************************************" << endl;
+//  logFile << "BOUNDARY_CONDITIONS_INPUT" << endl;
+//  for(int i = 0;i < dirichletConditions.size();i++) {
+//    logFile << "---------------------------------------------------" << endl;
+//    Condition& condition = dirichletConditions[i];
+//    logFile << condition.getType() << "ID=" << condition.getID() << endl;
+//    logFile << "controlMode=" << condition.getControlMode() << endl;
+//    logFile << "function=" << condition.getFunction() << endl;
+//    for(int j = 0;j < condition.getFunctionParams().size();j++)
+//      logFile << "a" << j << "=" << condition.getFunctionParams()[j] << " ";
+//    logFile << endl;
+//    logFile << "factor=" << condition.getFactor() << endl;
+//    logFile << "previousFactor=" << condition.getPreviousFactor() << endl;
+//    logFile << "maxFactor=" << condition.getMaxFactor() << endl;
+//    logFile << "minFactor=" << condition.getMinFactor() << endl;
+//    dbVector& condNormal = condition.getSurfaceNormal();
+//    for(int k = 0;k < condNormal.size();k++)
+//      logFile << "normal[" << k << "]=" << condNormal[k] << endl;
+//    blVector& condDOFs = condition.getConditionDOFs();
+//    dbVector& condValues = condition.getConditionValues();
+//    for(int k = 0;k < condDOFs.size();k++) {
+//      if(condDOFs[k]) logFile << "condition[" << k << "]: DOF=" << k
+//          << " value=" << condValues[k] << endl;
+//    }
+//    vector<ConditionElement>& condElems = condition.getElements();
+//    for(int k = 0;k < condElems.size();k++) {
+//      logFile << "Element " << condElems[k].getID() << endl;
+//      logFile << "nodes: ";
+//      intVector& elemNodes = condElems[k].getNodes();
+//      for(int l = 0;l < elemNodes.size();l++)
+//        logFile << elemNodes[l] << " ";
+//      logFile << endl;
+//    }
+//  }
+//  logFile << "======================================================" << endl;
+//  for(int i = 0;i < dirichletControlConditions.size();i++) {
+//    logFile << "---------------------------------------------------" << endl;
+//    Condition& condition = dirichletControlConditions[i];
+//    logFile << condition.getType() << "ID=" << condition.getID() << endl;
+//    logFile << "controlMode=" << condition.getControlMode() << endl;
+//    logFile << "function=" << condition.getFunction() << endl;
+//    for(int j = 0;j < condition.getFunctionParams().size();j++)
+//      logFile << "a" << j << "=" << condition.getFunctionParams()[j] << " ";
+//    logFile << endl;
+//    logFile << "factor=" << condition.getFactor() << endl;
+//    logFile << "previousFactor=" << condition.getPreviousFactor() << endl;
+//    logFile << "maxFactor=" << condition.getMaxFactor() << endl;
+//    logFile << "minFactor=" << condition.getMinFactor() << endl;
+//    dbVector& condNormal = condition.getSurfaceNormal();
+//    for(int k = 0;k < condNormal.size();k++)
+//      logFile << "normal[" << k << "]=" << condNormal[k] << endl;
+//    dbVector& rotationAxis = condition.getRotationAxis();
+//    dbVector& rotationCenter = condition.getRotationCenter();
+//    for(int k = 0;k < rotationCenter.size();k++)
+//      logFile << "rotCenter[" << k << "]=" << rotationCenter[k] << endl;
+//    for(int k = 0;k < rotationAxis.size();k++)
+//      logFile << "rotAxis[" << k << "]=" << rotationAxis[k] << endl;
+//    blVector& condDOFs = condition.getConditionDOFs();
+//    dbVector& condValues = condition.getConditionValues();
+//    for(int k = 0;k < condDOFs.size();k++) {
+//      if(condDOFs[k]) logFile << "condition[" << k << "]: DOF=" << k
+//          << " value=" << condValues[k] << endl;
+//    }
+//    vector<ConditionElement>& condElems = condition.getElements();
+//    for(int k = 0;k < condElems.size();k++) {
+//      logFile << "Element " << condElems[k].getID() << endl;
+//      logFile << "nodes: ";
+//      intVector& elemNodes = condElems[k].getNodes();
+//      for(int l = 0;l < elemNodes.size();l++)
+//        logFile << elemNodes[l] << " ";
+//      logFile << endl;
+//    }
+//  }
+//  logFile << "*****************************************************" << endl;
+//  logFile << "LOADING_CONDITIONS" << endl;
+//  for(int i = 0;i < loadingConditions.size();i++) {
+//    logFile << "---------------------------------------------------" << endl;
+//    Condition& condition = loadingConditions[i];
+//    logFile << condition.getType() << "ID=" << condition.getID() << endl;
+//    logFile << "function=" << condition.getFunction() << endl;
+//    logFile << "factor=" << condition.getFactor() << endl;
+//    logFile << "previousFactor=" << condition.getPreviousFactor() << endl;
+//    logFile << "maxFactor=" << condition.getMaxFactor() << endl;
+//    logFile << "minFactor=" << condition.getMinFactor() << endl;
+//    if((bool) problemData["cardiacMechanicsProblem"]
+//      && condition.getType() == "Surface-Pressure-Loading") {
+//      logFile << "endDiastolicPressure=" << condition.getEndDiastolicPressure()
+//          << endl;
+//      logFile << "endIVCPressure=" << condition.getEndIVCPressure() << endl;
+//    }
+//    dbVector& condNormal = condition.getSurfaceNormal();
+//    for(int k = 0;k < condNormal.size();k++)
+//      logFile << "normal[" << k << "]=" << condNormal[k] << endl;
+//    dbVector& rotationAxis = condition.getRotationAxis();
+//    dbVector& rotationCenter = condition.getRotationCenter();
+//    for(int k = 0;k < rotationCenter.size();k++)
+//      logFile << "rotCenter[" << k << "]=" << rotationCenter[k] << endl;
+//    for(int k = 0;k < rotationAxis.size();k++)
+//      logFile << "rotAxis[" << k << "]=" << rotationAxis[k] << endl;
+//    blVector& condDOFs = condition.getConditionDOFs();
+//    dbVector& condValues = condition.getConditionValues();
+//    for(int k = 0;k < condDOFs.size();k++) {
+//      if(condDOFs[k]) logFile << "condition[" << k << "]: DOF=" << k
+//          << " value=" << condValues[k] << endl;
+//    }
+//    vector<ConditionElement>& condElems = condition.getElements();
+//    for(int k = 0;k < condElems.size();k++) {
+//      logFile << "Element " << condElems[k].getID() << endl;
+//      logFile << "nodes: ";
+//      intVector& elemNodes = condElems[k].getNodes();
+//      for(int l = 0;l < elemNodes.size();l++)
+//        logFile << elemNodes[l] << " ";
+//      logFile << endl;
+//    }
+//  }
 
   // =====================================================================
   // check condition numbering
@@ -827,15 +924,14 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
   for(int i = 0;i < dirichletConditions.size();i++) {
     Condition& condition = dirichletConditions[i];
     if(condition.getID() > dirichletConditions.size()) break;
-    else if(condition.getID() > -1)
-      usedConditionIDs[condition.getID()]=true;
+    else if(condition.getID() > -1) usedConditionIDs[condition.getID()] = true;
   }
 
-  for(int i=0;i<usedConditionIDs.size();i++) {
+  for(int i = 0;i < usedConditionIDs.size();i++) {
 
-    if(!usedConditionIDs[i]) {
+    if( !usedConditionIDs[i]) {
       logFile << "In InputFileData::readInputFile 'BOUNNDARY CONDITION' "
-      << "input data  don't have unique and consecutive IDs."<< endl;
+          << "input data  don't have unique and consecutive IDs." << endl;
       MPI_Abort(MPI_COMM_WORLD,1);
     }
 
@@ -846,15 +942,14 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
   for(int i = 0;i < dirichletControlConditions.size();i++) {
     Condition& condition = dirichletControlConditions[i];
     if(condition.getID() > dirichletControlConditions.size()) break;
-    else if(condition.getID() > -1)
-      usedConditionIDs[condition.getID()]=true;
+    else if(condition.getID() > -1) usedConditionIDs[condition.getID()] = true;
   }
 
-  for(int i=0;i<usedConditionIDs.size();i++) {
+  for(int i = 0;i < usedConditionIDs.size();i++) {
 
-    if(!usedConditionIDs[i]) {
+    if( !usedConditionIDs[i]) {
       logFile << "In InputFileData::readInputFile 'BOUNNDARY CONDITION' "
-      << "input data  don't have unique and consecutive IDs."<< endl;
+          << "input data  don't have unique and consecutive IDs." << endl;
       MPI_Abort(MPI_COMM_WORLD,1);
     }
 
@@ -865,27 +960,462 @@ void InputFileData::readInputFile(std::string& filename,std::ofstream& logFile) 
   for(int i = 0;i < loadingConditions.size();i++) {
     Condition& condition = loadingConditions[i];
     if(condition.getID() > loadingConditions.size()) break;
-    else if(condition.getID() > -1)
-      usedConditionIDs[condition.getID()]=true;
+    else if(condition.getID() > -1) usedConditionIDs[condition.getID()] = true;
   }
 
-  for(int i=0;i<usedConditionIDs.size();i++) {
+  for(int i = 0;i < usedConditionIDs.size();i++) {
 
-    if(!usedConditionIDs[i]) {
+    if( !usedConditionIDs[i]) {
       logFile << "In InputFileData::readInputFile 'LOADING CONDITION' "
-      << "input data don't have unique and consecutive IDs."<< endl;
+          << "input data don't have unique and consecutive IDs." << endl;
       MPI_Abort(MPI_COMM_WORLD,1);
     }
 
   }
 
   /**********************************************************************/
+  // read surface material direction angle conditions
+  int normalType,surfaceID;
+  int oldSurfaceID = -1;
+
+  AnisotropyCondition* anisotropyCondition;
+  AnisotropyCondition dummyAnisoCond;
+
+  while(name != "END" && name != "CARDIAC_INPUT") {
+
+    if(name != "END" && name != "CARDIAC_INPUT"
+      && !dummyAnisoCond.isAnisotropyType(name)) {
+
+      while(getline(inputFile,line) && line.empty())
+        ;
+      stringstream ss(line);
+      ss >> name;
+      continue;
+    }
+    else if(name == "Surface-Material-Direction-Angle-Condition") {
+
+      while(getline(inputFile,line) && line.empty())
+        ;
+      stringstream ss1(line);
+      ss1 >> tag >> ID; // ID
+      ID -= 1;
+
+      if(ID >= anisotropyConditions[name].size()) {
+        anisotropyConditions[name].resize(ID + 1);
+        oldSurfaceID = -1;
+      }
+      anisotropyCondition = &anisotropyConditions[name][ID];
+
+    }
+    else if(name == "") continue;
+    else if(name == "END" || name == "CARDIAC_INPUT") break;
+    else {
+      logFile << "In InputFileData::readInputFile condition '" << name
+          << "' is not supported." << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+    }
+
+    // ================================================================
+    // read-in the properties of the current condition
+    int& condID = ( *anisotropyCondition).getID();
+    string& condType = ( *anisotropyCondition).getType();
+
+    int& tangentDirection = ( *anisotropyCondition).getSurfaceApplicationType();
+    vector<ConditionElement>& condElems = ( *anisotropyCondition).getElements();
+    dbVector& condNormal = ( *anisotropyCondition).getSurfaceNormal();
+    blVector& condDOFs = ( *anisotropyCondition).getConditionDOFs();
+    dbVector& condValues = ( *anisotropyCondition).getConditionValues();
+    allocateArray(condNormal,usedDims);
+    dbVector& rotationAngle = ( *anisotropyCondition).getRotationAngle();
+
+    condID = ID;
+    condType = name;
+
+    currentElem = 0;
+
+    // condition parameters
+
+    while(getline(inputFile,line)) {
+
+      if(line.empty()) continue;
+
+      stringstream ss2(line);
+      ss2 >> tag;
+
+      if(tag == "Surface-Material-Direction-Angle-Condition"
+        || tag == "CARDIAC_INPUT" || tag == "END") {
+        name = tag;
+        break; // new condition
+      }
+      else if(tag == "Element") {
+        currentElem = condElems.size();
+        condElems.resize(currentElem + 1);
+        int& elemID = condElems[currentElem].getID();
+
+        condElems[currentElem].getSurfaceID() = surfaceID;
+        condElems[currentElem].getSurfaceTangentDirection() = tangentDirection;
+        blVector& elemCondDOFs = condElems[currentElem].getConditionDOFs();
+        resizeArray(elemCondDOFs,1);
+        dbVector& elemCondValues = condElems[currentElem].getConditionValues();
+        resizeArray(elemCondValues,1);
+
+        ss2 >> elemID;
+        elemCondDOFs[0] = true;
+        elemCondValues[0] = condValues[surfaceID];
+
+      }
+      else if(tag == "nodes") {
+
+        intVector& elemNodes = condElems[currentElem].getNodes();
+
+        // loop over all nodes of current element
+        while(ss2 >> particle && ss2.rdstate() != ios::failbit)
+          elemNodes.push_back(particle);
+
+      }
+      // define an axis perpendicular to the surface normal
+      else if(tag == "normalDirection") {
+
+        ss2 >> normalType;
+
+        switch(normalType) {
+
+        // Cartesian x-axis
+        case 1:
+
+          if(computeNorm(condNormal,3,logFile) != 0 && condNormal[0] == 0) {
+            if(rank == 0) cerr
+                << "In InputFileData::readInputFile material incompatible "
+                << "direction plane normal directions.\n";
+            logFile << "In InputFileData::readInputFile material incompatible "
+                << "direction plane normal directions.\n";
+            MPI_Abort(MPI_COMM_WORLD,1);
+          }
+
+          condNormal[0] = 1.0;
+          condNormal[1] = 0.0;
+          condNormal[2] = 0.0;
+          break;
+
+          // Cartesian y-axis
+        case 2:
+
+          if(computeNorm(condNormal,3,logFile) != 0 && condNormal[1] == 0) {
+            if(rank == 0) cerr
+                << "In InputFileData::readInputFile material incompatible "
+                << "direction plane normal directions.\n";
+            logFile << "In InputFileData::readInputFile material incompatible "
+                << "direction plane normal directions.\n";
+            MPI_Abort(MPI_COMM_WORLD,1);
+          }
+
+          condNormal[0] = 0.0;
+          condNormal[1] = 1.0;
+          condNormal[2] = 0.0;
+          break;
+
+          // Cartesian z-axis
+        case 3:
+
+          if(computeNorm(condNormal,3,logFile) != 0 && condNormal[2] == 0) {
+            if(rank == 0) cerr
+                << "In InputFileData::readInputFile material incompatible "
+                << "direction plane normal directions.\n";
+            logFile << "In InputFileData::readInputFile material incompatible "
+                << "direction plane normal directions.\n";
+            MPI_Abort(MPI_COMM_WORLD,1);
+          }
+
+          condNormal[0] = 0.0;
+          condNormal[1] = 0.0;
+          condNormal[2] = 1.0;
+          break;
+        default:
+          if(rank == 0) cerr
+              << "In InputFileData::readInputFile material direction plane "
+              << "normal direction is not supported.\n";
+          logFile
+              << "In AInputFileData::readInputFile material direction plane "
+              << "normal direction is not supported.\n";
+          MPI_Abort(MPI_COMM_WORLD,1);
+          break;
+        }
+
+      }
+      // counter-clockwise (+1) or clockwise (-1) about normal vector
+      else if(tag == "tangentDirection") {
+
+        ss2 >> tangentDirection;
+      }
+      // format e.g. "surfaceID <ID> angle <value>
+      else if(tag == "surfaceID") {
+
+        ss2 >> surfaceID >> tag >> value;
+        surfaceID -= 1;
+
+        if(oldSurfaceID != -1 && oldSurfaceID == surfaceID) {
+          if(rank == 0) cerr
+              << "In InputFileData::readInputFile material direction condition ID="
+              << ID << " must have at least 2 different surface IDs.\n";
+          logFile
+              << "In InputFileData::readInputFile material direction condition ID="
+              << ID << " must have at least 2 different surface IDs.\n";
+          MPI_Abort(MPI_COMM_WORLD,1);
+
+        }
+
+        if(surfaceID < condDOFs.size()) {
+          condDOFs[surfaceID] = true;
+          condValues[surfaceID] = value;
+        }
+        else {
+          resizeArray(condDOFs,surfaceID + 1);
+          resizeArray(condValues,surfaceID + 1);
+          condDOFs[surfaceID] = true;
+          condValues[surfaceID] = value;
+        }
+
+      }
+      // rotation axis for rotated directions
+      else if(tag == "rotationAxisType") {
+        ss2 >> ( *anisotropyCondition).getRotationAxisType();
+      }
+      // rotation axis for rotated directions
+      else if(tag == "rotation-angle") {
+
+        double rotAngVal;
+        ss2 >> rotAngVal;
+        rotationAngle.push_back(rotAngVal);
+      }
+      // rotation axis for rotated directions
+      else if(tag == "rotation-axis") {
+
+        dbVector& rotationAxis = ( *anisotropyCondition).getRotationAxis();
+
+        // loop over all 3 dimensions
+        if(rotationAxis.size() == 0) {
+
+          while(ss2 >> value && ss2.rdstate() != ios::failbit)
+            pushBackVector(rotationAxis,value);
+
+        }
+        // already stored
+        else while(ss2 >> value && ss2.rdstate() != ios::failbit)
+          ;
+
+        // normalize vector
+        vecNorm = computeNorm(rotationAxis,2,logFile);
+        for(int k = 0;k < rotationAxis.size();k++)
+          rotationAxis[k] /= vecNorm;
+      }
+
+    }
+
+  }
+
+//  logFile << "*****************************************************" << endl;
+//  logFile << "ANISOTROPY_INPUT" << endl;
+//  string conditionName = "Surface-Material-Direction-Angle-Condition";
+//  for(int i = 0;i < anisotropyConditions[conditionName].size();i++) {
+//    logFile << "---------------------------------------------------" << endl;
+//    AnisotropyCondition& condition = anisotropyConditions[conditionName][i];
+//    if(condition.getType() != conditionName) continue;
+//    logFile << condition.getType() << " ID=" << condition.getID() << endl;
+//    dbVector& condNormal = condition.getSurfaceNormal();
+//    for(int k = 0;k < condNormal.size();k++)
+//      logFile << "normal[" << k << "]=" << condNormal[k] << endl;
+//    blVector& condDOFs = condition.getConditionDOFs();
+//    dbVector& condValues = condition.getConditionValues();
+//    for(int k = 0;k < condValues.size();k++) {
+//      if(condDOFs[k]) logFile << "condition[" << k << "]: DOF=" << k
+//          << " value=" << condValues[k] << endl;
+//    }
+//    dbVector& rotationAxis = condition.getRotationAxis();
+//    for(int k = 0;k < rotationAxis.size();k++)
+//      logFile << "rotationAxis[" << k << "]=" << rotationAxis[k] << endl;
+//    if(rotationAxis.size() != 0) for(int k = 0;
+//        k < condition.getRotationAngle().size();k++)
+//      logFile << "rotationAngle[" << k << "]="
+//          << condition.getRotationAngle()[k] << endl;
+//    vector<ConditionElement>& condElems = condition.getElements();
+//    for(int k = 0;k < condElems.size();k++) {
+//      logFile << "Element " << condElems[k].getID() << " surfaceID="
+//          << condElems[k].getSurfaceID() << " tangentDirection="
+//          << condElems[k].getSurfaceTangentDirection() << endl;
+//      logFile << "nodes: ";
+//      intVector& elemNodes = condElems[k].getNodes();
+//      for(int l = 0;l < elemNodes.size();l++)
+//        logFile << elemNodes[l] << " ";
+//      logFile << endl;
+//    }
+//  }
+
+  /**********************************************************************/
+  // read surface sarcomere conditions
+  while(name != "END") {
+
+    if(name != "END" && !dummyAnisoCond.isAnisotropyType(name)) {
+
+      while(getline(inputFile,line) && line.empty())
+        ;
+      stringstream ss(line);
+      ss >> name;
+      continue;
+    }
+    else if(name == "Surface-Sarcomere-Length-Condition") {
+
+      while(getline(inputFile,line) && line.empty())
+        ;
+      stringstream ss1(line);
+      ss1 >> tag >> ID; // ID
+      ID -= 1;
+
+      if(ID >= anisotropyConditions[name].size()) {
+        anisotropyConditions[name].resize(ID + 1);
+        oldSurfaceID = -1;
+      }
+      anisotropyCondition = &anisotropyConditions[name][ID];
+
+      if(ID > 0) {
+        logFile << "In InputFileData::readInputFile only one "
+            << "'Surface-Sarcomere-Length-Condition' is\n"
+            << " currently supported." << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+    }
+    else if(name == "") continue;
+    else if(name == "END") break;
+    else {
+      logFile << "In InputFileData::readInputFile condition '" << name
+          << "' is not supported." << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+    }
+
+    // ================================================================
+    // read-in the properties of the current condition
+    int& condID = ( *anisotropyCondition).getID();
+    string& condType = ( *anisotropyCondition).getType();
+
+    vector<ConditionElement>& condElems = ( *anisotropyCondition).getElements();
+    dbVector& condNormal = ( *anisotropyCondition).getSurfaceNormal();
+    blVector& condDOFs = ( *anisotropyCondition).getConditionDOFs();
+    dbVector& condValues = ( *anisotropyCondition).getConditionValues();
+    allocateArray(condNormal,usedDims);
+
+    condID = ID;
+    condType = name;
+
+    currentElem = 0;
+
+    // condition parameters
+
+    while(getline(inputFile,line)) {
+
+      if(line.empty()) continue;
+
+      stringstream ss2(line);
+      ss2 >> tag;
+
+      if(tag == "Surface-Sarcomere-Length-Condition" || tag == "END") {
+        name = tag;
+        break; // new condition
+      }
+      else if(tag == "Element") {
+        currentElem = condElems.size();
+        condElems.resize(currentElem + 1);
+        int& elemID = condElems[currentElem].getID();
+
+        condElems[currentElem].getSurfaceID() = surfaceID;
+        blVector& elemCondDOFs = condElems[currentElem].getConditionDOFs();
+        resizeArray(elemCondDOFs,1);
+        dbVector& elemCondValues = condElems[currentElem].getConditionValues();
+        resizeArray(elemCondValues,1);
+
+        ss2 >> elemID;
+        elemCondDOFs[0] = true;
+        elemCondValues[0] = condValues[surfaceID];
+
+      }
+      else if(tag == "nodes") {
+
+        intVector& elemNodes = condElems[currentElem].getNodes();
+
+        // loop over all nodes of current element
+        while(ss2 >> particle && ss2.rdstate() != ios::failbit)
+          elemNodes.push_back(particle);
+
+      }
+      // format e.g. "surfaceID <ID> angle <value>
+      else if(tag == "surfaceID") {
+
+        ss2 >> surfaceID >> tag >> value;
+        surfaceID -= 1;
+
+        if(oldSurfaceID != -1 && oldSurfaceID == surfaceID) {
+          if(rank == 0) cerr
+              << "In InputFileData::readInputFile surface sarcomere length condition ID="
+              << ID << " must have at least 2 different surface IDs.\n";
+          logFile
+              << "In InputFileData::readInputFile surface sarcomere length condition ID="
+              << ID << " must have at least 2 different surface IDs.\n";
+          MPI_Abort(MPI_COMM_WORLD,1);
+
+        }
+
+        if(surfaceID < condDOFs.size()) {
+          condDOFs[surfaceID] = true;
+          condValues[surfaceID] = value;
+        }
+        else {
+          resizeArray(condDOFs,surfaceID + 1);
+          resizeArray(condValues,surfaceID + 1);
+          condDOFs[surfaceID] = true;
+          condValues[surfaceID] = value;
+        }
+
+      }
+
+    }
+
+  }
+
+//  logFile << "*****************************************************" << endl;
+//  logFile << "CARDIAC_INPUT" << endl;\
+//  conditionName = "Surface-Sarcomere-Length-Condition";
+//  for(int i = 0;i < anisotropyConditions[conditionName].size();i++) {
+//    logFile << "---------------------------------------------------" << endl;
+//    AnisotropyCondition& condition = anisotropyConditions[conditionName][i];
+//    if(condition.getType() != conditionName) continue;
+//    logFile << condition.getType() << " ID=" << condition.getID() << endl;
+//    dbVector& condNormal = condition.getSurfaceNormal();
+//    for(int k = 0;k < condNormal.size();k++)
+//      logFile << "normal[" << k << "]=" << condNormal[k] << endl;
+//    blVector& condDOFs = condition.getConditionDOFs();
+//    dbVector& condValues = condition.getConditionValues();
+//    for(int k = 0;k < condValues.size();k++) {
+//      if(condDOFs[k]) logFile << "condition[" << k << "]: DOF=" << k
+//          << " value=" << condValues[k] << endl;
+//    }
+//    vector<ConditionElement>& condElems = condition.getElements();
+//    for(int k = 0;k < condElems.size();k++) {
+//      logFile << "Element " << condElems[k].getID() << " surfaceID="
+//          << condElems[k].getSurfaceID() << endl;
+//      logFile << "nodes: ";
+//      intVector& elemNodes = condElems[k].getNodes();
+//      for(int l = 0;l < elemNodes.size();l++)
+//        logFile << elemNodes[l] << " ";
+//      logFile << endl;
+//    }
+//
+//  }
+
+  /**********************************************************************/
   // all problem data (including default ones)
-  logFile << "####################################################" << endl;
-  logFile << "******* input parameter (incl. default values) ******" << endl;
-  for(map<string,double>::const_iterator p = problemData.begin();
-      p != problemData.end();++p)
-    logFile << p->first << " " << p->second << endl;
+//  logFile << "####################################################" << endl;
+//  logFile << "******* input parameter (incl. default values) ******" << endl;
+//  for(map<string,double>::const_iterator p = problemData.begin();
+//      p != problemData.end();++p)
+//    logFile << p->first << " " << p->second << endl;
 
 }
 
@@ -902,6 +1432,7 @@ void InputFileData::setDefaultSimulationParameters(std::ofstream& logFile) {
   problemData["PODEnergyLevel"] = 95;
   problemData["directInterpolation"] = 0;
   problemData["gridNodesType"] = 1;
+  problemData["printPodiInfo"] = 1;
 
   // Orion: MLS stuff
   problemData["interpolantionType"] = 2;
@@ -982,8 +1513,9 @@ void InputFileData::setDefaultSimulationParameters(std::ofstream& logFile) {
 
   // --------------------------------------------------------------------
   // essential boundary condition enforcement
-  problemData["boundaryEnforcementMethod"] = 2;
+  problemData["boundaryEnforcementMethod"] = 1;
   problemData["penaltyParameter"] = 1.0e+15;
+  problemData["nitscheParameter"] = 1.0e+15;
 
   /*********************************************************************/
   // model specific stuff
@@ -1036,9 +1568,9 @@ void InputFileData::setDefaultSimulationParameters(std::ofstream& logFile) {
 
   /*********************************************************************/
   // postprocessing
-  problemData["plotMaxIncrement"] = 20;
-  problemData["plotMinIncrement"] = 1;
-  problemData["constantPlotIncrement"] = 0;
+  problemData["simulationOutputFrequency"] = 0.2;
+  problemData["minSimulationOutputFrequency"] = 1.0e-03;
+  problemData["maxSimulationOutputFrequency"] = 1.0e+03;
   problemData["plotOnParticles"] = 1;
   problemData["plotOnGaussPoints"] = 0;
 
@@ -1065,12 +1597,16 @@ void InputFileData::setDefaultSimulationParameters(std::ofstream& logFile) {
   /*********************************************************************/
   // simulation control
   problemData["restartFileID"] = 0;
-  problemData["restartConditionIncrementScaling"] = 1.0;
+  problemData["restartConditionIncrementScaling"] = 0.0;
+  problemData["restartTimeIncrementScaling"] = 0.0;
 
   problemData["timeIncrement"] = 1.0e-02;
-  problemData["maxTimeIncrement"] = problemData["timeIncrement"] * 50.0;
-  problemData["minTimeIncrement"] = problemData["timeIncrement"] * 0.001;
+  problemData["minTimeIncrement"] = problemData["timeIncrement"] * 0.02;
+  problemData["maxTimeIncrement"] = problemData["timeIncrement"] * 50;
   problemData["maxSimulationTime"] = 1.0e+16;
+
+  // adaptive simulation increment method
+  problemData["simulationIncrementAdjustmentType"] = 1;
 
   problemData["KmatUpdatingWhileIterating"] = 1; // works only for a very small loading increment
   problemData["deallocateParallelKmat"] = 0;
@@ -1131,26 +1667,37 @@ void InputFileData::setDefaultSimulationParameters(std::ofstream& logFile) {
   // cardiac mechanics stuff
   // controls loading in cardiac simulations
   // this overrides the setup loading
+  problemData["maxCardiacBeatNumber"] = 1;
   problemData["cardiacMechanicsProblem"] = 0;
+  problemData["cardiacPhase"] = 1;
   problemData["plotPressureVolumeGraph"] = 0;
   problemData["plotVolumeTimeGraph"] = 0;
   problemData["plotPressureTimeGraph"] = 0;
 
   // 0 - if time dependent active tension
   // 1 - if steady active tension
-  problemData["steadyActiveTension"] = 1;
+  problemData["steadyActiveTension"] = 0;
+  problemData["transverseActiveStress"] = 0.0;
   
-  // adaptive simulation increment method
-  problemData["adaptiveConditionIncrementType"] = 1;
-
   // cardiac simulation parameters
-  problemData["diastolePressureControlled"] = 1;
+  problemData["diastolicFillingTime"] = 0.450;
+  problemData["syncronizeDiastoleStart"] = 1;
+  problemData["diastolicFastFillingSpeed"] = 2; // exponent k
+  problemData["diastolePressureControlled"] = 0;
   problemData["endSystolicPressure"] = 0.25e3;
   problemData["ejectionPressure"] = 5.0e3;
   problemData["endSystolicTime"] = 1250e-3;
 
+  problemData["runCardiacIsovolumetricContractionPhase"] = 1;
+  problemData["runCardiacEjectionPhase"] = 1;
+  problemData["runCardiacIsovolumetricRelaxationPhase"] = 1;
+
   problemData["maxVolumeIterations"] = 10;
-  problemData["volumeTolerance"] = 1.0e-08;
+  problemData["volumeControlConvergenceCriterion"] = 1.0e-08;
+
+  // three-element windkessel
+  problemData["maxWindkesselIterations"] = 10;
+  problemData["windkesselODEResidualTolerence"] = 1.0e-04;
 
   // ---------------------------------------------------------------------
   //for ellipsoidal geometries
@@ -1328,7 +1875,9 @@ void InputFileData::adjustConditionAllocation(
   int microDOF = (int) modelData["microDegreesOfFreedom"];
   int stressDOF = (int) modelData["stressDegreesOfFreedom"];
   int electricDOF = (int) modelData["electricDegreesOfFreedom"];
+  int porePressureDOF = (int) modelData["porePressureDegreesOfFreedom"];
   int depolarisationDOF = (int) modelData["depolarisationDegreesOfFreedom"];
+  int pressureDOF = (int) modelData["porePressureDegreesOfFreedom"];
 
   /**********************************************************************/
   // delete not used conditions
@@ -1360,6 +1909,12 @@ void InputFileData::adjustConditionAllocation(
       && (condition.getType() == "Electric-Point-Constraint"
         || condition.getType() == "Electric-Line-Constraint"
         || condition.getType() == "Electric-Surface-Constraint")) {
+      newOrder[n] = i;
+      n--;
+    }
+
+    else if(porePressureDOF == 0
+      && (condition.getType() == "Pore-Pressure-Constraint")) {
       newOrder[n] = i;
       n--;
     }
@@ -1410,6 +1965,10 @@ void InputFileData::adjustConditionAllocation(
     else if(electricDOF == 0
       && (condition.getType() == "Electric-Surface-Charge-Loading"
         || condition.getType() == "Electric-Body-Charge-Loading")) {
+      newOrder[n] = i;
+      n--;
+    }
+    else if(pressureDOF == 0 && (condition.getType() == "Fluid-Volume-Flux")) {
       newOrder[n] = i;
       n--;
     }
@@ -1489,6 +2048,10 @@ void InputFileData::adjustConditionAllocation(
       resizeArray(condition.getConditionDOFs(),electricDOF);
       resizeArray(condition.getConditionValues(),electricDOF);
     }
+    else if(condition.getType() == "Pore-Pressure-Constraint") {
+      resizeArray(condition.getConditionDOFs(),porePressureDOF);
+      resizeArray(condition.getConditionValues(),porePressureDOF);
+    }
     else if(condition.getType() == "Micro-Surface-Constraint") {
       resizeArray(condition.getConditionDOFs(),microDOF);
       resizeArray(condition.getConditionValues(),microDOF);
@@ -1562,8 +2125,56 @@ void InputFileData::adjustConditionAllocation(
       resizeArray(condition.getConditionDOFs(),usedDims);
       resizeArray(condition.getConditionValues(),usedDims);
     }
+    else if(condition.getType() == "Fluid-Volume-Flux") {
+      resizeArray(condition.getConditionDOFs(),usedDims);
+      resizeArray(condition.getConditionValues(),usedDims);
+    }
 
   }
+
+}
+
+/************************************************************************/
+/************************************************************************/
+// adjust the simulation output frequency
+void InputFileData::adjustSimulationOutputFrequency(
+    double adjustmentFactor,std::map<std::string,double>& calcData,
+    std::map<std::string,double>& modelData,std::ofstream& logFile) {
+
+  using namespace std;
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  double oldFrequency = calcData["simulationOutputFrequency"];
+  calcData["simulationOutputFrequency"] *= adjustmentFactor;
+
+  // ensure that the frequency is within the user-defined range
+  if(calcData["simulationOutputFrequency"]
+    < calcData["minSimulationOutputFrequency"]) calcData["simulationOutputFrequency"] =
+    calcData["minSimulationOutputFrequency"];
+
+  else if(calcData["simulationOutputFrequency"]
+    > calcData["maxSimulationOutputFrequency"]) calcData["simulationOutputFrequency"] =
+    calcData["maxSimulationOutputFrequency"];
+
+  if(adjustmentFactor != 1.0
+    && calcData["simulationOutputFrequency"] == oldFrequency) {
+
+    if(rank == 0) cout
+        << "WARNING: user-defined simulation-output-frequency limits ["
+        << calcData["minSimulationOutputFrequency"] << ", "
+        << calcData["maxSimulationOutputFrequency"] << "] enforced" << endl;
+    logFile << "WARNING: user-defined simulation-output-frequency limits ["
+        << calcData["minSimulationOutputFrequency"] << ", "
+        << calcData["maxSimulationOutputFrequency"] << "] enforced" << endl;
+
+  }
+
+#ifdef  _simulationDebugMode_
+  logFile << "simulationOutputFrequency="
+  << calcData["simulationOutputFrequency"] << endl;
+#endif
 
 }
 
@@ -1690,7 +2301,8 @@ void InputFileData::clearArrays(std::ofstream &logFile) {
   vector<Condition>(0,Condition()).swap(dirichletConditions);
   vector<Condition>(0,Condition()).swap(loadingConditions);
 
-  vector<Condition>(0,Condition()).swap(resultantReactions);
+  vector<ResultantReactionCondition>(0,ResultantReactionCondition()).swap(
+      resultantReactions);
 
 }
 

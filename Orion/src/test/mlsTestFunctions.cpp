@@ -99,6 +99,11 @@ void mlsTest_two(InputFileData* InputData,ofstream& logFile){
 		plot2DShapeFunctionsOfSamplePoints(ptcls,ptclList,MLSData,InputData,logFile);
 		plot2DErrorOfSamplePoints(ptcls,ptclList,MLSData,InputData,logFile);
 	}
+	else if(nDim < 1 || nDim > 3){
+		logFile << "In mlsTest_two, mlsTest_nDim = " << nDim << "is not valid." << endl;
+		cout << "In mlsTest_two, mlsTest_nDim = " << nDim << "is not valid." << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
 
 }
 
@@ -603,7 +608,6 @@ void setupFunction(vector<Particle>& ptcls,vector<Particle>& ptclList,
 	dbVector exactPolyValuePtcls(ptcls.size());
 
 	int polyFuncCoefType = InputData->getValue("mlsTest_polyFuncCoefType");
-	double polyFuncCoef = InputData->getValue("mlsTest_polyFuncCoef");
 
 	// Set the coefficients of the polynomial
 	dbVector polyCoefVec(nDim);
@@ -614,7 +618,7 @@ void setupFunction(vector<Particle>& ptcls,vector<Particle>& ptclList,
 		}
 	} else if (polyFuncCoefType == 1) {
 		for (int i = 0; i < nDim; i++) {
-
+			double polyFuncCoef = InputData->getValue("mlsTest_polyFuncCoef");
 			polyCoefVec[i] = polyFuncCoef;
 		}
 
@@ -748,7 +752,6 @@ bool isInInfluenceZone(Particle& ptcl_A, Particle& ptcl_B, double& influenceRadi
 	else
 		return false;
 
-
 }
 
 // *****************************************************************************
@@ -844,6 +847,7 @@ void calcInterpolants(vector<Particle>& ptcls, vector<Particle>& ptclList,
 		dbMatrix sCoordList(sPtcls.size(), dbVector());
 
 		if (radType == 0) {
+			// Changing influence radius
 
 			for (int j = 0; j < sPtcls.size(); j++) {
 
@@ -859,6 +863,7 @@ void calcInterpolants(vector<Particle>& ptcls, vector<Particle>& ptclList,
 			}
 
 		} else if (radType == 1) {
+			// Constant influence radius
 
 			for (int j = 0; j < sPtcls.size(); j++) {
 				sCoordList[j] = ptclList[sPtcls[j]].getCoords();

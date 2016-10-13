@@ -41,10 +41,10 @@
 GridNodes::GridNodes(Data& iData, InputFileData* InputData, ofstream& logFile)
 :gridGeometry(NULL),MeshlessData(NULL){
 
-	logFile << "************************" << endl;
-	logFile << "GridNodes::GridNodes(Single Data)" << endl;
-	logFile << "************************" << endl;
-	logFile << endl;
+//	logFile << "************************" << endl;
+//	logFile << "GridNodes::GridNodes(Single Data)" << endl;
+//	logFile << "************************" << endl;
+//	logFile << endl;
 
 	std::map<std::string, oPType> modelData;
 
@@ -125,13 +125,25 @@ void GridNodes::setGridNodes(InputFileData* InputData, ofstream& logFile) {
 
 	int choice = InputData->getValue("gridNodesType");
 
-	switch (choice) {
-	case 1:
+	if(InputData->getValue("gridNodesType") == 1){
 		generateGridNodes(InputData,logFile);
-		break;
 
-	case 2:
-	{
+		gridGeometry = new FEMGeometryExt(InputData, logFile);
+
+		vector<Particle> ptclsList(nodalList.size(),Particle(3));
+		vector<ParticleExt> ptclExtsList;
+
+		for(int i=0; i < nodalList.size(); i++){
+			ptclsList[i].getCoords() = nodalList[i].getCoords();
+			ptclExtsList.push_back(ParticleExt(ptclsList[i]));
+		}
+
+		gridGeometry->getNodesVec() = ptclExtsList;
+	}
+
+	else if(InputData->getValue("gridNodesType") == 2 ||
+			InputData->getValue("gridNodesType") == 3){
+
 
 		std::map<std::string, double> modelData;
 		modelData["integrationMethod"] = 1; // Gauss integration scheme.
@@ -149,10 +161,8 @@ void GridNodes::setGridNodes(InputFileData* InputData, ofstream& logFile) {
 		gridGeometry->writeMeshFile(mshFileName.c_str(),InputData,logFile);
 
 		importGridNodes(InputData, logFile);
-
-		break;
 	}
-	default:
+	else{
 		logFile << "In GridNodes::setGridNodes, choice of"
 				" gridNodesType is not valid" << endl;
 		cout << "In GridNodes::setGridNodes, choice of"
@@ -191,8 +201,10 @@ void GridNodes::generateGridNodes(InputFileData* InputData, ofstream& logFile){
 	logFile << "Length:  " << minX << " < L < " << maxX << endl;
 	logFile << "Breadth: " << minY << " < B < " << maxY << endl;
 	logFile << "Depth:   " << minZ << " < D < " << maxZ << endl;
-	logFile << "Num of Points: X[" << nPointsX << "] Y[" << nPointsY << "] Z["
+	logFile << "Num of Points(" << (nPointsX*nPointsY*nPointsZ)
+			<< "): X[" << nPointsX << "] Y[" << nPointsY << "] Z["
 			<< nPointsZ << "]" << endl;
+	cout << "Total number of grid nodes generated: " << (nPointsX*nPointsY*nPointsZ) << endl;
 #endif
 
 		dbVector coord;
@@ -228,7 +240,6 @@ void GridNodes::generateGridNodes(InputFileData* InputData, ofstream& logFile){
 	}
 	logFile << endl;
 #endif
-
 
 }
 
@@ -389,33 +400,34 @@ void GridNodes::findSuppParticles(dbVector& coord,
 	for (int i = 0; i < nDims; i++) {
 		coordRange[i][0] = coord[i] - rad; // min of range
 		coordRange[i][1] = coord[i] + rad; // max of range
-		logFile << "Coordinate Range of Dim[" << i << "]: " << coordRange[i][0]
-				<< " - " << coordRange[i][1] << endl;
+//		logFile << "Coordinate Range of Dim[" << i << "]: " << coordRange[i][0]
+//				<< " - " << coordRange[i][1] << endl;
 	}
 
 	int counter;
 	for (int j = 0; j < ptclList.size(); j++) {
 		dbVector ptclCoord = ptclList[j].getCoords();
 		counter = 0;
-		logFile << "Comparing: ";
+//		logFile << "Comparing: ";
 		for (int k = 0; k < ptclCoord.size(); k++) {
-			logFile << coordRange[k][0] << "<" << ptclCoord[k] << "<"
-					<< coordRange[k][1] << " ?";
+//			logFile << coordRange[k][0] << "<" << ptclCoord[k] << "<"
+//					<< coordRange[k][1] << " ?";
 			if (ptclCoord[k] > coordRange[k][0]
 					&& ptclCoord[k] <= coordRange[k][1]) {
-				logFile << "YES!";
+//				logFile << "YES!";
 				counter++;
 			}
 		}
-		logFile << "=>Counter[" << counter << "]";
+//		logFile << "=>Counter[" << counter << "]";
 		if (counter == nDims) {
-			logFile << " *SELECTED*" << endl;
+//			logFile << " *SELECTED*" << endl;
 			resizeArray(sPtcls, sPtcls.size() + 1);
 			sPtcls[sPtcls.size() - 1] = ptclList[j].getID();
-		} else
-			logFile << endl;
+		}
+//		else
+//			logFile << endl;
 	}
-	logFile << endl;
+//	logFile << endl;
 }
 
 /*!****************************************************************************/
@@ -562,7 +574,7 @@ void GridNodes::setSupportingParticles(Data& iData, InputFileData* InputData,
 	int volumeElem = 0;
 	intVector nodesOutsideGeo;
 
-	logFile << "Total number of grid nodes: " << nodalList.size() << endl;
+//	logFile << "Total number of grid nodes: " << nodalList.size() << endl;
 	for (int i = 0; i < nodalList.size(); i++) {
 
 		volumeElem = iData.getMeshData()->findPointInGeometry(
@@ -635,7 +647,7 @@ void GridNodes::setSupportingParticles_two(FEMGeometryExt* FEMDataExt,
 //			convertIntToString(FEMDataExt->getFEMGeoData()->getNodesVec().size());
 //	FEMDataExt->saveToGidMeshFile(fileName,InputData,logFile);
 
-	logFile << "Total number of grid nodes: " << nodalList.size() << endl;
+//	logFile << "Total number of grid nodes: " << nodalList.size() << endl;
 	for (int i = 0; i < nodesVec.size(); i++) {
 		dbVector& nodeCoord = nodesVec[i].getCoords();
 
@@ -694,7 +706,7 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 		std::vector<Node>& nodesVec, InputFileData* InputData,
 		ofstream& logFile) {
 
-	logFile << "GridNodes::setSupportingParticles_" << endl;
+//	logFile << "GridNodes::setSupportingParticles_" << endl;
 
 	std::map<std::string, oPType> modelData; // To satisfy findPointInGeometry input argument
 	modelData["integrationMethod"] = 1; // Gauss integration scheme.
@@ -711,7 +723,7 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 
 	FEMDataExt->printVolumePtclsDetails(InputData,logFile);
 
-	logFile << "Total number of grid nodes: " << nodalList.size() << endl;
+//	logFile << "Total number of grid nodes: " << nodalList.size() << endl;
 	for (int i = 0; i < nodesVec.size(); i++) {
 
 		dbVector nodeCoord = nodesVec[i].getCoords();
@@ -762,11 +774,11 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 
 	saveSelectedNodesToFile(nodesInsideGeo,logFile);
 
-	logFile << "Num of Gauss Points created: " << gaussPointsVec.size() << endl;
-	logFile << "Num of Gauss Points to be replaced: " << FEMData->getGaussPointsVec().size() << endl;
+//	logFile << "Num of Gauss Points created: " << gaussPointsVec.size() << endl;
+//	logFile << "Num of Gauss Points to be replaced: " << FEMData->getGaussPointsVec().size() << endl;
 
 	FEMData->getGaussPointsVec() = gaussPointsVec;
-	logFile << "GaussPoint list overwritten in FEMData " << endl;
+//	logFile << "GaussPoint list overwritten in FEMData " << endl;
 
 	//--------------------------------------------------------------------------
 	//--------------------------------------------------------------------------
@@ -784,22 +796,22 @@ void GridNodes::setSupportingParticles_(FEMGeometryExt* FEMDataExt,
 	vector<GaussPoint>& gaussPointsVecMeshless =
 										MeshlessData->getGaussPointsVec();
 
-	logFile << "gaussPointsVecMeshless: " << gaussPointsVecMeshless.size()
-			<< endl;
+//	logFile << "gaussPointsVecMeshless: " << gaussPointsVecMeshless.size()
+//			<< endl;
 
 //	vector<ParticleExt>& ptclList = FEMDataExt->getNodesVec();
 	vector<Particle>& ptclList = MeshlessData->getParticlesVec();
 
-	logFile << "In each particle, elems store:" << endl;
-	for(int i = 0; i < ptclList.size(); i++){
-
-		intVector elems = ptclList[i].getElems();
-		logFile << i << ")[" << elems.size() << "]:";
-		for(int j = 0 ; j < elems.size(); j++){
-			logFile << elems[j] << ", ";
-		}
-		logFile << endl;
-	}
+//	logFile << "In each particle, elems store:" << endl;
+//	for(int i = 0; i < ptclList.size(); i++){
+//
+//		intVector elems = ptclList[i].getElems();
+//		logFile << i << ")[" << elems.size() << "]:";
+//		for(int j = 0 ; j < elems.size(); j++){
+//			logFile << elems[j] << ", ";
+//		}
+//		logFile << endl;
+//	}
 
 
 //	for (int i = 0; i < nodesInsideGeo.size(); i++) {
@@ -971,14 +983,14 @@ void GridNodes::setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* I
 
 	vector<ParticleExt> ptcls = FEMData->getNodesVec();
 
-	logFile <<"In GridNodes::setInterpolantsOnNodes, particle list is:" << endl;
-	for(int i = 0; i < ptcls.size(); i++){
-			logFile << "Particle[" << i << "]: ";
-			for(int j = 0; j < ptcls[i].getCoords().size(); j++){
-				logFile << ptcls[i].getCoords()[j] << ", ";
-			}
-			logFile << endl;
-	}
+//	logFile <<"In GridNodes::setInterpolantsOnNodes, particle list is:" << endl;
+//	for(int i = 0; i < ptcls.size(); i++){
+//			logFile << "Particle[" << i << "]: ";
+//			for(int j = 0; j < ptcls[i].getCoords().size(); j++){
+//				logFile << ptcls[i].getCoords()[j] << ", ";
+//			}
+//			logFile << endl;
+//	}
 
 	double radExtFactor = InputData->getValue("gInfluenceRadExtFactor");
 	for (int i = 0; i < nodalList.size(); i++) {
@@ -1080,9 +1092,9 @@ void GridNodes::setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* I
 					sum += sPtclsInterpolants[j];
 				}
 
-				logFile
-						<< "In GridNodes::setInterpolantsOnNodes, sum of interpolants ="
-						<< sum << endl;
+//				logFile
+//						<< "In GridNodes::setInterpolantsOnNodes, sum of interpolants ="
+//						<< sum << endl;
 			}
 				break;
 			case 2:
@@ -1095,7 +1107,7 @@ void GridNodes::setInterpolantsOnNodes(FEMGeometryExt* FEMData, InputFileData* I
 			}
 
 			nodalList[i].setInterpolants(sPtclsInterpolants);
-			printVector(sPtclsInterpolants,"sPtclsInterpolants",logFile);
+//			printVector(sPtclsInterpolants,"sPtclsInterpolants",logFile);
 		}
 	}
 }
@@ -1144,21 +1156,21 @@ void GridNodes::calcMatrixFieldMLSApproximants(dbVector& iPoint,
 	logFile << "-------- Checking Points shape functions --------" << endl;
 	oPType sum;
 	for (int i = 0; i < pointList.size(); i++) {
-		logFile << "Point " << i << " (";
-
-		for (int j = 0; j < pointList[i].getCoords().size(); j++) {
-			logFile << pointList[i].getCoords()[j] << " ,";
-		}
-		logFile << ") -> " << endl;
+//		logFile << "Point " << i << " (";
+//
+//		for (int j = 0; j < pointList[i].getCoords().size(); j++) {
+//			logFile << pointList[i].getCoords()[j] << " ,";
+//		}
+//		logFile << ") -> " << endl;
 
 		sum = 0;
 		dbVector& shapeFuncs = pointList[i].getShapeFuncs();
 		for (int j = 0; j < shapeFuncs.size(); j++) {
-			logFile << shapeFuncs[j] << ", ";
+//			logFile << shapeFuncs[j] << ", ";
 			sum += shapeFuncs[j];
 		}
-		logFile << "-> [" << sum << "]";
-		logFile << endl;
+//		logFile << "-> [" << sum << "]";
+//		logFile << endl;
 	}
 
 	interpolants.clear();
@@ -1242,23 +1254,23 @@ void GridNodes::interpolateNodalResult(Data& iData, InputFileData* InputData,
 void GridNodes::interpolateNodalResult(Data& iData, InputFileData* InputData,
 		ofstream& logFile) {
 
-	logFile << "------------------------------------" << endl;
-	logFile << "In GridNodes::interpolateNodalResult" << endl;
-	logFile << "------------------------------------" << endl;
+//	logFile << "------------------------------------" << endl;
+//	logFile << "In GridNodes::interpolateNodalResult" << endl;
+//	logFile << "------------------------------------" << endl;
 
 	vector<ParticleExt>& ptcls = iData.getMeshData()->getNodesVec();
 
 	for (int i = 0; i < nodalList.size(); i++) {
 
-		logFile << "Node[" << i << "]" << endl;
+//		logFile << "Node[" << i << "]" << endl;
 
 		intVector& supportingPtcls = nodalList[i].getSPtlcs();
 
 		if (supportingPtcls.size() > 0) {
 			dbVector& interpolants = nodalList[i].getInterpolants();
 
-			printVector(supportingPtcls,"supportingPtcls",logFile);
-			printVector(interpolants,"interpolants",logFile);
+//			printVector(supportingPtcls,"supportingPtcls",logFile);
+//			printVector(interpolants,"interpolants",logFile);
 
 
 			int numCalcStep =
@@ -1281,8 +1293,8 @@ void GridNodes::interpolateNodalResult(Data& iData, InputFileData* InputData,
 				}
 			}
 
-			printMatrix(nodalList[i].getStepDOFMat(),
-					"nodalList[i].getStepDOFMat()",logFile);
+//			printMatrix(nodalList[i].getStepDOFMat(),
+//					"nodalList[i].getStepDOFMat()",logFile);
 
 		}
 	}
@@ -1686,7 +1698,7 @@ void GridNodes::saveSelectedNodesToFile(intVector& nodesVec,ofstream& logFile){
 		outputFileName
 			  = ((string)"selectedGridNodes" + convertIntToString(i) + ".dat");
 		ifstream file_to_check (outputFileName.c_str());
-		if(file_to_check == false) break;
+		if(file_to_check.good() == false) break;
 	}
 
 	ofstream writeStream(outputFileName.c_str());

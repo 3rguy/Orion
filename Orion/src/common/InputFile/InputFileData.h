@@ -10,11 +10,13 @@
 #include <string>
 #include <vector>
 
+#include "AnisotropyCondition.h"
 #include "commonTypedefs.h"
 #include "Condition.h"
 #include "defs.h"
 #include "mpi.h"
 #include "Graph.h"
+#include "ResultantReactionCondition.h"
 
 class InputFileData {
 
@@ -27,6 +29,10 @@ class InputFileData {
   void adjustConditionAllocation(InputFileData* InputData,
                                  std::map<std::string,double>& modelData,
                                  std::ofstream& logFile);
+
+  void adjustSimulationOutputFrequency(
+        double adjustmentFactor,std::map<std::string,double>& calcData,
+        std::map<std::string,double>& modelData,std::ofstream& logFile);
 
   /**********************************************************************/
   /// various simulation input data
@@ -66,8 +72,11 @@ class InputFileData {
   };
 
   /// surfaces where the resultant force and torque needs to be computed
-  std::vector<Condition>& getResultantReactions() { return resultantReactions; };
+  std::vector<ResultantReactionCondition>& getResultantReactions() { return resultantReactions; };
 
+  /// surface anisotropy information
+  std::map<std::string,std::vector<AnisotropyCondition> >& getAnisotropyConditions() {
+    return anisotropyConditions; };
 
 
   /**********************************************************************/
@@ -88,6 +97,7 @@ class InputFileData {
 
   std::map<std::string,double> backGroundMeshInfo;
   std::vector<std::map<std::string,double> > materials;
+  std::map<std::string,std::vector<AnisotropyCondition> > anisotropyConditions;
 
   /**********************************************************************/
   /// various simulation input data
@@ -109,7 +119,7 @@ class InputFileData {
   std::map<std::string,bool> conditionSet;
 
   /// surfaces where the resultant force and torque needs to be computed
-  std::vector<Condition> resultantReactions;
+  std::vector<ResultantReactionCondition> resultantReactions;
 
 };
 

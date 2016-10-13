@@ -234,8 +234,8 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 			if (PlotPOMs_choice == 1) {
 				cout << "Saving POMs to file" << endl;
 				logFile << "Saving POMs to file" << endl;
-				savePOMsToFile_ResFormat(PODSpace->getPOMs(), i, problemData,
-						InputData, logFile);
+				savePOMsToFile_ResFormat(PODSpace->getPOMs(), PODSpace->getMeanVec(),
+						i, problemData, InputData, logFile);
 			}
 
 			delete PODSpace;
@@ -460,9 +460,13 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 
 			// Save POMs to file
 			if (PlotPOMs_choice == 1) {
-				savePOMsToFile_ResFormat(PODSpace->getPOMs(), i, problemData,
+				savePOMsToFile_ResFormat(PODSpace->getPOMs(),
+						PODSpace->getMeanVec(), i, problemData, InputData,
+						logFile);
+				savePOVsToFile_GrfFormat(PODSpace->getPOVs(), i, problemData,
 						InputData, logFile);
-				savePOVsToFile_ResFormat(PODSpace->getPOVs(), i, problemData,
+				saveConservedPOVsToFile_GrfFormat(PODSpace->getNumPOVConserved(),
+						PODSpace->getEnergyConserved(), i, problemData,
 						InputData, logFile);
 			}
 
@@ -549,8 +553,8 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 
 /*!****************************************************************************/
 /*!****************************************************************************/
-void PODICalc::savePOMsToFile_ResFormat(dbMatrix& POMs, int stepValueID,
-		DataContainer* problemData, InputFileData* InputData,
+void PODICalc::savePOMsToFile_ResFormat(dbMatrix& POMs, dbVector& meanVec,
+		int stepValueID, DataContainer* problemData, InputFileData* InputData,
 		ofstream& logFile) {
 
 	string& resultName = problemData->getString("PODIResultName");
@@ -601,7 +605,7 @@ void PODICalc::savePOMsToFile_ResFormat(dbMatrix& POMs, int stepValueID,
 	int numPOMs = POMs[0].size();
 
 	logFile << "------------------------------------------------------" << endl;
-	printMatrix(POMs,"POMs",logFile);
+//	printMatrix(POMs,"POMs",logFile);
 
 	for (int i = 0; i < numPOMs; i++) {
 		writeToFile << "Result " << "\"" << "POM_" << i << "\" \""
@@ -613,13 +617,13 @@ void PODICalc::savePOMsToFile_ResFormat(dbMatrix& POMs, int stepValueID,
 
 		int DOFCounter = 0;
 		int nodeCounter = 1;
-		while(DOFCounter< numDOFs) {
+		while (DOFCounter < numDOFs) {
 
-			logFile << "writeToFile[nodeCounter] " << nodeCounter << endl;
+//			logFile << "writeToFile[nodeCounter] " << nodeCounter << endl;
 			writeToFile << nodeCounter << " ";
 
 			for (int k = 0; k < nDOFPerNode; k++) {
-				logFile << "Accessing: " << DOFCounter << ", " << i << endl;
+//				logFile << "Accessing: " << DOFCounter << ", " << i << endl;
 				writeToFile << POMs[DOFCounter][i] << " ";
 				DOFCounter++;
 			}
@@ -630,42 +634,40 @@ void PODICalc::savePOMsToFile_ResFormat(dbMatrix& POMs, int stepValueID,
 		writeToFile << "End Values" << endl;
 	}
 
-//	for (int i = 0; i < stepValueVec.size(); i++) {
-//		for (int j = 0; j < numPOMs; j++) {
-//			writeToFile << "Result " << "\"" << "POM_" << j << "\" \""
-//					<< analysis_name << "\" " << stepValueVec[i] << " "
-//					<< DofType << " " << my_location << endl;
-//
-//			writeToFile << componentNames << endl;
-//			writeToFile << "Values" << endl;
-//
-//			int DOFCounter = 0;
-//			int nodeCounter = 1;
-//			while (DOFCounter < numDOFs) {
-//
-//				logFile << "writeToFile[nodeCounter] " << nodeCounter << endl;
-//				writeToFile << nodeCounter << " ";
-//
-//				for (int k = 0; k < nDOFPerNode; k++) {
-//					logFile << "Accessing: " << DOFCounter << ", " << j << endl;
-//					writeToFile << POMs[DOFCounter][j] << " ";
-//					DOFCounter++;
-//				}
-//				writeToFile << endl;
-//				nodeCounter++;
-//			}
-//
-//			writeToFile << "End Values" << endl;
-//		}
-//	}
+	// -------------------------------------------------------------------------
+	// Write mean vector to file
 
-	//MPI_Abort(MPI_COMM_WORLD,1);
+	if (meanVec.size() > 0) {
+		writeToFile << "Result " << "\"" << "Mean\" \"" << analysis_name
+				<< "\" " << stepValueID << " " << DofType << " " << my_location
+				<< endl;
 
+		writeToFile << componentNames << endl;
+		writeToFile << "Values" << endl;
+
+		int DOFCounter = 0;
+		int nodeCounter = 1;
+		while (DOFCounter < numDOFs) {
+
+			writeToFile << nodeCounter << " ";
+
+			for (int k = 0; k < nDOFPerNode; k++) {
+				writeToFile << meanVec[DOFCounter] << " ";
+				DOFCounter++;
+			}
+			writeToFile << endl;
+			nodeCounter++;
+		}
+
+		writeToFile << "End Values" << endl;
+	}
+
+	writeToFile.close();
 }
 
 /*!****************************************************************************/
 /*!****************************************************************************/
-void PODICalc::savePOVsToFile_ResFormat(dbVector& POVs, int stepValueID,
+void PODICalc::savePOVsToFile_GrfFormat(dbVector& POVs, int stepValueID,
 		DataContainer* problemData, InputFileData* InputData,
 		ofstream& logFile){
 
@@ -696,10 +698,57 @@ void PODICalc::savePOVsToFile_ResFormat(dbVector& POVs, int stepValueID,
 
 
 	for(int i=0; i < POVs.size(); i++){
-		writeToFile << i << "\t" << POVs[i] << endl;
-		writeToFilePer << i << "\t" << (POVs[i]/sumPOVs)*100 << endl;
+		writeToFile << POVs[i] << "\t";
+		writeToFilePer << (POVs[i]/sumPOVs)*100 << "\t";
+	}
+	writeToFile  << endl;
+	writeToFilePer  << endl;
+
+	writeToFile.close();
+	writeToFilePer.close();
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void PODICalc::saveConservedPOVsToFile_GrfFormat(int& numConsrvPOV,
+		double& consrvPOVPercentage, int stepValueID, DataContainer* problemData,
+		InputFileData* InputData, ofstream& logFile){
+
+	string& resultName = problemData->getString("PODIResultName");
+	int& nDOFPerNode = problemData->getInt("PODIDofPerNode");
+
+	string fileName = "NumConservedPOVs_" + resultName + ".grf";
+	string fileNamePer = "conservedPOVs_Perctage_" + resultName + ".grf";
+
+	// Check if file exist
+	bool fileExist = true;
+	bool fileExistPer = true;
+
+	struct stat buffer;
+	if (stat(fileName.c_str(), &buffer) != 0) { // File exists
+		fileExist = false;
+	}
+	if (stat(fileNamePer.c_str(), &buffer) != 0) { // File exists
+		fileExistPer = false;
 	}
 
+	// Create/Open file
+	ofstream writeToFile(fileName, ios::app);
+	ofstream writeToFilePer(fileNamePer, ios::app);
+
+	// Write header line if file has been created
+	if (fileExist == false) {
+		writeToFile << "#Iteration_ID POV_value" << endl;
+	}
+	if (fileExist == false) {
+		writeToFilePer << "#Iteration_ID POV_energy" << endl;
+	}
+
+	// Write content to files
+	writeToFile << stepValueID << "\t" << numConsrvPOV << endl;
+	writeToFilePer << stepValueID << "\t" << consrvPOVPercentage << endl;
+
+	// Close files access
 	writeToFile.close();
 	writeToFilePer.close();
 }

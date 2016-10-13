@@ -98,11 +98,6 @@
 #endif
 #undef _FEdebugMode_PointInPoly_
 
-#ifndef _StepStandardisationDebugMode_
-#define _StepStandardisationDebugMode_
-#endif
-#undef _StepStandardisationDebugMode_
-
 // ****************************************************************************
 // ****************************************************************************
 // Seska stuff
@@ -126,3 +121,152 @@
 #define _supportDebugMode_
 #endif
 #undef _supportDebugMode_
+
+//#ifndef _influenceSphereDebugMode_
+//#define _influenceSphereDebugMode_
+//#endif
+//#undef _influenceSphereDebugMode_
+
+//#ifndef _partitioningDebugMode_
+//#define _partitioningDebugMode_
+//#endif
+//#undef _partitioningDebugMode_
+
+// kinematics define statements
+//#ifndef _kinematicsDebugMode_
+//#define _kinematicsDebugMode_
+//#endif
+//#undef _kinematicsDebugMode_
+
+// multiplicative rotation update
+//#ifndef _rotationUpdateDebugMode_
+//#define _rotationUpdateDebugMode_
+//#endif
+//#undef _rotationUpdateDebugMode_
+
+// constitutive laws define statements
+//#ifndef _constitutiveDebugMode_
+//#define _constitutiveDebugMode_
+//#endif
+//#undef _constitutiveDebugMode_
+
+// Assembling discrete equation system define statements
+//#ifndef _modelDebugMode_
+//#define _modelDebugMode_
+//#endif
+//#undef _modelDebugMode_
+
+//#ifndef _KmatModificationDebugMode_
+//#define _KmatModificationDebugMode_
+//#endif
+//#undef _KmatModificationDebugMode_
+
+//#ifndef _forceVecModificationDebugMode_
+//#define _forceVecModificationDebugMode_
+//#endif
+//#undef _forceVecModificationDebugMode_
+
+//#ifndef _KmatAssemblingDebugMode_
+//#define _KmatAssemblingDebugMode_
+//#endif
+//#undef _KmatAssemblingDebugMode_
+
+//#ifndef _forceVecAssemblingDebugMode_
+//#define _forceVecAssemblingDebugMode_
+//#endif
+//#undef _forceVecAssemblingDebugMode_
+
+//#ifdef _forceVecModificationDebugMode_
+//#define _KmatAssemblingDebugMode_
+//#define _forceVecAssemblingDebugMode_
+//#elif defined _KmatModificationDebugMode_
+//#define _KmatAssemblingDebugMode_
+//#define _forceVecAssemblingDebugMode_
+//#endif
+
+//#ifndef _checkParallelKmatDebugMode_
+//#define _checkParallelKmatDebugMode_
+//#endif
+//#undef _checkParallelKmatDebugMode_
+
+//#ifndef _checkEQSystemDebugMode_
+//#define _checkEQSystemDebugMode_
+//#endif
+//#undef _checkEQSystemDebugMode_
+
+// Calculation define statements
+//#ifndef _calculationDebugMode_
+//#define _calculationDebugMode_
+//#endif
+//#undef _calculationDebugMode_
+
+// Postprocessing define statements
+//#ifndef _postProcDebugMode_
+//#define _postProcDebugMode_
+//#endif
+//#undef _postProcDebugMode_
+
+// Shape functions debug mode
+//#ifndef _shapeFunctionsDebugging_
+//#define _shapeFunctionsDebugging_
+//#endif
+//#undef _shapeFunctionsDebugging_
+
+//#ifndef _MLSDebugMode_
+//#define _MLSDebugMode_
+//#endif
+//#undef _MLSDebugMode_
+
+//#ifndef _testBoundCollocation_
+//#define _testBoundCollocation_
+//#endif
+//#undef _testBoundCollocation_
+
+//#ifndef _debugMode_
+//#define _debugMode_
+//#endif
+//#undef _debugMode_
+
+//#ifndef _calculateSeries_
+//#define _calculateSeries_
+//#endif
+//#undef _calculateSeries_
+
+//#ifndef _checkMemory_
+//#define _checkMemory_
+//#endif
+//#undef _checkMemory_
+
+//#ifndef _checkMatrixConditioning_
+//#define _checkMatrixConditioning_
+//#endif
+//#undef _checkMatrixConditioning_
+
+//#ifndef _cuda_
+//#define _cuda_
+//#endif
+//#undef _cuda_
+
+
+//#ifndef _cudaDebug_
+//#define _cudaDebug_
+//#endif
+//#undef _cudaDebug_
+
+//inverse calcs
+//#ifndef _inverseDebugMode_
+//#define _inverseDebugMode_
+//#endif
+//#undef _inverseDebugMode_
+
+//#ifndef _inverseDisplayDebugMode_
+//#define _inverseDisplayDebugMode_
+//#endif
+//#undef _inverseDisplayDebugMode_
+
+// determining the unloaded configuration
+//#ifndef _loadedConfigDebugMode_
+//#define _loadedConfigDebugMode_
+//#endif
+//#undef _loadedConfigDebugMode_
+ 

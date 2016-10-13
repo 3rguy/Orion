@@ -446,6 +446,12 @@ void MicroSpace::setInitialMicroDirections(
   case 9:
 
     initialMicroDirectors = macroDirectors;
+
+    for(int k=0;k<initialMicroDirectors.size();k++)
+    if(checkZero(computeNorm(initialMicroDirectors[k],3,logFile))) {
+      logFile << "In MicroSpace::setMicroDirections director is a zero vector!" << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+    }
     break;
 
   case 10:
@@ -781,6 +787,12 @@ void MicroSpace::setMaterialProperties(InputFileData* InputData,
   case 23:
 
     microDependentMaterial = false;
+    break;
+
+    // Mises plasticity based on stretch tensor
+  case 26:
+
+    microDependentMaterial = true;
     break;
 
     // Cosserat just the fibre

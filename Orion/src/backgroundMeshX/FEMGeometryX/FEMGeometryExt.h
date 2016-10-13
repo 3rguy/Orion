@@ -39,6 +39,7 @@
 class FEMGeometryExt {
 
   public:
+	FEMGeometryExt(InputFileData* InputData, std::ofstream& logFile);
 
     FEMGeometryExt(InputFileData* InputData,
 		std::map<std::string,double>& modelData,

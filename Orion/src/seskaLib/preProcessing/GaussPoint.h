@@ -23,11 +23,6 @@ class GaussPoint : public virtual IntegrationPoint {
 
   std::vector<MicroSpace>& getMicroSpaces() { return microSpaces; };
 
-  // Global index datum manipulating 
-  //  void setGlobalID(int idx);
-  //  int& getGlobalID() { return globalID; };
-  //  int& getMaterialID() { return materialID; };
-
   // micro boundary conditions
   blVector& getMicroBoundDOF(int ID);
   dbVector& getMicroBoundConds(int ID);

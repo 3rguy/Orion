@@ -32,6 +32,14 @@ void ROMCalculation::calculation(Database& myDatabase, DataContainer* problemDat
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	start = std::chrono::system_clock::now();
 
+	if(commonResultsNameList.size() == 0){
+		logFile << "In ROMCalculation::calculation, commonResultsNameList.size() = 0"
+				<< endl;
+		cout << "In ROMCalculation::calculation, commonResultsNameList.size() = 0"
+				<< endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
 	for (int i = 0; i < commonResultsNameList.size(); i++) {
 
 		cout << "*****************************************************" << endl;
@@ -123,12 +131,12 @@ void ROMCalculation::reducedOrderCalculation(DataContainer* problemData,
 	cout << "PODI Calculation started " << endl;
 	logFile << "PODI Calculation started " << endl;
 
-	vector<dbMatrix>& rList = problemData->getDbMatrixVec("resultList");
-	logFile << "Printing the whole of resultList:" << endl;
-	for(int i=0; i<rList.size(); i++){
-		logFile << "rList[" << i << "]: " << endl;
-		printMatrix(rList[i],"rList",logFile);
-	}
+//	vector<dbMatrix>& rList = problemData->getDbMatrixVec("resultList");
+//	logFile << "Printing the whole of resultList:" << endl;
+//	for(int i=0; i<rList.size(); i++){
+//		logFile << "rList[" << i << "]: " << endl;
+//		printMatrix(rList[i],"rList",logFile);
+//	}
 
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	start = std::chrono::system_clock::now();

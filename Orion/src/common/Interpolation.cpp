@@ -348,7 +348,7 @@ void Interpolation::shiftedBasisCalc(dbVector& iPoint, dbMatrix& coords,
 	case 2: {
 
 		double shiftedBasisCoef = InputData->getValue("shiftedBasisCoef");
-		logFile << "shiftedBasisCoef used: " << shiftedBasisCoef << endl;
+//		logFile << "shiftedBasisCoef used: " << shiftedBasisCoef << endl;
 
 		for (int i = 0; i < coords.size(); i++) {
 			for (int j = 0; j < ndim; j++) {

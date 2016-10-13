@@ -24,11 +24,11 @@ StepStandardisation::StepStandardisation(DataContainer* problemData,
 void StepStandardisation::defineNormaliseSteps(DataContainer* problemData,
 		InputFileData* InputData,ofstream& logFile){
 
-	double standStepIncrement = 0.05;
-	int nStandStep = floor(1/standStepIncrement) + 1;
+	double standStepSpacing = InputData->getValue("standardStepSpacing");
+	int nStandStep = floor(1/standStepSpacing) + 1;
 	normStandStep = dbVector (nStandStep);
 	for(int i=0; i<nStandStep-1; i++){
-		normStandStep[i] = 0 + (i*standStepIncrement);
+		normStandStep[i] = 0 + (i*standStepSpacing);
 	}
 	normStandStep[nStandStep-1] = 1;
 
@@ -55,12 +55,12 @@ void StepStandardisation::standardise(DataContainer* problemData,
 			logFile << "***** nPhase[" << j << "] *****" << endl;
 
 			// *****************************************************************
-			// Get All infor related to the timesteps
+			// Get All info related to the timesteps
 			// *****************************************************************
 			// Extract the standard steps
 			string ss = "standardStepPhaseList" + std::to_string(j);
-			dbVector& standardStepPhase =
-					problemData->getDbMatrix(ss.c_str())[i];
+			dbVector& standardStepPhase = problemData->getDbMatrix(ss.c_str())[i];
+
 			problemData->setValue("standardStepPhase", standardStepPhase);
 			printVector(standardStepPhase, "standardStepPhase", logFile);
 
@@ -778,7 +778,7 @@ void StepStandardisation::getCardiacLoopDetails(
 
 		// Find the end-diastole point
 		if(eDFound == false){
-			if(gradientNext < 1 || i==(volumesList.size()-1)){
+			if(gradientNext < 0.1 || i==(volumesList.size()-1)){
 				logFile << "end-diastole point" << endl;
 				eDi.push_back(i);
 				cPi.push_back(i);

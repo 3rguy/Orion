@@ -103,6 +103,30 @@ dbVector& FEMElement::getTraction(int ID) {
 
 }
 
+blVector& FEMElement::getFluidVolumeFluxDOF(int ID) {
+
+  if(ID < fluidVolumeFluxDOF.size())
+    return fluidVolumeFluxDOF[ID];
+
+  else {
+    fluidVolumeFluxDOF.resize(ID+1);
+    return fluidVolumeFluxDOF[ID];
+  }
+
+}
+
+dbVector& FEMElement::getFluidVolumeFlux(int ID) {
+
+  if(ID < fluidVolumeFluxLoads.size())
+    return fluidVolumeFluxLoads[ID];
+
+  else {
+    fluidVolumeFluxLoads.resize(ID+1);
+    return fluidVolumeFluxLoads[ID];
+  }
+
+}
+
 
 blVector& FEMElement::getLineForceDOF(int ID) { 
 
@@ -321,6 +345,21 @@ dbVector& FEMElement::getSurfaceElectricBoundConds(int ID) {
   else {
     surfaceElectricBoundConds.resize(ID+1);
     return surfaceElectricBoundConds[ID]; 
+  }
+
+}
+
+/***********************************************************************/
+// TPM boundary conditions
+
+blVector& FEMElement::getPorePressureBoundDOF(int ID) {
+
+  if(ID < porePressureBoundDOF.size())
+    return porePressureBoundDOF[ID];
+
+  else {
+    porePressureBoundDOF.resize(ID+1);
+   return porePressureBoundDOF[ID];
   }
 
 }

@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 
 	case 1: {
 		//**********************************************************************
-		// New Implementation
+		// ROM
 		Calculation calc(InputData, logFile);
 		break;
 	}
@@ -90,6 +90,19 @@ int main(int argc, char* argv[]) {
 		//**********************************************************************
 		// Testing specific algorithm in Orion
 		testFunctions(InputData, logFile);
+		break;
+	}
+
+	case 4: {
+		//**********************************************************************
+		// ROM + Error Calculation
+		Calculation calc(InputData, logFile);
+
+		string fileOutput2 = "oLogError.dat";
+		ofstream elogFile(fileOutput2.c_str(), std::ofstream::out);
+		logFile.precision(15);
+
+		ErrorCalc myError(InputData, elogFile);
 		break;
 	}
 
@@ -221,6 +234,7 @@ void readMaterialFile(string filename, InputFileData* InputData,
 
 		//! Extract the parameters' value
 		vector<string> missingParameters;
+		vector<double> missingParametersValues;
 		for (int i = 0; i < paramNamesVec.size(); i++) {
 
 			//! Search for specific parameter in the material's parameters list
@@ -232,6 +246,8 @@ void readMaterialFile(string filename, InputFileData* InputData,
 				// missing parameters vector
 				missingParameters.resize(missingParameters.size() + 1,
 						paramNamesVec[i]);
+				missingParametersValues.resize(missingParameters.size() + 1,
+						paramValuesVec[i]);
 			} else {
 				// If specific parameter is found, record it in parameters vector
 				it_material->second = paramValuesVec[i];
@@ -239,18 +255,20 @@ void readMaterialFile(string filename, InputFileData* InputData,
 		}
 
 		if (missingParameters.size() > 0) {
-			logFile << "ERROR: The following parameters are missing from the "
-					"input file: " << endl;
-			cout << "ERROR: The following parameters are missing from the "
-					"input files: " << endl;
+			logFile << "WARNING: Missing from the "
+					"input file: ";
+			cout << "WARNING: Missing from the "
+					"input files: ";
 
 			for (int i = 0; i < missingParameters.size(); i++) {
+
+				material[missingParameters[i]] = missingParametersValues[i];
+
 				logFile << missingParameters[i] << " ";
 				cout << missingParameters[i] << " ";
 			}
 			logFile << endl;
 			cout << endl;
-			MPI_Abort(MPI_COMM_WORLD, 1);
 		}
 
 		//! Check

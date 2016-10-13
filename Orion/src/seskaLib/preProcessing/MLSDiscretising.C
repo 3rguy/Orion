@@ -1313,7 +1313,7 @@ void MLSDiscretising::matrixFieldMLSApproximation(
   for(int i=0;i<referencePoints.size();i++) {
     Particle& point = referencePoints[i];
     dbVector& coords = point.getCoords();
-    logFile<<"POINT "<<i+1<<"(";
+    logFile<<"SAMPLE-POINT "<<i+1<<"(";
     for(int j=0;j<coords.size();j++)
     logFile<<coords[j]<<" ";
     logFile<<") radii: ";
@@ -1375,6 +1375,7 @@ void MLSDiscretising::matrixFieldMLSApproximation(
     logFile<<suppPtcls[j]<<" ";
     logFile<<endl;
   }
+  logFile<<"******************************************************"<<endl;
 #endif
 
   // loop over all points and determine the particle shape function ordinates 
@@ -1384,6 +1385,13 @@ void MLSDiscretising::matrixFieldMLSApproximation(
     intVector& suppPtcls = point.getSupportPtcls();
     dbVector& shapes = point.getShapeFuncs();
     support = suppPtcls.size();
+
+#ifdef _anisotropyInterpolationDebugMode_
+    logFile<<"point "<<i+1<<": support:";
+    for(int k=0;k<suppPtcls.size();k++)
+      logFile<<suppPtcls[k]<<" ";
+    logFile<<endl;
+#endif
 
     // compute the shape function ordinates of all supporting particles
     EFGShapeFunc::calcShapes(InputData,support,suppPtcls,referencePoints,
@@ -1395,17 +1403,24 @@ void MLSDiscretising::matrixFieldMLSApproximation(
 #ifdef _anisotropyInterpolationDebugMode_
   logFile<<"******************************************************"<<endl;
   logFile<<"***************** point shape functions **************"<<endl;
+  double PUM;
   for(int i=0;i<points.size();i++) {
     Point& point = points[i];
     dbVector& coords = point.getCoords();
     intVector& suppPtcls = point.getSupportPtcls();
     dbVector& shapes = point.getShapeFuncs();
+    PUM=0;
     logFile<<"POINT "<<i+1<<"(";
     for(int j=0;j<coords.size();j++)
     logFile<<coords[j]<<" ";
     logFile<<"): ";
-    for(int j=0;j<suppPtcls.size();j++)
-    logFile<<"("<<suppPtcls[j]<<") "<<shapes[j]<<" ";
+    for(int j=0;j<suppPtcls.size();j++) {
+      PUM+=shapes[j];
+      logFile<<"("<<suppPtcls[j]<<") "<<shapes[j]<<" ";
+    }
+    logFile<<endl;
+    if(fabs(1.0-PUM) > 0.000000001)
+    logFile<<"PUM = "<<PUM;
     logFile<<endl;
   }
 #endif

@@ -23,22 +23,17 @@ void DOFStandardisation::initDOFStandardisation(DataContainer* problemData,
 	std::chrono::time_point<std::chrono::system_clock> start, end;
 	start = std::chrono::system_clock::now();
 
-	cout << "DOF Standardisation activated" << endl;
-	logFile << "DOF Standardisation activated" << endl;
-
-	logFile << "******* DOF Standardisation  *******" << endl;
-
 
 	// Preliminary stuff
 	// -----------------
-	if (InputData->getValue("automaticGridNodeSetup") == 1) {
+	if (InputData->getValue("gridNodesType") == 1) {
 
 		//! --------------------------------------------------------------------
 		//! For each data set: Assign displacement field to every particles and
-		//! reset their coordinate with respect to the defined anchor point
-
-		cout << "Setting up automatic benchmark grid" << endl;
-		logFile << "Setting up automatic benchmark grid" << endl;
+		//! reset their coordinates with respect to the defined anchor point
+		//!
+		cout << "Loading up cube grid" << endl;
+		logFile << "Loading up cube grid" << endl;
 
 		intVector& supportDataID = problemData->getIntVector("supportDataID");
 		dbMatrix maxCoordRange;
@@ -74,7 +69,7 @@ void DOFStandardisation::initDOFStandardisation(DataContainer* problemData,
 #endif
 
 		//! Reset particle's coordinates for the unknown geometry
-		logFile << "Coordinate setup for myData" << endl;
+		logFile << "Coordinate setup of myData" << endl;
 		coordinateSetup(myData, maxCoordRange, InputData, logFile);
 
 		// Set maxCoordRange
@@ -98,13 +93,18 @@ void DOFStandardisation::initDOFStandardisation(DataContainer* problemData,
 					"than 3 is not supported yet " << endl;
 			MPI_Abort(MPI_COMM_WORLD, 1);
 		}
+
+		//! --------------------------------------------------------------------
+		//! Setup the reference grid and define the nodes
+
+		myGrid = new GridNodes(InputData, logFile);
 	}
 	else{
 
 		//! --------------------------------------------------------------------
 		//! Setup the reference grid and define the nodes
-		cout << "Loading up benchmark grid" << endl;
-		logFile << "Loading up benchmark grid" << endl;
+		cout << "Loading up template grid" << endl;
+		logFile << "Loading up template grid" << endl;
 
 		myGrid = new GridNodes(InputData, logFile);
 	}
@@ -182,7 +182,9 @@ void DOFStandardisation::coordinateSetup(Data& sData, dbMatrix& maxCoordRange,
 
 	//!Extract coordinates of anchor point
 	dbVector anchorCoords;
-	if(anchorPoint > -1 && anchorPoint < particles.size()+1)
+	if(anchorPoint == 0)
+		anchorCoords = dbVector(particles[0].getCoords().size(),0);
+	else if(anchorPoint > 0 && anchorPoint < particles.size()+1)
 		anchorCoords = particles[anchorPoint-1].getCoords();
 	else{
 		cout << "Anchor Point does not exist or has not been specified in"

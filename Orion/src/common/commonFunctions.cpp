@@ -6254,7 +6254,7 @@ std::string convertIntToString(int number) {
 /***********************************************************************/
 // Check if a double precision number equals to zero within numerical
 // precision limits.
-bool checkZero(double& value) {
+bool checkZero(double value) {
 
 	if (fabs(value) < DBL_EPSILON * 1.0e+03)
 		return true;
@@ -7672,6 +7672,59 @@ std::vector<std::string> splitLine(std::string &s, char delim) {
     splitLine(s, delim, elems);
     return elems;
 }
+
+/***********************************************************************/
+/***********************************************************************/
+// normalize double vector
+void normalizeVector(dbVector& vec) {
+  using namespace std;
+  double norm = computeNorm(vec,2);
+  for(int i=0;i<vec.size();i++)
+    vec[i] /= norm;
+}
+
+/************************************************************************/
+/************************************************************************/
+// Compute a vector norm.
+double computeNorm(dbVector& aVector,int type) {
+
+  using namespace std;
+
+  double norm = 0;
+
+  switch(type) {
+  case 1:
+
+    for(int i = 0;i < aVector.size();i++)
+      norm += aVector[i];
+
+    break;
+  case 2:
+
+    for(int i = 0;i < aVector.size();i++)
+      norm += pow(aVector[i],2);
+
+    norm = sqrt(norm);
+
+    break;
+  case 3:
+
+    for(int i = 0;i < aVector.size();i++)
+
+      if(fabs(aVector[i]) > norm) norm = fabs(aVector[i]);
+
+    break;
+  default:
+    cerr << "In commonFunctions::computeNorm chosen convergence norm type isn't available, "
+        << "check file input.dat!" << endl;
+    MPI_Abort(MPI_COMM_WORLD,1);
+    break;
+  }
+
+  return norm;
+
+}
+
 
 
 

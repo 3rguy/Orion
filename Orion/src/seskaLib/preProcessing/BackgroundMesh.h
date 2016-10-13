@@ -21,6 +21,7 @@
 #include "ParticleDistribution.h"
 #include "petscsys.h"
 #include "petscvec.h"
+#include "ResultantReactionCondition.h"
 
 class BackgroundMesh : public virtual ParticleDistribution {
 
@@ -302,6 +303,12 @@ public:
                                               std::map<std::string,double>& modelData,
                                               std::ofstream& logFile);
 
+    // Return all boundary Gauss indices where a TPM
+    // boundary condition is applied (point,line,surface).
+    intMatrix& getAllTPMBoundGaussPtsIdx(InputFileData* InputData,
+                                              std::map<std::string,double>& modelData,
+                                              std::ofstream& logFile);
+
     // Return all boundary Gauss indices where an depolarisation Dirichlet
     // boundary condition is applied (point,line,surface).
     intMatrix& getAllDepolarisationBoundGaussPtsIdx(InputFileData* InputData,
@@ -413,10 +420,19 @@ public:
     intMatrix& getSurfaceElectricChargeBoundGaussPtsIdx()
     { return surfaceElectricChargeBoundGaussPtsIdx; };
 
+    // Return gauss points indices which have fluid volume flux
+    // are applied.
+    intMatrix& getFluidVolumeFluxBoundGaussPtsIdx()
+    { return fluidVolumeFluxBoundGaussPtsIdx; };
+
     // Return the gauss points associated with cavity-volume-control
     // conditions
     intMatrix& getCavityVolumeControlBoundGaussPtsIdx()
     { return cavityVolumeControlBoundGaussPtsIdx; };
+
+    // Return the gauss points associated with resultant reaction surfaces
+    intMatrix& getResultantReactionBoundGaussPtsIdx()
+    { return resultantReactionBoundGaussPtsIdx; }
 
     intVector& getGaussRootList()  { return gaussRootList; };
     intVector& getBoundGaussRootList() { return bGaussRootList; };
@@ -488,6 +504,11 @@ public:
     intMatrix surfaceElectricChargeBoundGaussPtsIdx;
     intMatrix bodyElectricChargeGaussPtsIdx;
 
+    // Indices of local gauss points which have a TPM
+    // constraint applied
+    intMatrix fluidVolumeFluxBoundGaussPtsIdx;
+    intMatrix porePressureBoundGaussPtsIdx;
+
     // Indices of all boundary Gauss points any deformation boundary
     // conditions are applies
     intMatrix surfaceDispBoundGaussPtsIdx;
@@ -541,6 +562,9 @@ public:
     // conditions
     intMatrix cavityVolumeControlBoundGaussPtsIdx;
 
+    // indices of all gauss points associated with resultant reaction surfaces
+    intMatrix resultantReactionBoundGaussPtsIdx;
+
 
     // all Dirichlet boundary Gauss points indices (point,line,surface)
     intMatrix allDisplacementBoundGaussPtsIdx;
@@ -555,6 +579,8 @@ public:
 
     intMatrix allLineBoundGaussPtsIdx;
     intMatrix allSurfaceBoundGaussPtsIdx;
+
+    intMatrix allTPMBoundGaussPtsIdx;
 
 
     /****************************/

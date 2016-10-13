@@ -8,24 +8,26 @@
 #include "Condition.h"
 
 Condition::Condition() :
-    ID(-1), type("none"), function(0), conditionTime(0),
+    ID( -1), type("none"), function(0), conditionTime(0),
     previousConditionTime(0), conditionTimeIncrement(0),
     minConditionTimeIncrement(0), maxConditionTimeIncrement(0),
     conditionApplicationTimePeriod(0), factor(0), previousFactor(0),
-    maxFactor(0), minFactor(0), maxInverseFactor(0), deltaFactor(0),
-    stepDeltaFactor(0), increment(0), controlMode(1), controlNode(-1),
-    controlDOF(-1), dirichletControlConditionID(0), rateOfChangeOfPressure(0),
-    previousRateOfChangeOfPressure(0), flowRate(0), previousFlowRate(0),
-    flowRateGradient(0), newReferenceFactor(0), referenceFactor(0),
-    inverseSimulationActive(0), referenceCavityVolume(0),
+    maxFactor(0), minFactor(0), maxInverseFactor(0), minInverseFactor(0),
+    deltaFactor(0), stepDeltaFactor(0), increment(0), controlMode(1),
+    controlNode( -1), controlDOF( -1), dirichletControlConditionID(0),
+    rateOfChangeOfPressure(0), previousRateOfChangeOfPressure(0), flowRate(0),
+    previousFlowRate(0), flowRateGradient(0), newReferenceFactor(0),
+    referenceFactor(0), inverseSimulationActive(0), referenceCavityVolume(0),
     currentReferenceCavityVolume(0), currentCavityVolume(0),
-    cardiacCyclePhase(1),endDiastolicTime(0),
-    endDiastolicPressure(0), endSystolicPressure(0), endIVCPressure(0),
-    endIVRPressure(0), windkesselODEResidual(0),
+    cardiacBeatNumber(1), cardiacCyclePhase(1), diastolicFillingFunction(0),
+    endDiastolicTime(0), endIVRTime(0), endDiastolicPressure(0),
+    endSystolicPressure(0), endIVCPressure(0), endIVRPressure(0),
+    cardiacResidualPressure(0), windkesselODEResidual(0),
     windkesselODEResidualTolerence(0), arterialCompliance(0),
     peripheralResistance(0), flowResistance(0), previousCavityVolume(0),
     cavityPressureIncrement(0), linkedControlConditionID(0),
     targetCavityVolume(0), requiredStrokeVolume(0), endDiastolicCavityVolume(0),
+    endSystolicCavityVolume(0), endRelaxationCavityVolume(0),
     currentStrokeVolume(0), deltaDirichletControlDeformation(0),
     stepDirichletControlDeformation(0), surfaceApplicationType(0) {
 
@@ -34,10 +36,14 @@ Condition::Condition() :
   // point Dirichlet
   pushBackVector(admissiblePointDirichletTypes,
                  (string) "Displacement-Point-Constraint");
-  pushBackVector(admissiblePointDirichletTypes,(string) "Rotation-Point-Constraint");
-  pushBackVector(admissiblePointDirichletTypes,(string) "Micro-Point-Constraint");
-  pushBackVector(admissiblePointDirichletTypes,(string) "Stress-Point-Constraint");
-  pushBackVector(admissiblePointDirichletTypes,(string) "Electric-Point-Constraint");
+  pushBackVector(admissiblePointDirichletTypes,
+                 (string) "Rotation-Point-Constraint");
+  pushBackVector(admissiblePointDirichletTypes,
+                 (string) "Micro-Point-Constraint");
+  pushBackVector(admissiblePointDirichletTypes,
+                 (string) "Stress-Point-Constraint");
+  pushBackVector(admissiblePointDirichletTypes,
+                 (string) "Electric-Point-Constraint");
   pushBackVector(admissiblePointDirichletTypes,
                  (string) "Depolarisation-Time-Point-Constraint");
   pushBackVector(admissibleDirichletTypes,admissiblePointDirichletTypes);
@@ -45,10 +51,13 @@ Condition::Condition() :
   // line Dirichlet
   pushBackVector(admissibleLineDirichletTypes,
                  (string) "Displacement-Line-Constraint");
-  pushBackVector(admissibleLineDirichletTypes,(string) "Rotation-Line-Constraint");
+  pushBackVector(admissibleLineDirichletTypes,
+                 (string) "Rotation-Line-Constraint");
   pushBackVector(admissibleLineDirichletTypes,(string) "Micro-Line-Constraint");
-  pushBackVector(admissibleLineDirichletTypes,(string) "Electric-Line-Constraint");
-  pushBackVector(admissibleLineDirichletTypes,(string) "Stress-Line-Constraint");
+  pushBackVector(admissibleLineDirichletTypes,
+                 (string) "Electric-Line-Constraint");
+  pushBackVector(admissibleLineDirichletTypes,
+                 (string) "Stress-Line-Constraint");
   pushBackVector(admissibleLineDirichletTypes,
                  (string) "Depolarisation-Time-Line-Constraint");
   pushBackVector(admissibleDirichletTypes,admissibleLineDirichletTypes);
@@ -60,8 +69,12 @@ Condition::Condition() :
                  (string) "Rotation-Surface-Constraint");
   pushBackVector(admissibleSurfaceDirichletTypes,
                  (string) "Electric-Surface-Constraint");
-  pushBackVector(admissibleSurfaceDirichletTypes,(string) "Micro-Surface-Constraint");
-  pushBackVector(admissibleSurfaceDirichletTypes,(string) "Stress-Surface-Constraint");
+  pushBackVector(admissibleSurfaceDirichletTypes,
+                  (string) "Pore-Pressure-Constraint");
+  pushBackVector(admissibleSurfaceDirichletTypes,
+                 (string) "Micro-Surface-Constraint");
+  pushBackVector(admissibleSurfaceDirichletTypes,
+                 (string) "Stress-Surface-Constraint");
   pushBackVector(admissibleSurfaceDirichletTypes,
                  (string) "Depolarisation-Time-Surface-Constraint");
   pushBackVector(admissibleDirichletTypes,
@@ -82,21 +95,24 @@ Condition::Condition() :
 
   // surface loading
   pushBackVector(admissibleSurfaceLoadingTypes,(string) "Traction-Loading");
-  pushBackVector(admissibleSurfaceLoadingTypes,(string) "Surface-Pressure-Loading");
-  pushBackVector(admissibleSurfaceLoadingTypes,(string) "Surface-Moment-Loading");
-  pushBackVector(admissibleSurfaceLoadingTypes,(string) "Elastic-Surface-Force");
+  pushBackVector(admissibleSurfaceLoadingTypes,
+                 (string) "Surface-Pressure-Loading");
+  pushBackVector(admissibleSurfaceLoadingTypes,
+                 (string) "Surface-Moment-Loading");
+  pushBackVector(admissibleSurfaceLoadingTypes,
+                 (string) "Elastic-Surface-Force");
   pushBackVector(admissibleSurfaceLoadingTypes,
                  (string) "Electric-Surface-Charge-Loading");
+  pushBackVector(admissibleSurfaceLoadingTypes,(string) "Fluid-Volume-Flux");
   pushBackVector(admissibleLoadingTypes,admissibleSurfaceLoadingTypes);
 
+  // body loading
   pushBackVector(admissibleLoadingTypes,(string) "Body-Force-Loading");
   pushBackVector(admissibleLoadingTypes,(string) "Body-Moment-Loading");
   pushBackVector(admissibleLoadingTypes,
                  (string) "Electric-Body-Charge-Loading");
-
-  // resultant reactions
-  pushBackVector(admissibleResultantReactionsTypes,
-                 (string) "Resultant-Internal-Traction");
+  pushBackVector(admissibleLoadingTypes, (string) "Fluid-Volume-Flux");
+  pushBackVector(admissibleLoadingTypes, (string) "Pre-Stress-Loading");
 
   // Dirichlet control conditions
   pushBackVector(admissibleDirichletControlTypes,
@@ -106,10 +122,9 @@ Condition::Condition() :
   pushBackVector(admissibleDirichletControlTypes,
                  admissibleSurfaceDirichletControlTypes);
 
-
   /*********************************************************************/
   // set default function if not specified by user
-  if(functionParams.size()==0) {
+  if(functionParams.size() == 0) {
     resizeArray(functionParams,2);
     functionParams[0] = 0.0;
     functionParams[1] = 1.0;
@@ -137,7 +152,7 @@ bool Condition::isPointDirichletCondition() {
 
   using namespace std;
 
-  return(contains(admissiblePointDirichletTypes,type));
+  return (contains(admissiblePointDirichletTypes,type));
 }
 
 /// check whether condition type is a line Dirichlet condition
@@ -145,7 +160,7 @@ bool Condition::isLineDirichletCondition() {
 
   using namespace std;
 
-  return(contains(admissibleLineDirichletTypes,type));
+  return (contains(admissibleLineDirichletTypes,type));
 }
 
 /// check whether condition type is a surface Dirichlet condition
@@ -153,7 +168,7 @@ bool Condition::isSurfaceDirichletCondition() {
 
   using namespace std;
 
-  return(contains(admissibleSurfaceDirichletTypes,type));
+  return (contains(admissibleSurfaceDirichletTypes,type));
 }
 
 /***********************************************************************/
@@ -176,7 +191,7 @@ bool Condition::isPointLoadingCondition() {
 
   using namespace std;
 
-  return(contains(admissiblePointLoadingTypes,type));
+  return (contains(admissiblePointLoadingTypes,type));
 }
 
 /// check whether condition type is a line loading
@@ -184,7 +199,7 @@ bool Condition::isLineLoadingCondition() {
 
   using namespace std;
 
-  return(contains(admissibleLineLoadingTypes,type));
+  return (contains(admissibleLineLoadingTypes,type));
 }
 
 /// check whether condition type is a surface loading
@@ -192,23 +207,7 @@ bool Condition::isSurfaceLoadingCondition() {
 
   using namespace std;
 
-  return(contains(admissibleSurfaceLoadingTypes,type));
-}
-
-/***********************************************************************/
-/***********************************************************************/
-/// check whether specified resultant reaction type is admissible
-bool Condition::isReactionType(std::string& t) {
-
-  using namespace std;
-
-  bool flag = false;
-
-  if(find(admissibleResultantReactionsTypes.begin(),
-          admissibleResultantReactionsTypes.end(),t)
-    != admissibleResultantReactionsTypes.end()) flag = true;
-
-  return flag;
+  return (contains(admissibleSurfaceLoadingTypes,type));
 }
 
 /***********************************************************************/
@@ -231,7 +230,7 @@ bool Condition::isDirichletControlCondition() {
 
   using namespace std;
 
-  return(contains(admissibleDirichletControlTypes,type));
+  return (contains(admissibleDirichletControlTypes,type));
 }
 
 /// check whether condition type is a surface Dirichlet-control condition
@@ -239,7 +238,7 @@ bool Condition::isSurfaceDirichletControlCondition() {
 
   using namespace std;
 
-  return(contains(admissibleSurfaceDirichletControlTypes,type));
+  return (contains(admissibleSurfaceDirichletControlTypes,type));
 }
 
 /***********************************************************************/
@@ -278,7 +277,7 @@ int& Condition::getControlNode() {
     if(nodes.size() != 1) {
       cerr
           << "In Condition::getControlNode each displacement-control condition\n"
-          << "can only be associated with one node."<<endl;
+          << "can only be associated with one node." << endl;
       MPI_Abort(MPI_COMM_WORLD,1);
     }
     else controlNode = nodes[0];
@@ -302,7 +301,7 @@ int& Condition::getControlDOF() {
     if(n != 1) {
       cerr
           << "In Condition::getControlNode each displacement-control condition\n"
-          << "can only be associated with one node."<<endl;
+          << "can only be associated with one node." << endl;
       MPI_Abort(MPI_COMM_WORLD,1);
     }
 
@@ -313,11 +312,10 @@ int& Condition::getControlDOF() {
 
 /***********************************************************************/
 /***********************************************************************/
-/// return the condition time increment referring to the user-specified
-/// condition function and a corresponding condition increment:
-/// df = f(t_n+1) - f(t_n)
-double Condition::getConditionTimeIncrement(
-    std::map<std::string,double>& calcData,
+/// return the condition time increment of the next simulation step
+/// using the specified condition function
+double Condition::getNewConditionTimeIncrement(
+    double incrementFactor,std::map<std::string,double>& calcData,
     std::map<std::string,double>& modelData,std::ofstream& logFile) {
 
   using namespace std;
@@ -328,22 +326,21 @@ double Condition::getConditionTimeIncrement(
   int dynamicsType = (int) calcData["dynamicSimulation"];
 
   double newFactor,newIncrement;
-  double currentTime = previousConditionTime + conditionTimeIncrement;
 
-  // condition increment: df = f(t_n+1) - f(t_n)
+  // t_n+2 = t_n+1 + c*dt
+  double currentTime = conditionTime + conditionTimeIncrement * incrementFactor;
 
-  // set the admissible condition time increment referring to a corresponding
-  // condition increment: df = f(t_n+1) - f(t_n)
+  // set the admissible condition time increment dt = t_n+2 - t_n+1
   switch(function) {
 
   // f = Df
   case 0:
-    newIncrement=0;
+    newIncrement = 0;
     break;
 
     /********************************************************************/
     // f(s) = a1*s + a0 <= fmax
-    // with tmax = (fmax-a0)/a1
+    // with smax = (fmax-a0)/a1
   case 1: {
 
     newFactor = functionParams[1] * currentTime + functionParams[0];
@@ -351,11 +348,30 @@ double Condition::getConditionTimeIncrement(
     // f < f0
     if(fabs(newFactor)
       < fabs(maxFactor) || fabs(newFactor-maxFactor) <= DBL_EPSILON) newIncrement =
-      currentTime - previousConditionTime;
+      currentTime - conditionTime;
 
     // f = f0
     else if(fabs(newFactor) > fabs(maxFactor)) newIncrement = (maxFactor
-      - functionParams[0]) / functionParams[1] - previousConditionTime;
+      - functionParams[0]) / functionParams[1] - conditionTime;
+
+    else newIncrement = 0;
+
+    break;
+  }
+    /********************************************************************/
+    // f(s) = -a1*s + a0 >= fmin
+    // with smax = -(fmin-a0)/a1
+  case 2: {
+
+    newFactor = -functionParams[1] * currentTime + functionParams[0];
+
+    // f < f0
+    if(newFactor > minFactor || fabs(newFactor - minFactor) <= DBL_EPSILON) newIncrement =
+      currentTime - conditionTime;
+
+    // f = f0
+    else if(newFactor < minFactor) newIncrement = -(minFactor
+      - functionParams[0]) / functionParams[1] - conditionTime;
 
     else newIncrement = 0;
 
@@ -368,14 +384,13 @@ double Condition::getConditionTimeIncrement(
 
     // s < s0
     if(conditionApplicationTimePeriod - currentTime > DBL_EPSILON * 1.0e+03) newIncrement =
-      currentTime - previousConditionTime;
+      currentTime - conditionTime;
 
     // s = s0
     else if(conditionApplicationTimePeriod - currentTime
       < -DBL_EPSILON * 1.0e+03
-      && conditionApplicationTimePeriod - previousConditionTime
-        > DBL_EPSILON * 1.0e+03) newIncrement = conditionApplicationTimePeriod
-      - previousConditionTime;
+      && conditionApplicationTimePeriod - conditionTime > DBL_EPSILON * 1.0e+03) newIncrement =
+      conditionApplicationTimePeriod - conditionTime;
 
     // s > s0
     else newIncrement = 0;
@@ -390,21 +405,19 @@ double Condition::getConditionTimeIncrement(
 
     // s <= s0
     if(conditionApplicationTimePeriod - currentTime >= -DBL_EPSILON * 1.0e+03) newIncrement =
-      currentTime - previousConditionTime;
+      currentTime - conditionTime;
 
     // s = s0
     else if(conditionApplicationTimePeriod - currentTime
       < -DBL_EPSILON * 1.0e+03
-      && conditionApplicationTimePeriod - previousConditionTime
-        > DBL_EPSILON * 1.0e+03) newIncrement = conditionApplicationTimePeriod
-      - previousConditionTime;
+      && conditionApplicationTimePeriod - conditionTime > DBL_EPSILON * 1.0e+03) newIncrement =
+      conditionApplicationTimePeriod - conditionTime;
 
     // s0 < s <= 2*s0
     else if(conditionApplicationTimePeriod - currentTime
       < -DBL_EPSILON * 1.0e+03
       && 2.0 * conditionApplicationTimePeriod - currentTime
-        > DBL_EPSILON * 1.0e+03) newIncrement = currentTime
-      - previousConditionTime;
+        > DBL_EPSILON * 1.0e+03) newIncrement = currentTime - conditionTime;
 
     // s > 2*s0
     else newIncrement = 0;
@@ -421,12 +434,50 @@ double Condition::getConditionTimeIncrement(
   return (newIncrement);
 }
 
+/************************************************************************/
+/************************************************************************/
+// Check whether the condition time increment is within the
+// user-specified limits
+void Condition::checkConditionTimeIncrementLimits(
+    double& newConditionTimeIncrement,std::ofstream& logFile) {
+
+  using namespace std;
+
+  // keep the simulation increment within a given range
+  // adjust to user-defined minimum time increment
+  if(fabs(newConditionTimeIncrement) < fabs(minConditionTimeIncrement)) {
+
+    newConditionTimeIncrement = minConditionTimeIncrement;
+
+    cerr << "WARNING: minimum condition increment=" << minConditionTimeIncrement
+        << " enforced" << endl;
+    logFile << "WARNING: minimum condition increment="
+        << minConditionTimeIncrement << " enforced" << endl;
+
+  }
+
+  // adjust to user-defined maximum time increment
+  else if(fabs(newConditionTimeIncrement) > fabs(maxConditionTimeIncrement)) {
+
+    newConditionTimeIncrement = maxConditionTimeIncrement;
+
+    cerr << "WARNING: maximum condition increment=" << maxConditionTimeIncrement
+        << " enforced" << endl;
+    logFile << "WARNING: maximum condition increment="
+        << maxConditionTimeIncrement << " enforced" << endl;
+
+  }
+
+}
+
 /***********************************************************************/
 /***********************************************************************/
-/// update the condition time to match a current loading factor
-void Condition::updateConditionTime(std::map<std::string,double>& calcData,
-                                    std::map<std::string,double>& modelData,
-                                    std::ofstream& logFile) {
+// increase incrementally the condition factor via the condition time
+// increment
+void Condition::setFactor(double incrementFactor,
+                          std::map<std::string,double>& calcData,
+                          std::map<std::string,double>& modelData,
+                          std::ofstream& logFile) {
 
   using namespace std;
 
@@ -437,6 +488,414 @@ void Condition::updateConditionTime(std::map<std::string,double>& calcData,
   int rank,size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+  if(calcData["iterationStep"] == 0
+    && (calcData["simulationStep"] > 1 || extend)) {
+
+    previousFactor = factor;
+    previousConditionTime = conditionTime;
+  }
+
+  double fullFactor,fullTime,fullConditionTime;
+
+  // (normal) forward simulation
+  if( !inverseSimulationActive) {
+
+    if(conditionTimeIncrement > conditionApplicationTimePeriod) {
+      logFile << "In Condition::setFactor " << type
+          << " 'condition time increment'=" << conditionTimeIncrement << "\n"
+          << "must be smaller or equal to than 'condition application time period'="
+          << conditionApplicationTimePeriod << "." << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+    }
+
+    // Choose a loading function and set loading factor.
+    switch(function) {
+
+    // f = Df
+    case 0:
+
+      break;
+
+      /********************************************************************/
+      // f(s) = a1*s + a0 <= fmax
+      // with smax = (fmax-a0)/a1
+    case 1: {
+
+      if((int) calcData["simulationStep"] == 1
+        && fabs(factor) > fabs(maxFactor)) {
+        logFile << "In Condition::setFactor " << type
+            << " 'max. condition factor'=" << maxFactor << "\n"
+            << "must be larger than current condition factor=" << factor << "."
+            << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+
+      if(maxFactor <= 0) {
+        logFile << "In Condition::setFactor max. condition factor\n" << "of "
+            << type << " ID=" << ID << " must be larger than zero." << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+
+      // check whether simulation has finished - statics
+      if(dynamicsType == 0) {
+
+        // s_n+1
+        conditionTimeIncrement *= incrementFactor;
+        conditionTime = previousConditionTime + conditionTimeIncrement;
+
+        // lambda at s_n+1
+        factor = functionParams[1] * conditionTime + functionParams[0];
+
+        // check whether simulation has finished
+        if(fabs(factor - maxFactor) < DBL_EPSILON * 1.0e+03
+          || fabs(factor) > fabs(maxFactor)) {
+          factor = maxFactor;
+
+          // s_n+1
+          conditionTime = (factor - functionParams[0]) / functionParams[1];
+          conditionTimeIncrement = conditionTime - previousConditionTime;
+
+          calcData["simulationCompleted"] = 1;
+        }
+
+      }
+
+      // check whether simulation has finished - dynamics
+      else if(dynamicsType > 0) {
+
+        // s_n
+        conditionTime += 0.5 * conditionTimeIncrement;
+
+        // s_n+1/2
+        conditionTimeIncrement *= incrementFactor;
+        conditionTime += 0.5 * conditionTimeIncrement;
+
+        // lambda at s_n+1/2
+        factor = functionParams[1] * conditionTime + functionParams[0];
+
+        // check whether simulation has finished
+        fullFactor = functionParams[1]
+          * (conditionTime + 0.5 * conditionTimeIncrement) + functionParams[0];
+
+        if(fabs(fullFactor - maxFactor) < DBL_EPSILON * 1.0e+03
+          || fabs(fullFactor) > fabs(maxFactor)) {
+
+          // s_n+1
+          fullConditionTime = (maxFactor - functionParams[0])
+            / functionParams[1];
+          conditionTimeIncrement = fullConditionTime - previousConditionTime;
+
+          // s_n+1/2 (in case of dynamics mid-point rule)
+          conditionTime = previousConditionTime + 0.5 * conditionTimeIncrement;
+
+          // lambda at s_n+1/2
+          factor = functionParams[1] * conditionTime + functionParams[0];
+
+          calcData["simulationCompleted"] = 1;
+        }
+
+      }
+
+      break;
+    }
+      /********************************************************************/
+      // f(s) = -a1*s + a0 >= fmin
+      // with smax = -(fmin-a0)/a1
+    case 2: {
+
+      if(functionParams[0] <= minFactor) {
+        logFile << "In Condition::setFactor min. condition factor\n" << "of "
+            << type << " ID=" << ID
+            << " must be larger than function parameter 'a0'." << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+      if((int) calcData["simulationStep"] == 1 && factor > functionParams[0]) {
+        logFile << "In Condition::setFactor condition factor\n" << "of " << type
+            << " ID=" << ID << " must be larger than function parameter 'a0'."
+            << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+
+      // check whether simulation has finished - statics
+      if(dynamicsType == 0) {
+
+        // s_n+1
+        conditionTimeIncrement *= incrementFactor;
+        conditionTime = previousConditionTime + conditionTimeIncrement;
+
+        // lambda at s_n+1
+        factor = -functionParams[1] * conditionTime + functionParams[0];
+
+        // check whether simulation has finished
+        if(fabs(factor - minFactor) < DBL_EPSILON * 1.0e+03
+          || factor < minFactor) {
+          factor = minFactor;
+
+          // s_n+1
+          conditionTime = -(factor - functionParams[0]) / functionParams[1];
+          conditionTimeIncrement = conditionTime - previousConditionTime;
+
+          calcData["simulationCompleted"] = 1;
+        }
+
+      }
+
+      // check whether simulation has finished - dynamics
+      else if(dynamicsType > 0) {
+        logFile << "In Condition::setFactor loading function " << function
+            << "\n" << "of " << type << " ID=" << ID
+            << "is not supported for dynamics!" << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+
+      break;
+    }
+      /********************************************************************/
+      // f(s) = a1*s + a0 for s <= s0
+      // f(s) = f0        for s > s0
+    case 5: {
+
+      // s_n
+      conditionTime += 0.5 * conditionTimeIncrement;
+
+      // s_n+1/2
+      conditionTimeIncrement *= incrementFactor;
+      conditionTime += 0.5 * conditionTimeIncrement;
+
+      fullConditionTime = conditionTime + 0.5 * conditionTimeIncrement;
+
+      // lambda at s_n+1/2
+      if(conditionApplicationTimePeriod - fullTime >= -DBL_EPSILON * 1.0e+03) factor =
+        functionParams[1] * conditionTime + functionParams[0];
+
+      else {
+
+        // s_n+1
+        fullConditionTime = (maxFactor - functionParams[0]) / functionParams[1];
+        conditionTimeIncrement = fullConditionTime - previousConditionTime;
+
+        // s_n+1/2 (in case of dynamics mid-point rule)
+        conditionTime = previousConditionTime + 0.5 * conditionTimeIncrement;
+
+        // lambda at s_n+1/2
+        factor = functionParams[1] * conditionTime + functionParams[0];
+      }
+
+      // check whether simulation has finished
+      if(tMax - fullTime < -DBL_EPSILON * 1.0e+03) calcData["simulationCompleted"] =
+        1;
+
+      break;
+    }
+      /********************************************************************/
+      // f(s) = a1*s + a0                 for s <= s0  and
+      // f(s) = -a1*(s-s0) + (a1*s0 + a0) for s0 < s < 2*s0
+      // f(s) = 0
+    case 6: {
+
+      // s_n
+      conditionTime += 0.5 * conditionTimeIncrement;
+
+      // s_n+1/2
+
+      conditionTimeIncrement *= incrementFactor;
+      conditionTime += 0.5 * conditionTimeIncrement;
+
+      fullTime = conditionTime + 0.5 * conditionTimeIncrement;
+
+      // --------------------------------------
+      // lambda at s_n+1/2
+
+      // s <= s0
+      if(conditionApplicationTimePeriod - fullTime >= -DBL_EPSILON * 1.0e+03) factor =
+        functionParams[1] * conditionTime + functionParams[0];
+
+      // s0 < s <= 2*s0
+      else if(conditionApplicationTimePeriod - fullTime < -DBL_EPSILON * 1.0e+03
+        && 2.0 * conditionApplicationTimePeriod - fullTime
+          > DBL_EPSILON * 1.0e+03) {
+        factor = -functionParams[1] * conditionTime
+          + 2 * functionParams[1] * conditionApplicationTimePeriod
+          + functionParams[0];
+      }
+
+      // s > 2*s0
+      else {
+
+        conditionTimeIncrement = 0;
+
+        // s_n+1/2
+        conditionTime = 0;
+
+        // lambda at s_n+1/2
+
+        factor = 0;
+      }
+
+      // ----------------------------------------
+      // check whether simulation has finished
+      if(tMax - fullTime < -DBL_EPSILON * 1.0e+03) calcData["simulationCompleted"] =
+        1;
+
+      break;
+    }
+    default:
+      logFile << "In Condition::updateFactor loading function " << function
+          << "\n" << "of " << type << " ID=" << ID << "is not supported!"
+          << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+      break;
+    }
+
+  }
+  /*********************************************************************/
+  // inverse simulation (to determine unknown unloaded configuration)
+  else {
+
+    if(fabs(factor) > fabs(maxInverseFactor)
+      && (bool) calcData["inverseLoadingControlledSimulation"]) {
+      logFile << "In Condition::setFactor " << type << " ID=" << ID
+          << " max. inverse condition factor=" << maxInverseFactor << "\n"
+          << "must be larger than current condition factor=" << factor << "."
+          << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+    }
+
+    // Choose a loading function and set loading factor.
+    switch(function) {
+
+    // f = Df
+    case 0:
+
+      break;
+
+      /********************************************************************/
+      // f(s) = a1*s + a0 <= fmax
+      // with smax = (fmax-a0)/a1
+    case 1: {
+
+      if(maxInverseFactor <= 0) {
+        logFile << "In Condition::updateFactor max. inverse condition factor\n"
+            << "of " << type << " ID=" << ID << " must be larger than zero."
+            << endl;
+        MPI_Abort(MPI_COMM_WORLD,1);
+      }
+
+      // check whether simulation has finished - statics
+      if(dynamicsType == 0) {
+
+        // s_n+1
+        conditionTimeIncrement *= incrementFactor;
+        conditionTime = previousConditionTime + conditionTimeIncrement;
+
+        // lambda at s_n+1
+        factor = functionParams[1] * conditionTime + functionParams[0];
+
+        // check whether simulation has finished
+        if(fabs(factor - maxInverseFactor) < DBL_EPSILON * 1.0e+03
+          || fabs(factor) > fabs(maxInverseFactor)) {
+
+          factor = maxInverseFactor;
+
+          // s_n+1
+          conditionTime = (factor - functionParams[0]) / functionParams[1];
+          conditionTimeIncrement = conditionTime - previousConditionTime;
+
+          calcData["simulationCompleted"] = 1;
+        }
+
+      }
+
+      // check whether simulation has finished - dynamics
+      else if(dynamicsType > 0) {
+
+        // s_n
+        conditionTime += 0.5 * conditionTimeIncrement;
+
+        // s_n+1/2
+        conditionTimeIncrement *= incrementFactor;
+        conditionTime += 0.5 * conditionTimeIncrement;
+
+        // lambda at s_n+1/2
+        factor = functionParams[1] * conditionTime + functionParams[0];
+
+        // check whether simulation has finished
+        fullFactor = functionParams[1]
+          * (conditionTime + 0.5 * conditionTimeIncrement) + functionParams[0];
+
+        if(fabs(fullFactor - maxInverseFactor) < DBL_EPSILON * 1.0e+03
+          || fabs(fullFactor) > fabs(maxInverseFactor)) {
+
+          // s_n+1
+          fullConditionTime = (maxInverseFactor - functionParams[0])
+            / functionParams[1];
+          conditionTimeIncrement = fullConditionTime - previousConditionTime;
+
+          // s_n+1/2 (in case of dynamics mid-point rule)
+          conditionTime = previousConditionTime + 0.5 * conditionTimeIncrement;
+
+          // lambda at s_n+1/2
+          factor = functionParams[1] * conditionTime + functionParams[0];
+
+          calcData["simulationCompleted"] = 1;
+        }
+
+      }
+
+      break;
+    }
+    default:
+      logFile << "In Condition::updateFactor loading function " << function
+          << "\n" << "of " << type << " ID=" << ID << " is not supported!"
+          << endl;
+      MPI_Abort(MPI_COMM_WORLD,1);
+      break;
+    }
+
+  }
+
+  // update increment
+  increment = factor - previousFactor;
+
+  logFile << type << " ID=" << ID << " factor=" << factor << " increment="
+      << increment << endl;
+  if(rank == 0) cout << type << " ID=" << ID << " factor=" << factor
+      << " increment=" << increment << endl;
+
+}
+
+/***********************************************************************/
+/***********************************************************************/
+/// update the condition factor and the corresponding condition time
+/// increment
+void Condition::updateFactor(double& factorIncrement,
+                             std::map<std::string,double>& calcData,
+                             std::map<std::string,double>& modelData,
+                             std::ofstream& logFile) {
+
+  using namespace std;
+
+  bool extend = (bool) calcData["restartFileID"];
+  int dynamicsType = (int) calcData["dynamicSimulation"];
+  double tMax = calcData["maxSimulationTime"];
+
+  int rank,size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  if(calcData["iterationStep"] == 0
+    && (calcData["simulationStep"] > 1 || extend)) {
+
+    previousFactor = factor;
+    previousConditionTime = conditionTime;
+  }
+
+  // update the factor
+  increment = factorIncrement;
+  factor += increment;
+
+  /*********************************************************************/
+  // update the condition time
+  //
   // Choose a loading function and set loading factor.
   switch(function) {
 
@@ -453,6 +912,17 @@ void Condition::updateConditionTime(std::map<std::string,double>& calcData,
 
     // s_n+1 or s_n+1/2 (in case of dynamics mid-point rule)
     conditionTime = (factor - functionParams[0]) / functionParams[1];
+
+    break;
+  }
+    /********************************************************************/
+    // f(s) = -a1*s + a0 >= fmin,
+    //
+    // i.e.: s = -(f(s)-a0)/a1
+  case 2: {
+
+    // s_n+1 or s_n+1/2 (in case of dynamics mid-point rule)
+    conditionTime = -(factor - functionParams[0]) / functionParams[1];
 
     break;
   }
@@ -492,334 +962,18 @@ void Condition::updateConditionTime(std::map<std::string,double>& calcData,
     break;
   }
   default:
-    logFile << "In Condition::updateConditionTime loading function " << function
+    logFile << "In Condition::updateFactor loading function " << function
         << "\n" << "is not supported!" << endl;
     MPI_Abort(MPI_COMM_WORLD,1);
     break;
   }
 
-  if(function != 0) {
-    logFile << type << " ID=" << ID << " condition-time=" << conditionTime
-        << endl;
-    if(rank == 0) cout << type << " ID=" << ID << " condition-time="
-        << conditionTime << endl;
-  }
+  conditionTimeIncrement = conditionTime - previousConditionTime;
 
-}
-
-/************************************************************************/
-/************************************************************************/
-// Check whether the condition time increment is within the
-// user-specified limits
-void Condition::checkConditionTimeIncrementLimits(
-    double& newConditionTimeIncrement,
-    std::ofstream& logFile) {
-
-  using namespace std;
-
-  // keep the simulation increment within a given range
-  // adjust to user-defined minimum time increment
-  if(fabs(newConditionTimeIncrement) < fabs(minConditionTimeIncrement)) {
-
-    newConditionTimeIncrement = minConditionTimeIncrement;
-
-    logFile << "WARNING: minimum condition increment="
-        << minConditionTimeIncrement << " reached" << endl;
-
-  }
-
-  // adjust to user-defined maximum time increment
-  else if(fabs(newConditionTimeIncrement) > fabs(maxConditionTimeIncrement)) {
-
-    newConditionTimeIncrement = maxConditionTimeIncrement;
-
-    logFile << "WARNING: maximum condition increment="
-        << maxConditionTimeIncrement << " reached" << endl;
-
-  }
-
-}
-
-/***********************************************************************/
-/***********************************************************************/
-/// incrementally update the condition factor by time increment
-void Condition::updateFactor(double incrementFactor,
-                             std::map<std::string,double>& calcData,
-                             std::map<std::string,double>& modelData,
-                             std::ofstream& logFile) {
-
-  using namespace std;
-
-  bool extend = (bool) calcData["restartFileID"];
-  int dynamicsType = (int) calcData["dynamicSimulation"];
-  double tMax = calcData["maxSimulationTime"];
-
-  int rank,size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  if(calcData["iterationStep"] == 0
-    && (calcData["simulationStep"] > 1 || extend)) {
-
-    previousFactor = factor;
-    previousConditionTime = conditionTime;
-  }
-
-  double fullFactor,fullTime;
-
-  // (normal) forward simulation
-  if( !inverseSimulationActive) {
-
-    if((int) calcData["simulationStep"] == 1
-      && fabs(factor) > fabs(maxFactor)) {
-      logFile << "In Condition::updateFactor "<<type
-          <<" max. condition factor="<<maxFactor<<"\n"
-          << "must be larger than current condition factor="<<factor<<"." << endl;
-      MPI_Abort(MPI_COMM_WORLD,1);
-    }
-
-    // Choose a loading function and set loading factor.
-    switch(function) {
-
-    // f = Df
-    case 0:
-
-      break;
-
-      /********************************************************************/
-      // f(s) = a1*s + a0 <= fmax
-      // with smax = (fmax-a0)/a1
-    case 1: {
-
-      if(maxFactor <= 0) {
-        logFile << "In Condition::updateFactor max. condition factor\n"
-            << "of "<<type<<" ID="<<ID<< " must be larger than zero." << endl;
-        MPI_Abort(MPI_COMM_WORLD,1);
-      }
-
-      // check whether simulation has finished - statics
-      if(dynamicsType == 0) {
-
-        // s_n+1
-        conditionTimeIncrement *= incrementFactor;
-        conditionTime = previousConditionTime + conditionTimeIncrement;
-
-        // lambda at s_n+1
-        factor = functionParams[1] * conditionTime + functionParams[0];
-
-        // check whether simulation has finished
-        if(fabs(factor - maxFactor) < DBL_EPSILON * 1.0e+03
-          || fabs(factor) > fabs(maxFactor)) {
-          factor = maxFactor;
-          calcData["simulationCompleted"] = 1;
-        }
-
-      }
-
-      // check whether simulation has finished - dynamics
-      else if(dynamicsType > 0) {
-
-        // s_n
-        conditionTime += 0.5 * conditionTimeIncrement;
-
-        // s_n+1/2
-        conditionTimeIncrement *= incrementFactor;
-        conditionTime += 0.5 * conditionTimeIncrement;
-
-        // lambda at s_n+1/2
-        factor = functionParams[1] * conditionTime + functionParams[0];
-
-        // check whether simulation has finished
-        fullFactor = functionParams[1]
-          * (conditionTime + 0.5 * conditionTimeIncrement) + functionParams[0];
-
-        if(fabs(fullFactor - maxFactor) < DBL_EPSILON * 1.0e+03
-          || fabs(fullFactor) > fabs(maxFactor)) {
-
-          if(fabs(factor - maxFactor) < DBL_EPSILON * 1.0e+03
-               || fabs(factor) > fabs(maxFactor))
-            factor = maxFactor;
-
-          calcData["simulationCompleted"] = 1;
-        }
-
-      }
-
-      break;
-    }
-      /********************************************************************/
-      // f(s) = a1*s + a0 for s <= s0
-      // f(s) = f0        for s > s0
-    case 5: {
-
-      // s_n
-      conditionTime += 0.5 * conditionTimeIncrement;
-
-      // s_n+1/2
-      conditionTimeIncrement *= incrementFactor;
-      conditionTime += 0.5 * conditionTimeIncrement;
-
-      fullTime = conditionTime + 0.5 * conditionTimeIncrement;
-
-      // lambda at s_n+1/2
-      if(conditionApplicationTimePeriod - fullTime >= -DBL_EPSILON * 1.0e+03) factor =
-        functionParams[1] * conditionTime + functionParams[0];
-
-      else factor = maxFactor;
-
-      // check whether simulation has finished
-      if(tMax - fullTime < -DBL_EPSILON * 1.0e+03) calcData["simulationCompleted"] =
-        1;
-
-      break;
-    }
-      /********************************************************************/
-      // f(s) = a1*s + a0                 for s <= s0  and
-      // f(s) = -a1*(s-s0) + (a1*s0 + a0) for s0 < s < 2*s0
-      // f(s) = 0
-    case 6: {
-
-      // s_n
-      conditionTime += 0.5 * conditionTimeIncrement;
-
-      // s_n+1/2
-
-      conditionTimeIncrement *= incrementFactor;
-      conditionTime += 0.5 * conditionTimeIncrement;
-
-      fullTime = conditionTime + 0.5 * conditionTimeIncrement;
-
-      // --------------------------------------
-      // lambda at s_n+1/2
-
-      // s <= s0
-      if(conditionApplicationTimePeriod - fullTime >= -DBL_EPSILON * 1.0e+03) factor =
-        functionParams[1] * conditionTime + functionParams[0];
-
-      // s0 < s <= 2*s0
-      else if(conditionApplicationTimePeriod - fullTime < -DBL_EPSILON * 1.0e+03
-        && 2.0 * conditionApplicationTimePeriod - fullTime
-          > DBL_EPSILON * 1.0e+03) factor = -functionParams[1] * conditionTime
-        + 2 * functionParams[1] * conditionApplicationTimePeriod
-        + functionParams[0];
-
-      // s > 2*s0
-      else factor = 0;
-
-      // ----------------------------------------
-      // check whether simulation has finished
-      if(tMax - fullTime < -DBL_EPSILON * 1.0e+03) calcData["simulationCompleted"] =
-        1;
-
-      break;
-    }
-    default:
-      logFile << "In Condition::updateFactor loading function " << function
-          << "\n" << "of "<<type<<" ID="<<ID<< "is not supported!" << endl;
-      MPI_Abort(MPI_COMM_WORLD,1);
-      break;
-    }
-
-  }
-  /*********************************************************************/
-  // inverse simulation (to determine unknown unloaded configuration)
-  else {
-
-    if(fabs(factor) > fabs(maxInverseFactor)
-      && (bool) calcData["inverseLoadingControlledSimulation"]) {
-      logFile << "In Condition::updateFactor "<<type<<" ID="<<ID
-          <<" max. inverse condition factor="
-          <<maxInverseFactor<<"\n"
-          << "must be larger than current condition factor="<<factor<<"." << endl;
-      MPI_Abort(MPI_COMM_WORLD,1);
-    }
-
-    // Choose a loading function and set loading factor.
-    switch(function) {
-
-    // f = Df
-    case 0:
-
-      break;
-
-      /********************************************************************/
-      // f(s) = a1*s + a0 <= fmax
-      // with smax = (fmax-a0)/a1
-    case 1: {
-
-      if(maxInverseFactor <= 0) {
-        logFile << "In Condition::updateFactor max. inverse condition factor\n"
-            << "of "<<type<<" ID="<<ID<< " must be larger than zero." << endl;
-        MPI_Abort(MPI_COMM_WORLD,1);
-      }
-
-      // check whether simulation has finished - statics
-      if(dynamicsType == 0) {
-
-        // s_n+1
-        conditionTimeIncrement *= incrementFactor;
-        conditionTime = previousConditionTime + conditionTimeIncrement;
-
-        // lambda at s_n+1
-        factor = functionParams[1] * conditionTime + functionParams[0];
-
-        // check whether simulation has finished
-        if(fabs(factor - maxInverseFactor) < DBL_EPSILON * 1.0e+03
-          || fabs(factor) > fabs(maxInverseFactor)) {
-
-          factor = maxInverseFactor;
-          calcData["simulationCompleted"] = 1;
-        }
-
-      }
-
-      // check whether simulation has finished - dynamics
-      else if(dynamicsType > 0) {
-
-        // s_n
-        conditionTime += 0.5 * conditionTimeIncrement;
-
-        // s_n+1/2
-        conditionTimeIncrement *= incrementFactor;
-        conditionTime += 0.5 * conditionTimeIncrement;
-
-        // lambda at s_n+1/2
-        factor = functionParams[1] * conditionTime + functionParams[0];
-
-        // check whether simulation has finished
-        fullFactor = functionParams[1]
-          * (conditionTime + 0.5 * conditionTimeIncrement) + functionParams[0];
-
-        if(fabs(fullFactor - maxInverseFactor) < DBL_EPSILON * 1.0e+03
-          || fabs(fullFactor) > fabs(maxInverseFactor)) {
-
-          if(fabs(factor - maxInverseFactor) < DBL_EPSILON * 1.0e+03
-            || fabs(factor) > fabs(maxInverseFactor)) factor = maxInverseFactor;
-
-          calcData["simulationCompleted"] = 1;
-        }
-
-      }
-
-      break;
-    }
-    default:
-      logFile << "In Condition::updateFactor loading function " << function
-          << "\n" << "of "<<type<<" ID="<<ID<< " is not supported!" << endl;
-      MPI_Abort(MPI_COMM_WORLD,1);
-      break;
-    }
-
-  }
-
-  // update increment
-  increment = factor - previousFactor;
-
-
-    logFile << type << " ID=" << ID << " factor=" << factor << " increment="
+  logFile << type << " ID=" << ID << " factor=" << factor << " increment="
       << increment << endl;
   if(rank == 0) cout << type << " ID=" << ID << " factor=" << factor
       << " increment=" << increment << endl;
-
 
 }
 
@@ -858,6 +1012,14 @@ double Condition::computeFactor(double t,std::map<std::string,double>& calcData,
     break;
 
     /********************************************************************/
+    // f(s) = -a1*s + a0 >= fmin
+    // with smax = -(fmin-a0)/a1
+  case 2:
+
+    lambda = -functionParams[1] * t + functionParams[0];
+    break;
+
+    /********************************************************************/
     // f(s) = a1*s + a0 for s <= s0
     // f(s) = f0        for s > s0
   case 5: {
@@ -892,13 +1054,62 @@ double Condition::computeFactor(double t,std::map<std::string,double>& calcData,
     break;
   }
   default:
-    logFile << "In Condition::updateFactor loading function " << function
+    logFile << "In Condition::computeFactor loading function " << function
         << "\n" << "is not supported!" << endl;
     MPI_Abort(MPI_COMM_WORLD,1);
     break;
   }
 
   return lambda;
+
+}
+
+/***********************************************************************/
+/***********************************************************************/
+double& Condition::getMaxFactor() {
+
+  using namespace std;
+
+  // (normal) forward simulation
+  if( !inverseSimulationActive) return maxFactor;
+
+  // inverse simulation (to determine unknown unloaded configuration)
+  else return maxInverseFactor;
+
+}
+double& Condition::getMinFactor() {
+
+  using namespace std;
+
+  // (normal) forward simulation
+  if( !inverseSimulationActive) return minFactor;
+
+  // inverse simulation (to determine unknown unloaded configuration)
+  else return minInverseFactor;
+
+}
+
+/***********************************************************************/
+/***********************************************************************/
+// set the maxFactor such that the condition value matches the given
+// maxValue
+void Condition::setMaxFactor(double maxValue) {
+
+  using namespace std;
+
+  double value = 0;
+
+  for(int i = 0;i < conditionValues.size();i++)
+
+    if(DOFs[i]) value += pow(conditionValues[i],2);
+
+  value = sqrt(value);
+
+  // (normal) forward simulation
+  if( !inverseSimulationActive) maxFactor = maxValue / value;
+
+  // inverse simulation (to determine unknown unloaded configuration)
+  else maxInverseFactor = maxValue / value;
 
 }
 
@@ -912,33 +1123,12 @@ double Condition::getCurrentCondition() {
 
   double value = 0;
 
-  for(int i=0;i<conditionValues.size();i++)
+  for(int i = 0;i < conditionValues.size();i++)
 
-    if(DOFs[i])
-      value += pow(conditionValues[i],2);
+    if(DOFs[i]) value += pow(conditionValues[i],2);
 
-  value = factor*sqrt(value);
+  value = factor * sqrt(value);
   return value;
-}
-
-/***********************************************************************/
-/***********************************************************************/
-// set the maxFactor such that the condition value matches the given
-// maxValue
-void Condition::setMaxFactor(double maxValue) {
-
-  using namespace std;
-
-  double value = 0;
-
-  for(int i=0;i<conditionValues.size();i++)
-
-    if(DOFs[i])
-      value += pow(conditionValues[i],2);
-
-  value = sqrt(value);
-
-  maxFactor = maxValue/value;
 }
 
 /***********************************************************************/
@@ -952,14 +1142,16 @@ bool Condition::checkInverseSimulationActive(
 
   int dynamicsType = (int) calcData["dynamicSimulation"];
 
-  double currentFactor,fullFactor;
+  double currentFactor;
+
+  inverseSimulationActive = false;
 
   // Choose a loading function and set loading factor.
   switch(function) {
 
   // f = Df
   case 0:
-    inverseSimulationActive = false;
+    //inverseSimulationActive = false;
     break;
 
     /********************************************************************/
@@ -990,19 +1182,18 @@ bool Condition::checkInverseSimulationActive(
 
       if(fabs(currentFactor) < fabs(maxInverseFactor)) inverseSimulationActive =
         true;
-      ;
 
     }
 
     break;
   }
+
   default:
-    logFile << "In Condition::updateFactor loading function " << function
-        << "\n" << "is not supported!" << endl;
+    logFile << "In Condition::checkInverseSimulationActive loading function "
+        << function << "\n" << "is not supported!" << endl;
     MPI_Abort(MPI_COMM_WORLD,1);
     break;
   }
 
   return inverseSimulationActive;
 }
-

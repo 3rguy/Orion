@@ -22,6 +22,7 @@ class Point {
     intVector& getSupportPtcls() { return supportingPtcls; };
     dbVector& getShapeFuncs() { return shapeFuncs; };
 
+    double& getMLSscalar() { return MLSscalar; };
     dbVector& getMLSvec() { return MLSvec; };
     dbMatrix& getMLSmat() { return MLSmat; };
 
@@ -31,6 +32,7 @@ class Point {
     intVector supportingPtcls;
     dbVector shapeFuncs;
 
+    double MLSscalar;
     dbVector MLSvec;
     dbMatrix MLSmat;
 

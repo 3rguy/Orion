@@ -127,6 +127,16 @@ class FEMGeometry {
     intMatrix& getLineElectricBoundGaussPtsIdx() {
       return lineElectricBoundGaussPtsIdx; };
 
+    /// Return indices of boundary Gauss points with fluid volume flux
+    ///  boundary conditions applied
+    intMatrix& getFluidVolumeFluxBoundGaussPtsIdx() {
+      return fluidVolumeFluxBoundGaussPtsIdx; };
+
+    /// Return indices of boundary Gauss points with fpore pressure
+     ///  boundary conditions applied
+     intMatrix& getPorePressureBoundGaussPtsIdx() {
+       return porePressureBoundGaussPtsIdx; };
+
     /// Return indices of boundary Gauss points with depolarisation boundary
     /// conditions applied
     intMatrix& getSurfaceDepolarisationBoundGaussPtsIdx() {
@@ -242,6 +252,10 @@ class FEMGeometry {
     intMatrix& getCavityVolumeControlBoundElemIdx() {
       return cavityVolumeControlBoundElemIdx; };
 
+    intMatrix& getResultantReactionBoundGaussPtsIdx() {
+      return resultantReactionBoundGaussPtsIdx;
+    }
+
     /*******************************************************************/
     /*******************************************************************/
 
@@ -294,6 +308,9 @@ class FEMGeometry {
     intMatrix surfaceElectricBoundGaussPtsIdx;
     intMatrix lineElectricBoundGaussPtsIdx;
 
+    /// Indices of all boudnary Gauss points with TPM conditions applied
+    intMatrix fluidVolumeFluxBoundGaussPtsIdx;
+    intMatrix porePressureBoundGaussPtsIdx;
     /// Indices of all boundary Gauss points any depolarisation boundary
     /// conditions are applied
     intMatrix surfaceDepolarisationBoundGaussPtsIdx;
@@ -307,6 +324,10 @@ class FEMGeometry {
     /// Indices of all boundary Gauss points where cavity-volume-control
     /// conditions are applied
     intMatrix cavityVolumeControlBoundGaussPtsIdx;
+
+    // indices of all gauss points associated with resultant reaction surfaces
+    intMatrix resultantReactionBoundGaussPtsIdx;
+
 
     /*******************************************************************/
     /// particle integration
@@ -355,6 +376,8 @@ class FEMGeometry {
     intMatrix lineForceElemIdx;
     intMatrix elasticLineForceElemIdx;
 
+    intMatrix fluidVolumeFluxElemIdx;
+
     intMatrix bodyMomentElemIdx;
     intMatrix surfaceMomentElemIdx;
     intMatrix lineMomentElemIdx;
@@ -373,6 +396,8 @@ class FEMGeometry {
     intMatrix surfaceElectricBoundElemIdx;
     intMatrix lineElectricBoundElemIdx;
 
+    intMatrix porePressureBoundElemIdx;
+
     intMatrix surfaceDepolarisationBoundElemIdx;
     intMatrix lineDepolarisationBoundElemIdx;
 
@@ -380,6 +405,8 @@ class FEMGeometry {
     intMatrix lineMicroBoundElemIdx;
 
     intMatrix cavityVolumeControlBoundElemIdx;
+
+    intMatrix resultantReactionBoundElemPtsIdx;
 
     /*******************************************************************/
     /// FEM element shape functions ordinates of all nodes at all

@@ -233,6 +233,30 @@ dbVector& IntegrationPoint::getTraction(int ID) {
 
 }
 
+blVector& IntegrationPoint::getFluidVolumeFluxDOF(int ID) {
+
+  if(ID < fluidVolumeFluxDOF.size())
+    return fluidVolumeFluxDOF[ID];
+
+  else {
+    fluidVolumeFluxDOF.resize(ID+1);
+    return fluidVolumeFluxDOF[ID];
+  }
+
+}
+
+dbVector& IntegrationPoint::getFluidVolumeFlux(int ID) {
+
+  if(ID < fluidVolumeFluxLoads.size())
+    return fluidVolumeFluxLoads[ID];
+
+  else {
+    fluidVolumeFluxLoads.resize(ID+1);
+    return fluidVolumeFluxLoads[ID];
+  }
+
+}
+
 
 blVector& IntegrationPoint::getLineForceDOF(int ID) { 
 
@@ -456,6 +480,59 @@ dbVector& IntegrationPoint::getInitialElectricBoundConds(int ID) {
   }
 
 }
+
+// ----------------------------------------------------------------------
+// TPM boundary conditions
+
+blVector& IntegrationPoint::getTPMBoundDOF(int ID) {
+
+  if(ID < TPMBoundDOF.size())
+    return TPMBoundDOF[ID];
+
+  else {
+    TPMBoundDOF.resize(ID+1);
+    return TPMBoundDOF[ID];
+  }
+
+}
+
+dbVector& IntegrationPoint::getTPMBoundConds(int ID) {
+
+  if(ID < TPMBoundConds.size())
+    return TPMBoundConds[ID];
+
+  else {
+    TPMBoundConds.resize(ID+1);
+   return TPMBoundConds[ID];
+  }
+
+}
+
+dbVector& IntegrationPoint::getDeltaTPMBoundConds(int ID) {
+
+  if(ID < deltaTPMBoundConds.size())
+    return deltaTPMBoundConds[ID];
+
+  else {
+    deltaTPMBoundConds.resize(ID+1);
+    return deltaTPMBoundConds[ID];
+  }
+
+}
+
+dbVector& IntegrationPoint::getInitialTPMBoundConds(int ID) {
+
+  if(ID < initialTPMBoundConds.size())
+    return initialTPMBoundConds[ID];
+
+  else {
+    initialTPMBoundConds.resize(ID+1);
+    return initialTPMBoundConds[ID];
+  }
+
+}
+
+
 
 
 // ----------------------------------------------------------------------

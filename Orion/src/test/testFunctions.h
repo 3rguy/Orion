@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <limits>
+#include <stdlib.h>
 
 #include <time.h>
 #include <chrono>
@@ -73,5 +74,7 @@ void printSnapshotPOMs(InputFileData* InputData,ofstream& logFile);
 // *****************************************************************************
 // *****************************************************************************
 //void pcl_test(InputFileData* InputData,ofstream& logFile);
+
+dbMatrix createRandomMatrix(int row,int col,ofstream& logFile);
 
 #endif /* TESTFUNCTIONS_H_ */

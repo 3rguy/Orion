@@ -105,16 +105,17 @@ public:
 //    void saveDispFile(ofstream& logFile);
 //    void saveDispFile_res_format(const char* outputFileName,ofstream& logFile);
 
-    void saveResultsToFile(ofstream& logFile);
+    void saveResultsToFile(InputFileData* InputData,ofstream& logFile);
     void saveAllResultsToFile_res_format(const char* outputFileName,
-    		ofstream& logFile);
+    		InputFileData* InputData,ofstream& logFile);
 
     void setAnchorPoint(int aPoint){anchorPoint = aPoint;};
     int& getAnchorPoint(){return anchorPoint;};
 
 //	void assignDispToParticles(InputFileData* InputData, ofstream& logFile);
 	void saveResultsToFile_res_format(const char* outputFileName,
-				vector<string>& saveResultNameList, ofstream& logFile);
+				vector<string>& saveResultNameList,InputFileData* InputData,
+				ofstream& logFile);
 	void assignResultToParticles(const char* resultName,
 			InputFileData* InputData, ofstream& logFile);
 
@@ -158,6 +159,7 @@ public:
     void syncCardiacTimeStepsAndResults(InputFileData* InputData, ofstream& logFile);
 
     void insertZeroResultFields(InputFileData* InputData, ofstream& logFile);
+    void removeZeroResultFields(InputFileData* InputData, ofstream& logFile);
 
     void plotPostProcessGraph(InputFileData* InputData, ofstream& logFile);
     dbVector& getGraphData(int graphType, int node, int DOF, string& resultName,

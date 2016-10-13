@@ -1,4 +1,4 @@
-// Stores all properties of a single particle.
+/// Stores all properties of a single particle.
 
 #ifndef Particle_h_
 #define Particle_h_
@@ -22,34 +22,34 @@ class Particle {
     Particle(int usedDOF);
     ~Particle();
 
-    // Particle identity number.
+    /// Particle identity number.
     void setID(int idx);
     int& getID() { return ID; };
 
     int& getMaterialID() { return materialID; };
 
-    // Weight data manipulating 
+    /// Weight data manipulating
     dbVector& getAllIntWeights() { return weights; };
     double& getIntWeight(int ID);
     double& getWeight() { return getIntWeight(0); };
     void setWeight(int ID,double value);
     void setWeight(double value) { setWeight(0,value); };
 
-    // Elements to that this particle belongs.
+    /// Elements to that this particle belongs.
     void setElems(int elem);
     intVector& getElems() { return elems; };
 
-    // Coordinates manipulating 
+    /// Coordinates manipulating
     void setCoords(double coord1,double coord2,double coord3);
     double& getCoord(int idx) { return coords[idx]; };    
     dbVector& getCoords() { return coords; };
 
-    // Influence radius manipulating
+    /// Influence radius manipulating
     void setRadii(double& rx,double& ry,double& rz);
     double& getRadius(int dof) { return influenceRadii[dof]; };
     dbVector& getRadii() { return influenceRadii; };
 
-    // Degrees of freedem manipulating 
+    /// Degrees of freedem manipulating
     void setDOF(int idx,double& value);
     void setDOFs(dbVector& dofs);
     double& getDOF(int idx) { return degreesOfFreedom[idx]; };
@@ -66,12 +66,12 @@ class Particle {
     double& getDeltaDOF(int idx) { return deltaDOF[idx]; };
     dbVector& getDeltaDOF() { return deltaDOF; };
 
-    // Supporting neighbour particles(neigbour spheres which include this 
-    // particle).
+    /// Supporting neighbour particles(neigbour spheres which include this
+    /// particle).
     int& getSupportPtcle(int idx) { return supportingPtcls[idx]; };
     intVector& getSupportPtcls() { return supportingPtcls; };
 
-    // Minimum distance between the particle and supporting particles
+    /// Minimum distance between the particle and supporting particles
     void setLocalMinPtcleDistance(double localMinPtcleDist);
     double& getLocalMinPtcleDistance(){ return localMinPtcleDistance;};
 
@@ -95,13 +95,13 @@ class Particle {
     dbMatrix& getFirstDerivShapes() { return firstDerivShapeFuncs; };
     dbMatrix& getSecondDerivShapes() { return secondDerivShapeFuncs; };
 
-    // Influencing neighbour spheres (sphere cutting if a volume or boundary 
-    // integration point is also supported by another neighbouring particle).
+    /// Influencing neighbour spheres (sphere cutting if a volume or boundary
+    /// integration point is also supported by another neighbouring particle).
     void setInflSpheres(int& size,intVector& iSpheres);
     intVector& getInflSpheres() { return influencingSpheres; };
     intVector& getExtendedInflSpheres() { return extendedInfluencingSpheres; };
 
-    // Check if a point is supported by this particle.
+    /// Check if a point is supported by this particle.
     bool querySupported(InputFileData* InputData,dbVector& pointCoords,
 			std::map<std::string,double>& modelData,
 			std::ofstream& logFile);
@@ -110,26 +110,26 @@ class Particle {
             double& ptcleDist,std::map<std::string,double>& modelData,
             std::ofstream& logFile);
 
-    // return customized spline
+    /// return customized spline
 
     CustomSpline* getSpline() { return &spline; };
 
     /*******************************************************************/
-    // Only used for particles boundary conditions are applied.
+    /// Only used for particles boundary conditions are applied.
 
     void setSupportNBPtcle(int& DOF,int& ptcle)
       { suppNBoundPtcls[DOF].push_back(ptcle); };
     intVector& getSupportNBPtcls(int& DOF) 
       { return suppNBoundPtcls[DOF]; };
 
-    // Influencing boundary neighbour particles.
+    /// Influencing boundary neighbour particles.
     void setSupportBPtcle(int& DOF,int& ptcle)
       { suppBoundPtcls[DOF].push_back(ptcle); };
     intVector& getSupportBPtcls(int& DOF) 
       { return suppBoundPtcls[DOF]; };
 
-    // Shape function values of influencing nonboundary neighbour 
-    // particles at its own coordinates.
+    /// Shape function values of influencing nonboundary neighbour
+    /// particles at its own coordinates.
     void setNBShapeFunc(int& DOF,int& idx,double& value);
     void setNBShapeFuncs(int& DOF,int& suppportSize,
 			 dbVector& shapes);
@@ -138,25 +138,25 @@ class Particle {
     dbVector& getNBShapeFuncs(int& DOF)  { 
       return nBoundShapeFuncs[DOF]; };
 
-    // Shape function values of influencing boundary neighbour 
-    // particles at its own coordinates.
+    /// Shape function values of influencing boundary neighbour
+    /// particles at its own coordinates.
     void setBShapeFunc(int& DOF,int& position,double& value);
     double& getBShapeFunc(int& DOF,int idx) 
       { return boundShapeFuncs[DOF][idx]; };
     dbVector& getBShapeFuncs(int& DOF)  
       { return boundShapeFuncs[DOF]; };
 
-    // Allocate several vectors.
+    /// Allocate several vectors.
     void setUsedDOF(int& usedDOF);
 
     /*******************************************************************/
-    // Needed stuff for particle integration.
+    /// Needed stuff for particle integration.
 
-    // surface integration 
+    /// surface integration
     dbVector& getSurfaceNormal(int ID);
     dbMatrix& getAllSurfaceNormals() { return surfaceNormals; };
 
-    // force data manipulating.
+    /// force data manipulating.
     blMatrix& getAllBodyForceDOF() { return bodyForceDOF; };
     dbMatrix& getAllBodyForceLoads() { return bodyForceLoads; };
     blVector& getBodyForceDOF(int ID);
@@ -180,7 +180,7 @@ class Particle {
     dbVector& getAllSurfacePressureLoads() { return surfacePressureLoads; };
     double& getSurfacePressure(int ID);
 
-    // deformation boundary conditions
+    /// deformation boundary conditions
     blMatrix& getAllDeformationBoundDOF() 
       { return deformationBoundDOF; };
     dbMatrix& getAllDeformationBoundConds() 
@@ -191,7 +191,7 @@ class Particle {
     dbVector& getDeltaDeformationBoundConds(int ID);
     dbVector& getInitialDeformationBoundConds(int ID);
 
-    // electric boundary conditions
+    /// electric boundary conditions
     blMatrix& getAllElectricBoundDOF() 
       { return electricBoundDOF; };
     dbMatrix& getAllElectricBoundConds() 
@@ -202,7 +202,19 @@ class Particle {
     dbVector& getDeltaElectricBoundConds(int ID);
     dbVector& getInitialElectricBoundConds(int ID);
 
-    // depolarisation boundary conditions
+    /// TPM boundary conditions
+    blMatrix& getAllTPMBoundDOF()
+      { return TPMBoundDOF; };
+    dbMatrix& getAllTPMBoundConds()
+      { return TPMBoundConds; };
+    blVector& getTPMBoundDOF(int ID);
+    dbVector& getTPMBoundConds(int ID);
+
+    dbVector& getDeltaTPMBoundConds(int ID);
+    dbVector& getInitialTPMBoundConds(int ID);
+
+
+    /// depolarisation boundary conditions
     blMatrix& getAllDepolarisationBoundDOF() 
       { return depolarisationBoundDOF; };
     dbMatrix& getAllDepolarisationBoundConds() 
@@ -213,7 +225,7 @@ class Particle {
     dbVector& getDeltaDepolarisationBoundConds(int ID);
     dbVector& getInitialDepolarisationBoundConds(int ID);
 
-    // micro boundary conditions
+    /// micro boundary conditions
     blMatrix& getAllMicroBoundDOF() 
       { return electricBoundDOF; };
     dbMatrix& getAllMicroBoundConds() 
@@ -225,56 +237,56 @@ class Particle {
     dbVector& getInitialMicroBoundConds(int ID);
 
     /*******************************************************************/
-    // history variables
+    /// history variables
 
     dbMatrix& getDeformationGradient();
 
-    // Return the intermediate deformation gradient which is a history
-    // variable needed when undeformed configuration is unknown; transfers
-    // undeformed to deformed configuration
+    /// Return the intermediate deformation gradient which is a history
+    /// variable needed when undeformed configuration is unknown; transfers
+    /// undeformed to deformed configuration
     dbMatrix& getIntermediateDefGradient();
     double& getIntermediateJacobian();
 
-    // Cosserat continuum
+    /// Cosserat continuum
     dbMatrix& getRotationTens() { return rotationTensor; };
     dbMatrix& getOldRotationTens() { return oldRotationTensor; };
 
     dbMatrix& getSecondStrainTens() { return  secondStrainTens; };
     dbMatrix& getOldSecondStrainTens() { return oldSecondStrainTens; };
 
-    // plasticity history variables
+    /// plasticity history variables
     dbMatrix& getPlasticityHistory() { return plasticityHistory; };
 
     dbVector& getInternalTraction() { return internalTraction; };
 
-    // logarithmic strain computation via Taylor expansion
+    /// logarithmic strain computation via Taylor expansion
     dbMatrix& getStrainTens() { return strainTens; };
     dbMatrix& getLogStrainTens() { return logStrainTens; };
 
     /*******************************************************************/
-    // Ghost boundary
+    /// Ghost boundary
     int& getMotherPtcle() { return motherPtcle; };
     intVector& getSupportBoundGhostPtcls() 
       { return supportBoundGhostPtcls; };
 
     /********************************************************************/
-    // generalized continuum
+    /// generalized continuum
 
     dbVector& getSpinor() { return spinor; };
     dbVector& getDeltaSpinor() { return deltaSpinor; };
 
     /********************************************************************/
-    // generalized continuum
+    /// generalized continuum
     std::vector<MicroSpace>& getMicroSpaces() { return microSpaces; };
 
     /*******************************************************************/
-    // anisotropy
-    dbMatrix& getMaterialDirections() { return materialDirections; };
+    /// anisotropy
+    dbMatrix3& getMaterialDirections() { return materialDirections; };
 
 
 
     /*******************************************************************/
-    // active tension (kerckhoffs)
+    /// active tension (kerckhoffs)
 
     double& getLc0()
       { return lc0;};
@@ -297,21 +309,21 @@ class Particle {
     double& getActiveTensionVariation()
       { return activeTensionVariation; };
 
-    double& getLR()
-      { return lR; };
+    double& getRestSarcomereLength()
+      { return restSarcomereLength; };
 
     /********************************************************************/
-    //electrophysiology stuff
+    ///electrophysiology stuff
 
     double& getDepolarisationTime()
       { return depolarisationTime;};
 
     /********************************************************************/
-    // Clear all class arrays which are not locally needed.
+    /// Clear all class arrays which are not locally needed.
     void clearArrays();
 
     /********************************************************************/
-    // some arbitrary vector and matrix field approximated by MLS
+    /// some arbitrary vector and matrix field approximated by MLS
 
     dbVector& getMLSvec() { return MLSvec; };
     dbMatrix& getMLSmat() { return MLSmat; };
@@ -324,12 +336,12 @@ class Particle {
     dbVector deformations;
     dbVector influenceRadii;
     dbVector degreesOfFreedom;
-    dbVector stepDegreesOfFreedom; // DOF obtained during one time step
-    dbVector oldDegreesOfFreedom; // converged DOF of previous time step
+    dbVector stepDegreesOfFreedom; /// DOF obtained during one time step
+    dbVector oldDegreesOfFreedom; /// converged DOF of previous time step
     dbVector deltaDOF;
     intVector supportingPtcls;
     intVector influencingSpheres;
-    intVector extendedInfluencingSpheres; // accounting changes due to modified boundary collocation method
+    intVector extendedInfluencingSpheres; /// accounting changes due to modified boundary collocation method
     dbVector shapeFuncs;
     dbMatrix firstDerivShapeFuncs;
     dbMatrix secondDerivShapeFuncs;
@@ -340,19 +352,19 @@ class Particle {
 
     CustomSpline spline;
 
-    // Only used for particles boundary conditions applied.
-    //intVector ownSuppNBCounts;
+    /// Only used for particles boundary conditions applied.
+    ///intVector ownSuppNBCounts;
     intMatrix suppBoundPtcls;
     intMatrix suppNBoundPtcls;
     dbMatrix boundShapeFuncs;
     dbMatrix nBoundShapeFuncs;
 
-    //-------------------------------------------------------------------
-    // Needed stuff for particle integration.
+    ///-------------------------------------------------------------------
+    /// Needed stuff for particle integration.
     dbVector weights;
     dbMatrix surfaceNormals;
 
-    // loading
+    /// loading
     blMatrix bodyForceDOF;
     dbMatrix bodyForceLoads;
 
@@ -367,28 +379,35 @@ class Particle {
 
     dbVector surfacePressureLoads;
 
-    // deformation boundary conditions
+    /// deformation boundary conditions
     blMatrix deformationBoundDOF;
     dbMatrix deformationBoundConds;
 
     dbMatrix deltaDeformationBoundConds;
     dbMatrix initialDeformationBoundConds;
 
-    // electric boundary conditions
+    /// electric boundary conditions
     blMatrix electricBoundDOF;
     dbMatrix electricBoundConds;
 
     dbMatrix deltaElectricBoundConds;
     dbMatrix initialElectricBoundConds;
 
-    // depolarisation boundary conditions
+    /// TPM boundary conditions
+    blMatrix TPMBoundDOF;
+    dbMatrix TPMBoundConds;
+
+    dbMatrix deltaTPMBoundConds;
+    dbMatrix initialTPMBoundConds;
+
+    /// depolarisation boundary conditions
     blMatrix depolarisationBoundDOF;
     dbMatrix depolarisationBoundConds;
 
     dbMatrix deltaDepolarisationBoundConds;
     dbMatrix initialDepolarisationBoundConds;
 
-    // micro boundary conditions
+    /// micro boundary conditions
     blMatrix microBoundDOF;
     dbMatrix microBoundConds;
 
@@ -396,7 +415,7 @@ class Particle {
     dbMatrix initialMicroBoundConds;
 
     /********************************************************************/
-    // history variables
+    /// history variables
     dbMatrix deformationGradient;
     dbVector internalTraction;
 
@@ -406,35 +425,35 @@ class Particle {
     dbMatrix secondStrainTens;
     dbMatrix oldSecondStrainTens;
 
-    // needed when undeformed configuration is unknown; transfers
-    // undeformed to deformed configuration
+    /// needed when undeformed configuration is unknown; transfers
+    /// undeformed to deformed configuration
     dbMatrix intermediateDefGradient;
     double intermediateJacobian;
 
-    // history variables for Carlo's viscoplastic constitutive law
+    /// history variables for Carlo's viscoplastic constitutive law
     dbMatrix plasticityHistory;
 
-    // logarithmic strain computation via Taylor expansion
+    /// logarithmic strain computation via Taylor expansion
     dbMatrix strainTens;
     dbMatrix logStrainTens;
 
-    // ghost boundary
+    /// ghost boundary
     int motherPtcle;
     intVector supportBoundGhostPtcls;
 
     /********************************************************************/
-    // generalized continuum
+    /// generalized continuum
 
     std::vector<MicroSpace> microSpaces;
     dbVector spinor,deltaSpinor;
 
     /********************************************************************/
-    // anisotropy
-    dbMatrix materialDirections;
+    /// anisotropy
+    dbMatrix3 materialDirections;
 
 
     /********************************************************************/
-    // active tension (kerckhoffs)
+    /// active tension (kerckhoffs)
 
     double lc0;
     double sarcomereLength;
@@ -442,17 +461,17 @@ class Particle {
     dbVector contractileLengthHistory;
     double activeTension;
     double activeTensionVariation;
-    double lR; //sarcomere length in unloaded config
-               // should vary transmurally
+    double restSarcomereLength; ///sarcomere length in unloaded config
+               /// should vary transmurally
 
     /********************************************************************/
-    // electrophysiology stuff
+    /// electrophysiology stuff
 
     double depolarisationTime;
 
 
     /********************************************************************/
-    // some arbitrary vector and matrix field approximated by MLS
+    /// some arbitrary vector and matrix field approximated by MLS
     dbVector MLSvec;
     dbMatrix MLSmat;
 

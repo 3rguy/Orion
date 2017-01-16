@@ -74,6 +74,12 @@
 
 // ----------------------------------------------------------------------------
 // MLS debug mode
+
+#ifndef _MLSDebugLiteMode_
+#define _MLSDebugLiteMode_
+#endif
+#undef _MLSDebugLiteMode_
+
 #ifndef _MLSDebugMode_
 #define _MLSDebugMode_
 #endif
@@ -97,6 +103,14 @@
 #define _FEdebugMode_PointInPoly_
 #endif
 #undef _FEdebugMode_PointInPoly_
+
+// ----------------------------------------------------------------------------
+// Activate checking algorithms
+#ifndef _errorCalcMode_
+#define _errorCalcMode_
+#endif
+#undef _errorCalcMode_
+
 
 // ****************************************************************************
 // ****************************************************************************

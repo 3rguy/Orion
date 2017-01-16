@@ -186,7 +186,7 @@ Interpolation::Interpolation(dbVector& iPoint, dbMatrix& coords,
 dbVector Interpolation::MLSCalc(dbVector iPoint, dbMatrix coords,
 		dbVector radiusVec, InputFileData* InputData, ofstream& logFile) {
 
-#ifdef _MLSDebugMode_
+#ifdef _MLSDebugLiteMode_
 	logFile << "********* In Interpolation::MLSCalc *********" << endl;
 	printVector(iPoint, "iPoint", logFile);
 	printMatrix(coords, "Coords", logFile);
@@ -292,6 +292,9 @@ dbVector Interpolation::MLSCalc(dbVector iPoint, dbMatrix coords,
 #ifdef _MLSDebugMode_
 	printMatrix(inverseMomentMat, "Inverse Moment Matrix", logFile);
 	printVector(iPointBasisVec, "iPointBasisVec", logFile);
+#endif
+
+#ifdef _MLSDebugLiteMode_
 	printVector(interpolants, "Interpolants", logFile);
 
 	double intSum = 0;

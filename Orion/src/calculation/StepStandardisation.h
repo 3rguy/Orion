@@ -20,6 +20,7 @@
 #include <cmath>
 #include <map>
 #include <climits>
+#include <float.h>
 
 #include <chrono>
 #include <ctime>
@@ -77,6 +78,14 @@ public:
 	void findSupports(dbVector& iPoint, dbMatrix& pointList,
 			intVector& supportsList, dbVector& pointRadii,
 			InputFileData* InputData, ofstream& logFile);
+
+	void findSupports_two(dbVector& iPoint, dbMatrix& pointList,
+				intVector& supportsList, dbVector& pointRadii,
+				InputFileData* InputData, ofstream& logFile);
+
+	void findSupports_three(dbVector& iPoint, dbMatrix& pointList,
+				intVector& supportsList, dbVector& pointRadii,
+				InputFileData* InputData, ofstream& logFile);
 
 	/*!************************************************************************/
 	/*!************************************************************************/

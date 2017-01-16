@@ -217,6 +217,8 @@ void PreProcessing::loadSelectedData(DataContainer* problemData,
 	dbMatrix& stepHistoryList = problemData->getDbMatrix("stepHistoryList");
 	stepHistoryList.resize(supportDataID.size());
 
+	std::chrono::time_point<std::chrono::system_clock> start, end;
+	start = std::chrono::system_clock::now();
 
 	for (int i = 0; i < supportDataID.size(); i++) {
 
@@ -251,6 +253,15 @@ void PreProcessing::loadSelectedData(DataContainer* problemData,
 //		}
 
 	}
+
+	end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - start;
+
+	cout << "Reading selected datasets completed in: "
+			<< elapsed_seconds.count() << " sec" << endl;
+	logFile << "Reading selected datasets completed in: "
+			<< elapsed_seconds.count() << " sec" << endl;
+
 
 	if(InputData->getValue("standardiseDOF") == 1 &&
 				InputData->getValue("gridNodesType") == 1 ){
@@ -497,6 +508,15 @@ void PreProcessing::standardiseStep(DataContainer* problemData,
 	}
 
 	delete StepStandard;
+
+
+	cout << "Saving datasets standardised results" << endl;
+	logFile << "Saving datasets standardised results" << endl;
+	for (int j = 0; j < supportDataID.size(); j++) {
+		myDatabase.getDataId(supportDataID[j]).saveResultsToFile_step(InputData, logFile);
+		myDatabase.getDataId(supportDataID[j]).calcLeftCavityVolumes_step(InputData,logFile);
+		myDatabase.getDataId(supportDataID[j]).calcRightCavityVolumes_step(InputData,logFile);
+	}
 
 
 	end = std::chrono::system_clock::now();

@@ -99,8 +99,8 @@ void StepStandardisation::standardise(DataContainer* problemData,
 				newResult = standardresultPhase;
 			}
 			else{
-//				cout << "bulding newResultMatrix" << endl;
-//				logFile << "bulding newResultMatrix" << endl;
+//				cout << "building newResultMatrix" << endl;
+//				logFile << "building newResultMatrix" << endl;
 				for (int k = 0; k < standardresultPhase.size(); k++) {
 					for (int l = 1; l < standardresultPhase[k].size(); l++) { // Intentionally skip first entry since it has already been recorded from the previous phase
 					newResult[k].push_back(standardresultPhase[k][l]);
@@ -130,7 +130,9 @@ void StepStandardisation::stepStandardisationCalc(DataContainer* problemData,
 
 	int totalNumDofs = nonStandardResultPhase.size();
 
+#ifdef _StepStandardisationDebugMode_
 	printMatrix(nonStandardResultPhase,"nonStandardResultPhase",logFile);
+#endif
 
 	dbMatrix standardResultPhase(totalNumDofs, dbVector(standardStepPhase.size()));
 
@@ -162,7 +164,7 @@ void StepStandardisation::stepStandardisationCalc(DataContainer* problemData,
 			dbVector pointRadii;
 			intVector supportsList;
 
-			findSupports(iPoint, pointList, supportsList, pointRadii, InputData,
+			findSupports_two(iPoint, pointList, supportsList, pointRadii, InputData,
 					logFile);
 
 			dbMatrix supportPointList(supportsList.size(), dbVector(1));
@@ -180,6 +182,7 @@ void StepStandardisation::stepStandardisationCalc(DataContainer* problemData,
 				}
 			}
 
+#ifdef _StepStandardisationDebugMode_
 			printVector(iPoint, "iPoint:", logFile);
 			printMatrix(supportPointList, "supportPointList:", logFile);
 
@@ -188,9 +191,6 @@ void StepStandardisation::stepStandardisationCalc(DataContainer* problemData,
 				printMatrix(tempDispList[p],"tempDispList",logFile);
 			}
 
-			dbMatrix tempResultingDispMatrix;
-
-#ifdef _StepStandardisationDebugMode_
 			printVector(iPoint, "iPoint:", logFile);
 			printVector(pointRadii, "pointRadii:", logFile);
 			printVector(supportsList, "supportsList:", logFile);
@@ -209,26 +209,48 @@ void StepStandardisation::stepStandardisationCalc(DataContainer* problemData,
 			InputData->setValue("MLSWeightFunc",
 					InputData->getValue("dbMLSWeightFunc"));
 			InputData->setValue("parameterPolynomialDegree",
-					InputData->getValue("dbparameterPolynomialDegree"));
+					InputData->getValue("standStepstepPODIPolynomialDegree"));
+
+			InputData->setValue("PODMeanCalculation",
+					InputData->getValue("standStepPODMeanCalculation"));
+			InputData->setValue("PODCalculationType",
+					InputData->getValue("standStepstepPODCalculationType"));
+			InputData->setValue("PODEnergyLevel",
+					InputData->getValue("standStepstepPODEnergyLevel"));
+			InputData->setValue("PODICalculationType",
+					InputData->getValue("standStepstepPODICalculationType"));
+			InputData->setValue("PODIPolynomialDegree",
+					InputData->getValue("standStepstepPODIPolynomialDegree"));
+
+			double plotPOVandPOM = InputData->getValue("PlotPOMsAndPOVs");
+			InputData->setValue("PlotPOMsAndPOVs",0);
+
+			dbMatrix tempResultingDispMatrix;
 
 			PODICalc* Podi = new PODICalc(iPoint, pointRadii, supportsList,
 					supportPointList, tempDispList, tempResultingDispMatrix,
 					problemData, InputData, logFile);
 
-			printMatrix(tempResultingDispMatrix,"tempResultingDispMatrix",logFile);
-
+			InputData->setValue("PlotPOMsAndPOVs",plotPOVandPOM);
 
 			for (int l = 0; l < totalNumDofs; l++)
 				standardResultPhase[l][j] = tempResultingDispMatrix[l][0];
 
-			printMatrix(standardResultPhase,"standardResultPhase",logFile);
-
 			delete Podi;
+
+#ifdef _StepStandardisationDebugMode_
+			printMatrix(tempResultingDispMatrix,"tempResultingDispMatrix",logFile);
+			printMatrix(standardResultPhase,"standardResultPhase",logFile);
+#endif
 
 		}
 	}
 
+#ifdef _StepStandardisationDebugMode_
 	printMatrix(standardResultPhase,"standardResultPhase(final)",logFile);
+#endif
+
+
 	nonStandardResultPhase = standardResultPhase;
 
 	InputData->setValue("printPodiInfo",1);
@@ -379,11 +401,12 @@ void StepStandardisation::findSupports(dbVector& iPoint, dbMatrix& pointList,
 		distVec[i] = sqrt(sqr_dist);
 	}
 
-//	printVector(distVec,"distVec",logFile);
+	printVector(distVec,"distVec (before sorting)",logFile);
 	std::sort(distVec.begin(),distVec.end());
-//	printVector(distVec,"distVec",logFile);
+	printVector(distVec,"distVec (after sorting)",logFile);
 
-	double radiusFactor = 1.1;
+//	double radiusFactor = 1.1;
+	double radiusFactor = InputData->getValue("stepStandRadiusFactor");
 
 	int counter = 0;
 	dbMatrix pointInfluenceRange(iPoint.size(), dbVector(2));
@@ -397,6 +420,8 @@ void StepStandardisation::findSupports(dbVector& iPoint, dbMatrix& pointList,
 		counter++;
 	}
 
+	printMatrix(pointInfluenceRange,"pointInfluenceRange: min(left column) max(right column)",logFile);
+	printVector(pointRadii,"pointRadii",logFile);
 
 	// =========================================================================
 
@@ -469,6 +494,10 @@ void StepStandardisation::findSupports(dbVector& iPoint, dbMatrix& pointList,
 	}
 	logFile << endl;
 
+	printMatrix(pointList,"pointList",logFile);
+
+	printVector(supportsList,"supportsList",logFile);
+
 	logFile << "Supports are: " << endl;
 	for (int j = 0; j < supportsList.size(); j++) {
 		logFile << "[" << j << "] : ";
@@ -479,6 +508,338 @@ void StepStandardisation::findSupports(dbVector& iPoint, dbMatrix& pointList,
 	}
 #endif
 }
+
+
+void StepStandardisation::findSupports_two(dbVector& iPoint, dbMatrix& pointList,
+		intVector& supportsList, dbVector& pointRadii, InputFileData* InputData,
+		ofstream& logFile) {
+
+	int findSupport_choice = 0;
+
+	double dist_sum = 0, sqr_dist = 0;
+	dbVector distVec(pointList.size());
+	for(int i=0; i<pointList.size(); i++){
+		sqr_dist = 0;
+		for(int j=0; j<pointList[i].size(); j++){
+			sqr_dist += pow(pointList[i][j]-iPoint[j],2);
+		}
+		distVec[i] = sqrt(sqr_dist);
+	}
+
+//	printVector(distVec,"distVec (before sorting)",logFile);
+	std::sort(distVec.begin(),distVec.end());
+//	printVector(distVec,"distVec (after sorting)",logFile);
+
+//	double radiusFactor = 1.1;
+	double radiusFactor = InputData->getValue("stepStandRadiusFactor");
+
+	int counter = 0;
+	dbMatrix pointInfluenceRange(iPoint.size(), dbVector(2));
+	pointRadii.resize(iPoint.size());
+	for (int i = 0; i < iPoint.size(); i++) {
+		pointInfluenceRange[counter][0] = iPoint[i]
+				- (distVec[1] * radiusFactor); 	// Min value
+		pointInfluenceRange[counter][1] = iPoint[i]
+				+ (distVec[1] * radiusFactor);	// Max value
+		pointRadii[counter] = distVec[1] * radiusFactor;
+		counter++;
+	}
+
+//	printMatrix(pointInfluenceRange,"pointInfluenceRange (1st col [min], 2nd col [max])",logFile);
+//	printVector(pointRadii,"pointRadii",logFile);
+
+
+	// =========================================================================
+
+	// Temporary solution -> need to find a better one
+//	double radiusFactor = InputData->getValue("stepStandardRadiusFactor");
+//
+//	// Determine the max and min value of each parameter(i.e Range) and store
+//	// them in the matrix "myParamaterInfluenceRange"
+//	int counter = 0;
+//	dbMatrix pointInfluenceRange(iPoint.size(), dbVector(2));
+//	pointRadii.resize(iPoint.size());
+//	for (int i = 0; i < iPoint.size(); i++) {
+//		pointInfluenceRange[counter][0] = iPoint[i]
+//				- (iPoint[i] * radiusFactor); 	// Min value
+//		pointInfluenceRange[counter][1] = iPoint[i]
+//				+ (iPoint[i] * radiusFactor);	// Max value
+//		pointRadii[counter] = iPoint[i] * radiusFactor;
+//		counter++;
+//	}
+	// =========================================================================
+
+	// Determine if the data parameters are within the influence range
+//	dbVector dataParametersVec;
+//	int pointInsideCounter = 0;
+//	for (int i = 0; i < pointList.size(); i++) {
+//
+//		// Extract parameters of of a particular data
+//		dbVector pointVec = pointList[i];
+//
+//		// Loop over each parameter and check if they are within the range
+//		// specified. If one of them is not, the rest of the parameters are
+//		// skipped.
+//		pointInsideCounter = 0;
+//		for (int j = 0; j < pointInfluenceRange.size(); j++) {
+//
+////			logFile << pointInfluenceRange[j][0] << " < " << pointVec[j]
+////					<< " < " << pointInfluenceRange[j][1] << endl;
+//
+//			if (pointInfluenceRange[j][0] <= pointVec[j]
+//					&& pointVec[j] <= pointInfluenceRange[j][1]) {
+//				pointInsideCounter++;
+////				logFile << "Taken" << endl << endl;
+//
+//			} else
+//				// No need to continue the comparison process if one of the
+//				// parameters is out of range
+//				break;
+//		}
+//
+//		// If the all parameters are inside the influence range, record ID of
+//		// Data
+//		if (pointInsideCounter == pointInfluenceRange.size()) {
+//			supportsList.resize(supportsList.size() + 1);
+//			supportsList[supportsList.size() - 1] = i;
+//		}
+//	}
+
+	vector<int>().swap(supportsList);
+	for (int i = 0; i < pointList.size(); i++) {
+		supportsList.resize(supportsList.size() + 1);
+		supportsList[supportsList.size() - 1] = i;
+	}
+
+	if (supportsList.size() < 2) {
+		logFile << "ERROR: Point does not have enough of supports" << endl;
+		cout << "ERROR: Point does not have enough of supports" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	if (supportsList.size() > 2 && InputData->getValue("StepStandardisationSupportFilter")==1) {
+
+		if (pointList[0].size() == 1) {
+
+//			logFile
+//					<< "In StepStandardisation::findSupports, retaining only the two closest points."
+//					<< endl;
+
+			double dist_sum = 0, sqr_dist = 0;
+			int postiviteID = -1, negativeID = -1;
+			double dist = 0, maxDist = 0;
+			double dist_positive = DBL_MAX;
+			double dist_negative = -DBL_MAX;
+			for (int i = 0; i < supportsList.size(); i++) {
+				dist = 0;
+				for (int j = 0; j < pointList[supportsList[i]].size(); j++) {
+
+					dist += pointList[supportsList[i]][j] - iPoint[j];
+
+//					logFile << "Comparing points: " << pointList[supportsList[i]][j] <<" and " << iPoint[j] << " with dist: " << dist << endl;
+				}
+
+				if(dist > 0){
+//					logFile << "dist[" << dist << "] < [" << dist_positive << "]dist_positive: ";
+					if(dist < dist_positive){
+						dist_positive = dist;
+						postiviteID = supportsList[i];
+//						logFile << "Recorded with postiviteID: " << postiviteID;
+					}
+//					logFile << endl;
+				}
+				else{
+//					logFile << "dist[" << dist << "] > [" << dist_negative << "]dist_negative: ";
+					if(dist > dist_negative){
+						dist_negative = dist;
+						negativeID = supportsList[i];
+//						logFile << "Recorded with negativeID: " << negativeID;
+					}
+//					logFile << endl;
+				}
+
+			}
+
+			vector<int>().swap(supportsList);
+
+			supportsList.push_back(postiviteID);
+			supportsList.push_back(negativeID);
+
+			double radiusFactor = InputData->getValue("stepStandRadiusFactor");
+
+//			logFile << "dist_positive: " << dist_positive << endl;
+//			logFile << "dist_negative: " << dist_negative << endl;
+			if(fabs(dist_negative) > dist_positive)
+				maxDist = fabs(dist_negative);
+			else
+				maxDist = dist_positive;
+
+//			logFile << "maxDist: " << maxDist << endl;
+
+			int counter = 0;
+			pointRadii.clear();
+			pointRadii.resize(iPoint.size());
+			for (int i = 0; i < iPoint.size(); i++) {
+				pointInfluenceRange[counter][0] = iPoint[i]
+						- (maxDist * radiusFactor); 	// Min value
+				pointInfluenceRange[counter][1] = iPoint[i]
+						+ (maxDist * radiusFactor);	// Max value
+				pointRadii[counter] = maxDist * radiusFactor;
+				counter++;
+			}
+
+		}
+
+	}
+
+#ifdef _StepStandardisationDebugMode_
+	logFile << "******* Supporting Points *******" << endl;
+
+	logFile << "Main point: ";
+	for (int i = 0; i < iPoint.size(); i++) {
+		logFile << iPoint[i] << ",";
+	}
+	logFile << endl;
+
+	printMatrix(pointList,"pointList",logFile);
+
+	printVector(supportsList,"supportsList",logFile);
+
+	logFile << "Supports are: " << endl;
+	for (int j = 0; j < supportsList.size(); j++) {
+		logFile << "[" << j << "] : ";
+		for (int k = 0; k < pointList[supportsList[j]].size(); k++) {
+			logFile << pointList[supportsList[j]][k] << ",";
+		}
+		logFile << endl;
+	}
+#endif
+}
+
+void StepStandardisation::findSupports_three(dbVector& iPoint,
+		dbMatrix& pointList, intVector& supportsList, dbVector& pointRadii,
+		InputFileData* InputData, ofstream& logFile) {
+
+	vector<int>().swap(supportsList);
+	for (int i = 0; i < pointList.size(); i++) {
+		supportsList.resize(supportsList.size() + 1);
+		supportsList[supportsList.size() - 1] = i;
+	}
+
+	if (supportsList.size() < 2) {
+		logFile << "ERROR: Point does not have enough of supports" << endl;
+		cout << "ERROR: Point does not have enough of supports" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	if (pointList[0].size() == 1) {
+
+		logFile
+				<< "In StepStandardisation::findSupports, retaining only the two closest points."
+				<< endl;
+
+		double dist_sum = 0, sqr_dist = 0;
+		int postiviteID = -1, negativeID = -1;
+		double dist = 0, maxDist = 0;
+		double dist_positive = DBL_MAX;
+		double dist_negative = -DBL_MAX;
+		for (int i = 0; i < supportsList.size(); i++) {
+			dist = 0;
+			for (int j = 0; j < pointList[supportsList[i]].size(); j++) {
+
+				dist += pointList[supportsList[i]][j] - iPoint[j];
+
+				logFile << "Comparing points: " << pointList[supportsList[i]][j]
+						<< " and " << iPoint[j] << " with dist: " << dist
+						<< endl;
+			}
+
+			if (dist > 0) {
+				logFile << "dist[" << dist << "] < [" << dist_positive
+						<< "]dist_positive: ";
+				if (dist < dist_positive) {
+					dist_positive = dist;
+					postiviteID = supportsList[i];
+					logFile << "Recorded with postiviteID: " << postiviteID;
+				}
+				logFile << endl;
+			} else {
+				logFile << "dist[" << dist << "] > [" << dist_negative
+						<< "]dist_negative: ";
+				if (dist > dist_negative) {
+					dist_negative = dist;
+					negativeID = supportsList[i];
+					logFile << "Recorded with negativeID: " << negativeID;
+				}
+				logFile << endl;
+			}
+
+		}
+
+		vector<int>().swap(supportsList);
+
+		supportsList.push_back(postiviteID);
+		supportsList.push_back(negativeID);
+
+		double radiusFactor = InputData->getValue("stepStandRadiusFactor");
+
+		logFile << "dist_positive: " << dist_positive << endl;
+		logFile << "dist_negative: " << dist_negative << endl;
+		if (fabs(dist_negative) > dist_positive)
+			maxDist = fabs(dist_negative);
+		else
+			maxDist = dist_positive;
+
+		logFile << "maxDist: " << maxDist << endl;
+
+		int counter = 0;
+		pointRadii.clear();
+		pointRadii.resize(iPoint.size());
+		dbMatrix pointInfluenceRange(iPoint.size(), dbVector(2));
+		for (int i = 0; i < iPoint.size(); i++) {
+			pointInfluenceRange[counter][0] = iPoint[i]
+					- (maxDist * radiusFactor); 	// Min value
+			pointInfluenceRange[counter][1] = iPoint[i]
+					+ (maxDist * radiusFactor);	// Max value
+			pointRadii[counter] = maxDist * radiusFactor;
+			counter++;
+		}
+
+	} else {
+
+		logFile
+				<< "Error: StepStandardisation::findSupports_three only support 1D points"
+				<< endl;
+		cout
+				<< "Error: StepStandardisation::findSupports_three only support 1D points"
+				<< endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+#ifdef _StepStandardisationDebugMode_
+	logFile << "******* Supporting Points *******" << endl;
+
+	logFile << "Main point: ";
+	for (int i = 0; i < iPoint.size(); i++) {
+		logFile << iPoint[i] << ",";
+	}
+	logFile << endl;
+
+	printMatrix(pointList,"pointList",logFile);
+
+	printVector(supportsList,"supportsList",logFile);
+
+	logFile << "Supports are: " << endl;
+	for (int j = 0; j < supportsList.size(); j++) {
+		logFile << "[" << j << "] : ";
+		for (int k = 0; k < pointList[supportsList[j]].size(); k++) {
+			logFile << pointList[supportsList[j]][k] << ",";
+		}
+		logFile << endl;
+	}
+#endif
+}
+
 
 /*!****************************************************************************/
 /*!****************************************************************************/
@@ -706,9 +1067,6 @@ void StepStandardisation::getCardiacLoopDetails(
 	intVector eEi; // End-ejection index
 	intVector eRi; // End-relaxation index
 
-	logFile << "volumesList.size(): " << volumesList.size() << endl;
-	logFile << "pressuresList.size(): " << pressuresList.size() << endl;
-
 	//Check
 	if(volumesList.size() != pressuresList.size()){
 		cout << "ERROR: In StepStandardisation::getCardiacLoopDetails(), volumesList and pressureList are not of the same size." << endl;
@@ -722,11 +1080,17 @@ void StepStandardisation::getCardiacLoopDetails(
 	double vNorm = computeNorm(volumesList,2,logFile);
 	double pNorm = computeNorm(pressuresList,2,logFile);
 
+#ifdef _StepStandardisationDebugMode_
+	logFile << "volumesList.size(): " << volumesList.size() << endl;
+	logFile << "pressuresList.size(): " << pressuresList.size() << endl;
+
+	logFile <<"Volume and pressure list (before normalisation)" << endl;
 	printVector(volumesList,"volumesList",logFile);
 	printVector(pressuresList,"pressuresList",logFile);
 
 	logFile << "vNorm = " << vNorm << endl;
 	logFile << "pNorm = " << pNorm << endl;
+#endif
 
 	for(int i=0; i<volumesList.size();i++){
 		volumesList[i] = volumesList[i]/vNorm;
@@ -751,10 +1115,13 @@ void StepStandardisation::getCardiacLoopDetails(
 			pressuresList[i] = pressuresList[i]/maxPress;
 	}
 
+#ifdef _StepStandardisationDebugMode_
+	logFile <<"Volume and pressure list (after normalisation)" << endl;
 	printVector(volumesList,"volumesList",logFile);
 	printVector(pressuresList,"pressuresList",logFile);
+#endif
 
-	bool eDFound = false, eIFound = true, eEFound = true, eRFound = true;
+	bool eDFound = false, eIFound = true, eEFound = true, eRFound = true, phaseJustFound = false;
 	double gradientPrevious=0, gradientNext=0, angle=0;
 	for(int i=1; i < volumesList.size(); i++){
 
@@ -765,6 +1132,7 @@ void StepStandardisation::getCardiacLoopDetails(
 
 		angle = atan((gradientPrevious-gradientNext)/(1+(gradientPrevious*gradientNext)));
 
+#ifdef _StepStandardisationDebugMode_
 		logFile << "[" << i << "]"
 		<< "\t PV Gradient(previous): " << gradientPrevious
 		<< "\t PV Gradient(next): " << gradientNext
@@ -775,65 +1143,97 @@ void StepStandardisation::getCardiacLoopDetails(
 		<< "\t Pressure(current): " << pressuresList[i]
 		<< endl;
 		logFile << "---------------------------------------" << endl;
+#endif
 
 		// Find the end-diastole point
 		if(eDFound == false){
-			if(gradientNext < 0.1 || i==(volumesList.size()-1)){
-				logFile << "end-diastole point" << endl;
+			if((gradientNext < 1 && phaseJustFound == false) || i==(volumesList.size()-1)){
+
+#ifdef _StepStandardisationDebugMode_
+				logFile << "!! FOUND: End-diastole point" << endl;
+#endif
+
 				eDi.push_back(i);
 				cPi.push_back(i);
 				eDFound = true;
 				eIFound = false;
+				phaseJustFound = true;
 				continue;
 			}
 		}
 
 		// Find the end-isovolumetric contraction point
 		if(eIFound == false){
-			if(angle > 1.2e-02 || i==(volumesList.size()-1)){
-				logFile << "end-isovolumetric contraction point" << endl;
+			if((angle > 1.2e-02 && phaseJustFound == false) || i==(volumesList.size()-1)){
+
+#ifdef _StepStandardisationDebugMode_
+				logFile << "!! FOUND: End-isovolumetric contraction point" << endl;
+#endif
+
 				eIi.push_back(i);
 				cPi.push_back(i);
 				eIFound = true;
 				eEFound = false;
+				phaseJustFound = true;
 				continue;
 			}
 		}
 
 		// Find the end-ejection point
 		if(eEFound == false){
-			if((gradientPrevious < 0 && gradientNext < 0 && angle < 1.0e-5) || i==(volumesList.size()-1)){
-				logFile << "end-ejection contraction point" << endl;
+			if((gradientPrevious < 0 && gradientNext < 0 && angle < 1.0e-5 && phaseJustFound == false) || i==(volumesList.size()-1)){
+
+#ifdef _StepStandardisationDebugMode_
+				logFile << "!! FOUND: End-ejection contraction point" << endl;
+#endif
+
 				eEi.push_back(i);
 				cPi.push_back(i);
 				eEFound = true;
 				eRFound = false;
+				phaseJustFound = true;
 				continue;
 			}
 		}
 
 		// Find the end-relaxation point
 		if (eRFound == false) {
-			if (gradientPrevious > 99999) {
-				logFile << "end-relaxation point" << endl;
+			if (gradientPrevious > 99999 && phaseJustFound == false) {
+
+#ifdef _StepStandardisationDebugMode_
+				logFile << "!! FOUND: End-relaxation point" << endl;
+#endif
+
 				eRi.push_back(i);
 				cPi.push_back(i);
 				eRFound = true;
 				eDFound = false;
+				phaseJustFound = true;
 				continue;
 			}
 		}
 
+		phaseJustFound = false;
+
 	}
 
 	if(eDFound == true && eIFound == true && eEFound == true && eRFound == false && volumesList.back() != eEi.back()){
+
+#ifdef _StepStandardisationDebugMode_
+		logFile << "!! FOUND: End-relaxation point" << endl;
+#endif
+
 		eRi.push_back(volumesList.size() - 1);
 		cPi.push_back(volumesList.size() - 1);
 		eRFound = true;
 	}
 
 
-//#ifdef _StepStandardisationDebugMode_
+	// Print the heart cycle details
+	logFile << "========================" << endl;
+	logFile << "Heart cycle information " << endl;
+	logFile << "========================" << endl;
+
 	logFile << "End-diastole: " << endl;
 	logFile << "--------------" << endl;
 	for(int i=0; i<eDi.size(); i++){
@@ -873,7 +1273,11 @@ void StepStandardisation::getCardiacLoopDetails(
 		logFile << "Pressure = " << pressuresList[eRi[i]] << endl;
 		logFile << "Timestep = " << stepList[eRi[i]] << endl;
 	}
-//#endif
+
+//	cPi.clear();
+//	cPi.push_back(0);
+//	cPi.push_back(volumesList.size()-1);
+
 
 }
 
@@ -883,7 +1287,9 @@ void StepStandardisation::getCardiacLoopDetails(
 dbVector StepStandardisation::getStandardSteps(dbVector& interpolants,
 	   DataContainer* problemData, InputFileData* InputData, ofstream& logFile){
 
+#ifdef _StepStandardisationDebugMode_
 	logFile << "In StepStandardisation::getStandardSteps" << endl;
+#endif
 
 	dbVector interpolatedSteps;
 
@@ -891,7 +1297,9 @@ dbVector StepStandardisation::getStandardSteps(dbVector& interpolants,
 		string ss = "standardStepPhaseList" + std::to_string(i);
 		dbMatrix& standardStepPhaseList = problemData->getDbMatrix(ss.c_str());
 
+#ifdef _StepStandardisationDebugMode_
 		printMatrix(standardStepPhaseList,"standardStepPhaseList",logFile);
+#endif
 
 		int nSteps = standardStepPhaseList[0].size();
 		dbVector interpolatedStepPhase(nSteps,0);
@@ -913,7 +1321,9 @@ dbVector StepStandardisation::getStandardSteps(dbVector& interpolants,
 			}
 		}
 
+#ifdef _StepStandardisationDebugMode_
 		printVector(interpolatedStepPhase,"interpolatedStepPhase",logFile);
+#endif
 
 		if(interpolatedSteps.size() == 0)
 			interpolatedSteps = interpolatedStepPhase;
@@ -921,9 +1331,11 @@ dbVector StepStandardisation::getStandardSteps(dbVector& interpolants,
 			interpolatedSteps.pop_back();
 			interpolatedSteps.insert(interpolatedSteps.end(),
 					interpolatedStepPhase.begin(),interpolatedStepPhase.end());
-
 		}
+
+#ifdef _StepStandardisationDebugMode_
 		printVector(interpolatedSteps,"interpolatedSteps",logFile);
+#endif
 
 	}
 

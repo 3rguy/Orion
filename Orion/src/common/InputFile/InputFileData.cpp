@@ -1444,6 +1444,8 @@ void InputFileData::setDefaultSimulationParameters(std::ofstream& logFile) {
 
   problemData["dispMatrixRearrange"] = 1;
 
+  problemData["StepStandardisationSupportFilter"] = 0;
+
   problemData["nGraphs"] = 0;
 
 

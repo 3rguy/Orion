@@ -987,6 +987,17 @@ void printSnapshotPOMs(InputFileData* InputData,ofstream& logFile){
 
 		problemData->setValue("calcResultList",dbMatrix());
 
+		InputData->setValue("PODMeanCalculation",
+				InputData->getValue("dbPODMeanCalculation"));
+		InputData->setValue("PODCalculationType",
+				InputData->getValue("dbPODCalculationType"));
+		InputData->setValue("PODEnergyLevel",
+				InputData->getValue("dbPODEnergyLevel"));
+		InputData->setValue("PODICalculationType",
+				InputData->getValue("dbPODICalculationType"));
+		InputData->setValue("PODIPolynomialDegree",
+				InputData->getValue("dbPODIPolynomialDegree"));
+
 		PODICalc* Podi = new PODICalc(problemData->getDbVector("myParameters"),
 				problemData->getDbVector("parameterRadii"),
 				problemData->getIntVector("supportDataID"),

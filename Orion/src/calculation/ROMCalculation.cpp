@@ -71,6 +71,17 @@ void ROMCalculation::calculation(Database& myDatabase, DataContainer* problemDat
 		InputData->setValue("parameterPolynomialDegree",
 				InputData->getValue("dbparameterPolynomialDegree"));
 
+		InputData->setValue("PODMeanCalculation",
+				InputData->getValue("dbPODMeanCalculation"));
+		InputData->setValue("PODCalculationType",
+				InputData->getValue("dbPODCalculationType"));
+		InputData->setValue("PODEnergyLevel",
+				InputData->getValue("dbPODEnergyLevel"));
+		InputData->setValue("PODICalculationType",
+				InputData->getValue("dbPODICalculationType"));
+		InputData->setValue("PODIPolynomialDegree",
+				InputData->getValue("dbPODIPolynomialDegree"));
+
 		problemData->setValue("PODIResultName", commonResultsNameList[i]);
 		problemData->setValue("PODIDofPerNode",
 				myData.getResultDOF(commonResultsNameList[i].c_str()));

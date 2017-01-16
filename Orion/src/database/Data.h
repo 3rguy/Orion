@@ -106,6 +106,7 @@ public:
 //    void saveDispFile_res_format(const char* outputFileName,ofstream& logFile);
 
     void saveResultsToFile(InputFileData* InputData,ofstream& logFile);
+    void saveResultsToFile_step(InputFileData* InputData,ofstream& logFile);
     void saveAllResultsToFile_res_format(const char* outputFileName,
     		InputFileData* InputData,ofstream& logFile);
 
@@ -141,7 +142,9 @@ public:
 
     void calcLeftAndRightCavityVolumes(InputFileData* InputData, ofstream& logFile);
     void calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile);
+    void calcLeftCavityVolumes_step(InputFileData* InputData, ofstream& logFile);
     void calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile);
+    void calcRightCavityVolumes_step(InputFileData* InputData, ofstream& logFile);
 
     dbVector& getLeftCavityVolumes(){return leftCavityVolumes;};
     dbVector& getRightCavityVolumes(){return rightCavityVolumes;};

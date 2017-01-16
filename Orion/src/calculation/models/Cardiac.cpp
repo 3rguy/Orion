@@ -84,6 +84,9 @@ void Cardiac::loadSelectedData(DataContainer* problemData,
 	dbMatrix& rightCavityPressuresList = problemData->getDbMatrix("rightCavityPressuresList");
 	rightCavityPressuresList.resize(supportDataID.size(),dbVector());
 
+	std::chrono::time_point<std::chrono::system_clock> start, end;
+	start = std::chrono::system_clock::now();
+
 	for (int i = 0; i < supportDataID.size(); i++) {
 
 		Data& mainData = myDatabase.getDataId(supportDataID[i]);
@@ -141,6 +144,14 @@ void Cardiac::loadSelectedData(DataContainer* problemData,
 	}
 
 	cout << "-----------------------------" << endl;
+
+	end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - start;
+
+	cout << "Reading selected datasets completed in: "
+			<< elapsed_seconds.count() << " sec" << endl;
+	logFile << "Reading selected datasets completed in: "
+			<< elapsed_seconds.count() << " sec" << endl;
 
 
 	if(InputData->getValue("standardiseDOF") == 1){
@@ -285,6 +296,7 @@ void Cardiac::preROMCalculationFunctions(DataContainer* problemData,
 	// =========================================================================
 	// Left cavity pressure
 	// =========================================================================
+	logFile << "Standardising the left cavity pressure." << endl;
 	vector<dbMatrix>().swap(problemData->getDbMatrixVec("resultList"));
 	intVector& supportDataID = problemData->getIntVector("supportDataID");
 	dbVector leftPressure;
@@ -329,6 +341,7 @@ void Cardiac::preROMCalculationFunctions(DataContainer* problemData,
 	// =========================================================================
 	int isRV = InputData->getValue("isRightVentriclePresent");
 	if(isRV == 1){
+		logFile << "Standardising the right cavity pressure." << endl;
 		vector<dbMatrix>().swap(problemData->getDbMatrixVec("resultList"));
 		dbVector rightPressure;
 		for (int i = 0; i < supportDataID.size(); i++) {

@@ -355,8 +355,10 @@ void ErrorCalc::calculateErrors_grf_Format(dbMatrix& exactGrfMatrix,
 	dbMatrix approxGrfMatrix_volOnly(1,dbVector());
 	approxGrfMatrix_volOnly[0] = approxGrfMatrix[0];
 
+#ifdef _errorCalcMode_
 	printMatrix(exactGrfMatrix_volOnly,"exactGrfMatrix_volOnly",logFile);
 	printMatrix(approxGrfMatrix_volOnly,"approxGrfMatrix_volOnly",logFile);
+#endif
 
 	// *************************************************************************
 	double rel2Norm_first =
@@ -373,8 +375,10 @@ void ErrorCalc::calculateErrors_grf_Format(dbMatrix& exactGrfMatrix,
 	exactGrfMatrix_volOnly[0] = exactGrfMatrix[1];
 	approxGrfMatrix_volOnly[0] = approxGrfMatrix[1];
 
+#ifdef _errorCalcMode_
 	printMatrix(exactGrfMatrix_volOnly, "exactGrfMatrix_volOnly", logFile);
 	printMatrix(approxGrfMatrix_volOnly, "approxGrfMatrix_volOnly", logFile);
+#endif
 
 	// *********************************************************************
 	double rel2Norm_second = relativeL2norm(exactGrfMatrix_volOnly,

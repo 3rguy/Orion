@@ -940,7 +940,6 @@ void Data::readLeftVentriclePVGraphResultFile(InputFileData* InputData,
 	std::string vFileName = folderName + "volume_time-dirichletID_0.grf";
 	dbMatrix vGraphResult;
 	readGraphFile_grfFormat(vFileName, vGraphResult, logFile);
-	printMatrix(vGraphResult, "vGraphResult", logFile);
 	setGraph("LVTimeSteps",vGraphResult[0]);
 	leftCavityVolumes = vGraphResult[1];
 
@@ -948,13 +947,13 @@ void Data::readLeftVentriclePVGraphResultFile(InputFileData* InputData,
 	std::string pFileName = folderName + "load_time-loadID_0.grf";
 	dbMatrix pGraphResult;
 	readGraphFile_grfFormat(pFileName, pGraphResult, logFile);
-	printMatrix(pGraphResult, "pGraphResult", logFile);
 	setGraph("LPTimeSteps",pGraphResult[0]);
 	leftCavityPressures = pGraphResult[1];
 
-
+#ifdef _DataDebugMode_
 	printVector(leftCavityVolumes, "leftCavityVolumes", logFile);
 	printVector(leftCavityPressures, "leftCavityPressures", logFile);
+#endif
 }
 
 /*!****************************************************************************/
@@ -1680,6 +1679,26 @@ void Data::saveResultsToFile(InputFileData* InputData,ofstream& logFile) {
 
 }
 
+void Data::saveResultsToFile_step(InputFileData* InputData,ofstream& logFile) {
+
+	int choice = 1;
+
+	switch (choice) {
+	case 1:
+	{
+		//Save matrix to .res file format
+		string str = folderName + "fem_orion_step.res";
+		saveAllResultsToFile_res_format(str.c_str(),InputData,logFile);
+		break;
+	}
+	default:
+		logFile << "ERROR: Specified file format cannot be written to" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+		break;
+	}
+
+}
+
 /*!****************************************************************************/
 /*!****************************************************************************/
 // Writing generated displacement matrix to files
@@ -2206,7 +2225,7 @@ void Data::calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 
 	using namespace std;
 
-	logFile << "Calculating left cavity volumes" << endl;
+//	logFile << "Calculating left cavity volumes" << endl;
 
 	dbMatrix& resultMatrix = this->getResult("displacement");
 	//printMatrix(resultMatrix,"displacement Matrix",logFile);
@@ -2236,6 +2255,12 @@ void Data::calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 	intMatrix surfaceNodes;
 	meshData->getSpecificSurfaceNodes("Endocaridum_LV_Surface", surfaceIDList,
 			surfaceNodes, InputData, logFile);
+
+//	logFile << "List of surfaces" << endl;
+//	for(int i=0; i<surfaceIDList.size(); i++){
+//		logFile << "surfaceIDList: " << surfaceNodes[i][0] << ", " << surfaceNodes[i][1] << ", " << surfaceNodes[i][2] << endl;
+//
+//	}
 
 	int numOfSteps = resultMatList.size();
 	dbVector volumeVec(numOfSteps, 0);
@@ -2304,9 +2329,241 @@ void Data::calcLeftCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 
 }
 
+void Data::calcLeftCavityVolumes_step(InputFileData* InputData, ofstream& logFile) {
+
+	using namespace std;
+
+//	logFile << "Calculating left cavity volumes" << endl;
+
+	dbMatrix& resultMatrix = this->getResult("displacement");
+
+	// Convert each result at each step from a vector to a matrix
+	vector<dbMatrix> resultMatList(resultMatrix[0].size(),
+				dbMatrix(resultMatrix.size() / 3, dbVector(3,0)));
+	for (int i = 1; i < resultMatrix[0].size(); i++) {
+		dbMatrix& mat = resultMatList[i];
+
+		int row = 0;
+		int col = 0;
+		for (int j = 0; j < resultMatrix.size(); j++) {
+
+			mat[row][col] = resultMatrix[j][i];
+			col++;
+
+			if (col > 2) {
+				col = 0;
+				row++;
+			}
+		}
+	}
+
+	// Extract the surface of the left ventricle
+	intVector surfaceIDList;
+	intMatrix surfaceNodes;
+	meshData->getSpecificSurfaceNodes("Endocaridum_LV_Surface", surfaceIDList,
+			surfaceNodes, InputData, logFile);
+
+	int numOfSteps = resultMatList.size();
+	dbVector volumeVec(numOfSteps, 0);
+
+
+	for (int i = 0; i < numOfSteps; i++) {
+
+		dbMatrix& rMatrix = resultMatList[i];
+		vector<ParticleExt> ptcls = meshData->getNodesVec();
+
+		// Update the coordinates
+		for (int j = 0; j < ptcls.size(); j++) {
+			for (int k = 0; k < 3; k++) {
+				ptcls[j].getCoord(k) += rMatrix[j][k];
+			}
+		}
+
+		// Compute the volume of the cavity
+		double volume = 0;
+
+		int x = 0;
+		int y = 1;
+		int z = 2;
+
+		int numOfsurfaces = surfaceIDList.size();
+		for (int m = 0; m < numOfsurfaces; m++) {
+
+			dbVector& v1 = ptcls[surfaceNodes[m][0] - 1].getCoords();
+			dbVector& v2 = ptcls[surfaceNodes[m][1] - 1].getCoords();
+			dbVector& v3 = ptcls[surfaceNodes[m][2] - 1].getCoords();
+
+			volume += ((v2[y] - v1[y]) * (v3[z] - v1[z])
+					- (v2[z] - v1[z]) * (v3[y] - v1[y]))
+					* (v1[x] + v2[x] + v3[x]);
+		}
+
+		volumeVec[i] = abs(volume / 6.0);
+	}
+
+	string timeGraphFileName = folderName + "time_volume-LV_step.grf";
+	logFile << "Writing to: " << timeGraphFileName << endl;
+	cout << "Writing to: " << timeGraphFileName << endl;
+
+	ofstream writeTimeGraph(timeGraphFileName);
+	writeTimeGraph.precision(15);
+	writeTimeGraph.setf( std::ios::scientific, std:: ios::floatfield );
+
+	string pressureGraphFileName = folderName + "pressure_volume-LV_step.grf";
+	logFile << "Writing to: " << pressureGraphFileName << endl;
+	cout << "Writing to: " << pressureGraphFileName << endl;
+
+	ofstream writePressureGraph(pressureGraphFileName);
+	writePressureGraph.precision(15);
+	writePressureGraph.setf( std::ios::scientific, std:: ios::floatfield );
+
+
+	if (writeTimeGraph.good() && writePressureGraph.good()) {
+		for (int i = 0; i < step_value_vec.size(); i++) {
+			writeTimeGraph << step_value_vec[i] << " " << volumeVec[i] << endl;
+			writePressureGraph << volumeVec[i] << " " << leftCavityPressures[i] << endl;
+		}
+	}
+
+	writeTimeGraph.close();
+	writePressureGraph.close();
+
+	leftCavityVolumes = volumeVec;
+
+}
+
 /*!****************************************************************************/
 /*!****************************************************************************/
 void Data::calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile) {
+
+	using namespace std;
+
+//	logFile << "Calculating right cavity volumes" << endl;
+
+	dbMatrix& resultMatrix = this->getResult("displacement");
+//	printMatrix(resultMatrix,"displacement Matrix",logFile);
+//	MPI_Abort(MPI_COMM_WORLD, 1);
+
+	// Convert each result at each step from a vector to a matrix
+	vector<dbMatrix> resultMatList(resultMatrix[0].size(),
+			dbMatrix(resultMatrix.size() / 3, dbVector(3,0)));
+	for (int i = 0; i < resultMatrix[0].size(); i++) {
+		dbMatrix& mat = resultMatList[i];
+
+		int row = 0;
+		int col = 0;
+		for (int j = 0; j < resultMatrix.size(); j++) {
+
+			mat[row][col] = resultMatrix[j][i];
+			col++;
+
+			if (col > 2) {
+				col = 0;
+				row++;
+			}
+		}
+	}
+
+	// Extract the surface of the left ventricle
+	intVector surfaceIDList_EndoRV;
+	intMatrix surfaceNodes_EndoRV;
+	meshData->getSpecificSurfaceNodes("Endocaridum_RV_Surface",
+			surfaceIDList_EndoRV,surfaceNodes_EndoRV, InputData, logFile);
+
+	intVector surfaceIDList_FreeWall;
+	intMatrix surfaceNodes_FreeWall;
+	meshData->getSpecificSurfaceNodes("Endocaridum_Freewall_Surface",
+			surfaceIDList_FreeWall,surfaceNodes_FreeWall, InputData, logFile);
+
+	// Merge Endocaridum_RV_Surface and Endocaridum_Freewall_Surface data
+	intVector surfaceIDList;
+	intMatrix surfaceNodes;
+
+	surfaceIDList.reserve( surfaceIDList_EndoRV.size() + surfaceIDList_FreeWall.size() );
+	surfaceIDList.insert( surfaceIDList.end(), surfaceIDList_EndoRV.begin(), surfaceIDList_EndoRV.end() );
+	surfaceIDList.insert( surfaceIDList.end(), surfaceIDList_FreeWall.begin(), surfaceIDList_FreeWall.end() );
+
+	surfaceNodes.reserve( surfaceNodes_EndoRV.size() + surfaceNodes_FreeWall.size() ); // preallocate memory
+	surfaceNodes.insert( surfaceNodes.end(), surfaceNodes_EndoRV.begin(), surfaceNodes_EndoRV.end() );
+	surfaceNodes.insert( surfaceNodes.end(), surfaceNodes_FreeWall.begin(), surfaceNodes_FreeWall.end() );
+
+
+	int numOfSteps = resultMatList.size();
+	dbVector volumeVec(numOfSteps, 0);
+
+
+	for (int i = 0; i < numOfSteps; i++) {
+
+		dbMatrix& rMatrix = resultMatList[i];
+
+		vector<ParticleExt> ptcls = meshData->getNodesVec();
+
+		// Update the coordinates
+		for (int j = 0; j < ptcls.size(); j++) {
+			for (int k = 0; k < 3; k++) {
+				ptcls[j].getCoord(k) += rMatrix[j][k];
+			}
+		}
+
+		// Compute the volume of the cavity
+		double volume = 0;
+
+		int x = 0;
+		int y = 1;
+		int z = 2;
+
+		int numOfsurfaces = surfaceIDList.size();
+		for (int m = 0; m < numOfsurfaces; m++) {
+
+			dbVector& v1 = ptcls[surfaceNodes[m][0] - 1].getCoords();
+			dbVector& v2 = ptcls[surfaceNodes[m][1] - 1].getCoords();
+			dbVector& v3 = ptcls[surfaceNodes[m][2] - 1].getCoords();
+
+			volume += ((v2[y] - v1[y]) * (v3[z] - v1[z])
+					- (v2[z] - v1[z]) * (v3[y] - v1[y]))
+					* (v1[x] + v2[x] + v3[x]);
+		}
+
+		volumeVec[i] = abs(volume / 6.0);
+
+//		logFile << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
+	}
+
+	string timeGraphFileName = folderName + "time_volume-RV.grf";
+	logFile << "Writing to: " << timeGraphFileName << endl;
+	cout << "Writing to: " << timeGraphFileName << endl;
+
+	ofstream writeTimeGraph(timeGraphFileName);
+	writeTimeGraph.precision(15);
+	writeTimeGraph.setf(std::ios::scientific, std::ios::floatfield);
+
+
+	string pressureGraphFileName = folderName + "pressure_volume-RV.grf";
+	logFile << "Writing to: " << pressureGraphFileName << endl;
+	cout << "Writing to: " << pressureGraphFileName << endl;
+
+	ofstream writePressureGraph(pressureGraphFileName);
+	writePressureGraph.precision(15);
+	writePressureGraph.setf( std::ios::scientific, std:: ios::floatfield );
+
+
+	if (writeTimeGraph.good() && writePressureGraph.good()) {
+		for (int i = 0; i < step_value_vec.size(); i++) {
+			writeTimeGraph << step_value_vec[i] << " " << volumeVec[i] << endl;
+			writePressureGraph << volumeVec[i] << " " << rightCavityPressures[i] << endl;
+		}
+	}
+
+	writeTimeGraph.close();
+	writePressureGraph.close();
+
+	rightCavityVolumes = volumeVec;
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+void Data::calcRightCavityVolumes_step(InputFileData* InputData, ofstream& logFile) {
 
 	using namespace std;
 
@@ -2401,7 +2658,7 @@ void Data::calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 //		logFile << "[" << i << "] Geometry volume = " << volumeVec[i] << endl;
 	}
 
-	string timeGraphFileName = folderName + "time_volume-RV.grf";
+	string timeGraphFileName = folderName + "time_volume-RV_step.grf";
 	cout << "Writing to: " << timeGraphFileName << endl;
 
 	ofstream writeTimeGraph(timeGraphFileName);
@@ -2409,7 +2666,7 @@ void Data::calcRightCavityVolumes(InputFileData* InputData, ofstream& logFile) {
 	writeTimeGraph.setf(std::ios::scientific, std::ios::floatfield);
 
 
-	string pressureGraphFileName = folderName + "pressure_volume-RV.grf";
+	string pressureGraphFileName = folderName + "pressure_volume-RV_step.grf";
 	cout << "Writing to: " << pressureGraphFileName << endl;
 
 	ofstream writePressureGraph(pressureGraphFileName);
@@ -2491,11 +2748,13 @@ void Data::syncCardiacTimeStepsAndResults(InputFileData* InputData, ofstream& lo
 	logFile << "Synchronising result timesteps and graph results." << endl;
 	cout    << "Synchronising result timesteps and graph results." << endl;
 
+#ifdef _DataDebugMode_
 	printVector(leftCavityVolumes,"leftCavityVolumes(Before)",logFile);
 	printVector(leftCavityPressures,"leftCavityPressures(Before)",logFile);
 
 	printVector(rightCavityVolumes,"rightCavityVolumes(Before)",logFile);
 	printVector(rightCavityPressures,"rightCavityPressures(Before)",logFile);
+#endif
 
 
 	dbVector& LVTimeSteps = getGraph("LVTimeSteps");
@@ -2584,8 +2843,10 @@ void Data::syncCardiacTimeStepsAndResults(InputFileData* InputData, ofstream& lo
 //		logFile << "In Data::syncCardiacTimeStepsAndResults, RV timesteps is empty." << endl;
 //	}
 
+#ifdef _DataDebugMode_
 	printVector(leftCavityVolumes,"leftCavityVolumes(after)",logFile);
 	printVector(leftCavityPressures,"leftCavityPressures(after)",logFile);
+#endif
 
 //	printVector(rightCavityVolumes,"rightCavityVolumes(after)",logFile);
 //	printVector(rightCavityPressures,"rightCavityPressures(after)",logFile);

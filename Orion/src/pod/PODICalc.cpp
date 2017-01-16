@@ -181,10 +181,8 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 				" INTERPOLATION HAS BEEN ACTIVATED" << endl;
 	}
 
-
 	resultingDisplacementMatrix.resize(rearrangeDisplacementList[0].size(),
 			dbVector());
-
 
 	double energyLevel = InputData->getValue("PODEnergyLevel");
 	double totalPOVsConserved = 0;

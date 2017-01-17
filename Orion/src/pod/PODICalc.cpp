@@ -155,7 +155,6 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 		DataContainer* problemData,InputFileData* InputData, ofstream& logFile)
 {
 
-
 #ifdef _PODICalcCheckMode_
 	for(int i = 0; i < rearrangeDisplacementList.size(); i++) {
 		if(rearrangeDisplacementList[0][0].size() != interpolants.size()) {
@@ -243,6 +242,8 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 
 			//! ----------------------------------------------------------------
 			//! Direction interpolation
+
+			logFile << "Direction interpolation used" << endl;
 
 			fullInterpolatedDispVec.resize(rearrangeDisplacementList[i].size(),0);
 			for (int j = 0; j < rearrangeDisplacementList[i].size(); j++) {
@@ -379,9 +380,13 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 	int count_interpolChange = 0;
 	for (int i = 0; i < rearrangeDisplacementList.size(); i++) {
 
+		PODCalc* PODSpace = new PODCalc(rearrangeDisplacementList[i],
+													InputData, logFile);
+
 		// Find the zeroes entries
 		intVector zeroEntriesVec;
-		dbMatrix& fullDispMat = rearrangeDisplacementList[i];
+		dbMatrix& fullDispMat = PODSpace->getDataMatrix();
+
 		for(int j=0; j<fullDispMat.size(); j++){
 
 			int counter = 0;
@@ -405,7 +410,7 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 		}
 		logFile << endl;
 
-		// If all entries has been deleted form the fullDispMat, the
+		// If all entries has been deleted from the fullDispMat, the
 		// interpolation_choice is switched to 1
 		int oldInterpolation_choice = interpolation_choice;
 		bool zeroDispMat = false;
@@ -415,8 +420,6 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 			count_interpolChange++;
 		}
 
-//		printMatrix(fullDispMat,"fullDispMat -> Reduced",logFile);
-
 		dbMatrix reduceDisplacementMatrix;
 		dbVector interpolatedReducedDispVec, fullInterpolatedDispVec;
 
@@ -425,13 +428,23 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 			//! ----------------------------------------------------------------
 			//! POD Reduction + direction interpolation
 
-			//! Setup the POD space and compress displacement matrix
-			PODCalc* PODSpace = new PODCalc(rearrangeDisplacementList[i],
-					reduceDisplacementMatrix, energyLevel, InputData, logFile);
+			// Define the energy level to be conserved
+			PODSpace->setEnergyLevel(energyLevel);
+
+			// Calculate the POMs and POVs
+			PODSpace->setPOVsandPOMs(InputData,logFile);
+
+			// Determine the number of POMs needed to meet the minimum energy level
+			// requirement
+			PODSpace->energyConservCalc(logFile);
+
+			// Reduce Matrix's size
+			PODSpace->compressMatrix(reduceDisplacementMatrix,InputData,logFile);
+
 
 			logFile << " ---------------------------------------------------"
 					<< endl;
-			logFile << "Carrying out the interpolation on the reduced matrix"
+			logFile << "Interpolating the reduced matrix"
 					<< endl;
 
 			interpolatedReducedDispVec.resize(reduceDisplacementMatrix.size(),
@@ -468,24 +481,24 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 						InputData, logFile);
 			}
 
-			delete PODSpace;
-
-
-
 		}
 		else if (interpolation_choice == 1) {
 
 			//! ----------------------------------------------------------------
 			//! Direction interpolation
-			fullInterpolatedDispVec.resize(rearrangeDisplacementList[i].size(),0);
-			for (int j = 0; j < rearrangeDisplacementList[i].size(); j++) {
-				for (int k = 0; k < rearrangeDisplacementList[i][j].size();
+
+			logFile << "Direction interpolation used" << endl;
+
+			fullInterpolatedDispVec.resize(fullDispMat.size(),0);
+			for (int j = 0; j < fullDispMat.size(); j++) {
+				for (int k = 0; k < fullDispMat[j].size();
 						k++) {
 					fullInterpolatedDispVec[j] +=
-							rearrangeDisplacementList[i][j][k]
+							fullDispMat[j][k]
 									* interpolants[k];
 				}
 			}
+
 		}
 		else{
 			logFile << "In PODICalc::PODInterpolation, interpolation method "
@@ -495,9 +508,6 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 			MPI_Abort(MPI_COMM_WORLD,1);
 		}
 
-		if(zeroDispMat == true)
-					interpolation_choice = oldInterpolation_choice;
-
 //		logFile << "---------- Before adding zero row ----------" << endl;
 //		printVector(fullInterpolatedDispVec,"fullInterpolatedDispVec",logFile);
 
@@ -505,6 +515,15 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 		for (int j = 0; j<zeroEntriesVec.size(); j++){
 			fullInterpolatedDispVec.insert(fullInterpolatedDispVec.begin()+zeroEntriesVec[j],0);
 		}
+
+		// If a direct interpolation is carried out, the mean of the ensemble matrix is
+		// not automatically added.
+		PODSpace->addMean(fullInterpolatedDispVec,InputData,logFile);
+
+		delete PODSpace;
+
+		if(zeroDispMat == true)
+					interpolation_choice = oldInterpolation_choice;
 
 //		logFile << "---------- After adding zero row ----------" << endl;
 //		printVector(fullInterpolatedDispVec,"fullInterpolatedDispVec",logFile);

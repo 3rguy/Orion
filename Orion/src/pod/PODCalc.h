@@ -34,6 +34,9 @@ class PODCalc
 {
 public:
 
+	PODCalc(dbMatrix& fullMatrix, InputFileData* InputData,
+			ofstream& logFile);
+
     PODCalc(dbMatrix& fullMatrix,dbMatrix& reducedMatrix, double enLev,
     		InputFileData* InputData, ofstream& logFile);
 
@@ -44,6 +47,8 @@ public:
 
     // Set data matrix
     void setDataMatrix(dbMatrix& mat,InputFileData* InputData, ofstream& logFile);
+    dbMatrix& getDataMatrix(){return dataMat;};
+
 
     void setPOVsandPOMs(InputFileData* InputData,ofstream& logFile);
     dbMatrix& getPOMs(){return POMs;};
@@ -85,6 +90,9 @@ public:
 
     void expandVector(dbVector& reducedVector,dbVector& fullVector,
     		InputFileData* InputData,ofstream& logFile);
+
+    void addMean(dbVector& vec, InputFileData* InputData,
+    		ofstream& logFile);
 
 private:
 

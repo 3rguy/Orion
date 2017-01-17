@@ -5,6 +5,17 @@ using namespace std;
 /*!****************************************************************************/
 /*!****************************************************************************/
 //! PODCalc constructor
+PODCalc::PODCalc(dbMatrix& fullMatrix, InputFileData* InputData,
+		ofstream& logFile){
+
+	// POD Preprocessing
+	setDataMatrix(fullMatrix,InputData,logFile);
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! PODCalc constructor
 PODCalc::PODCalc(dbMatrix& fullMatrix,dbMatrix& reducedMatrix, double enLev,
 		InputFileData* InputData, ofstream& logFile){
 
@@ -564,12 +575,6 @@ void PODCalc::expandVector(dbVector& reducedVector,dbVector& fullVector,
 		}
 	}
 
-	if(InputData->getValue("PODMeanCalculation") == 1){
-		for(int i = 0; i < fullVector.size(); i++){
-			fullVector[i] = fullVector[i] + meanVec[i];
-		}
-	}
-
 #ifdef _PODCalcDebugMode_
 	logFile << "******* PODCalc::expandVector *******" << endl;
 
@@ -583,5 +588,25 @@ void PODCalc::expandVector(dbVector& reducedVector,dbVector& fullVector,
 		logFile << fullVector[i] << endl;
 	}
 #endif
+
+}
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! expand any matrix using the Proper Orthogonal Modes
+void PODCalc::addMean(dbVector& vec, InputFileData* InputData,
+		ofstream& logFile) {
+
+	if(vec.size() == meanVec.size()){
+		for (int i = 0; i < vec.size(); i++) {
+			vec[i] = vec[i] + meanVec[i];
+		}
+	}else{
+
+		cout << "In PODCalc::addMean, size of vec is not equal to size of meanVec" << endl;
+		logFile << "In PODCalc::addMean, size of vec is not equal to size of meanVec" << endl;
+		MPI_Abort(MPI_COMM_WORLD,1);
+
+	}
 
 }

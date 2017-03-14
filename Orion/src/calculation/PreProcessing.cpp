@@ -123,7 +123,6 @@ void PreProcessing::searchDatabase(DataContainer* problemData,Database& myDataba
 
 		logFile << "(" << i << "): " << "Data[" << mainData.getId() << "]-> "
 				<< mainData.getFolderName() << endl;
-
 	}
 
 }
@@ -510,13 +509,16 @@ void PreProcessing::standardiseStep(DataContainer* problemData,
 	delete StepStandard;
 
 
-	cout << "Saving datasets standardised results" << endl;
-	logFile << "Saving datasets standardised results" << endl;
-	for (int j = 0; j < supportDataID.size(); j++) {
-		myDatabase.getDataId(supportDataID[j]).saveResultsToFile_step(InputData, logFile);
-		myDatabase.getDataId(supportDataID[j]).calcLeftCavityVolumes_step(InputData,logFile);
-		myDatabase.getDataId(supportDataID[j]).calcRightCavityVolumes_step(InputData,logFile);
-	}
+//	cout << "Saving datasets standardised results" << endl;
+//	logFile << "Saving datasets standardised results" << endl;
+//	for (int j = 0; j < supportDataID.size(); j++) {
+//		myDatabase.getDataId(supportDataID[j]).saveResultsToFile_step(InputData, logFile);
+//		myDatabase.getDataId(supportDataID[j]).calcLeftCavityVolumes_step(InputData,logFile);
+//
+//		if(InputData->getValue("isRightVentriclePresent") == 1){
+//			myDatabase.getDataId(supportDataID[j]).calcRightCavityVolumes_step(InputData,logFile);
+//		}
+//	}
 
 
 	end = std::chrono::system_clock::now();
@@ -643,6 +645,8 @@ void PreProcessing::recordStandardisedSteps(DataContainer* problemData,
 				myData.getInterpolants(), problemData, InputData, logFile);
 	myData.setStepValueVec(standardSteps);
 	problemData->setValue("PODIStepValueVec", myData.getStepValueVec());
+
+	printVector(myData.getStepValueVec(),"***** Standardised myData steps vector *****",logFile);
 
 
 	// Record the new standardised step values of each dataset

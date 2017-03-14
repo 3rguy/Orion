@@ -279,8 +279,7 @@ void Cardiac::additionalPostProcessingFunctions(DataContainer* problemData,
 
 	myData.calcLeftCavityVolumes(InputData,logFile);
 
-	int isRV = InputData->getValue("isRightVentriclePresent");
-	if(isRV == 1){
+	if(InputData->getValue("isRightVentriclePresent") == 1){
 		myData.calcRightCavityVolumes(InputData,logFile);
 	}
 
@@ -290,6 +289,7 @@ void Cardiac::additionalPostProcessingFunctions(DataContainer* problemData,
 /*!****************************************************************************/
 void Cardiac::preROMCalculationFunctions(DataContainer* problemData,
 		InputFileData* InputData, ofstream& logFile) {
+
 
 	// Standardise the left and right cavity pressures
 

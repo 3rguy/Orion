@@ -83,6 +83,9 @@ int main(int argc, char* argv[]) {
 		logFile.precision(15);
 
 		ErrorCalc myError(InputData, elogFile);
+
+		elogFile.close();
+
 		break;
 	}
 
@@ -103,6 +106,9 @@ int main(int argc, char* argv[]) {
 		logFile.precision(15);
 
 		ErrorCalc myError(InputData, elogFile);
+
+		elogFile.close();
+
 		break;
 	}
 

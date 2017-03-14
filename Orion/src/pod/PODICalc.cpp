@@ -52,7 +52,6 @@ PODICalc::PODICalc(dbVector& myParameters, dbVector& parameterRadii,
 		cout << "PODICalculationType: " << choice << " does not exist.\n"
 						"Valid options are <1,2>." << endl;
 		MPI_Abort(MPI_COMM_WORLD,1);
-
 	}
 
 }
@@ -233,6 +232,11 @@ void PODICalc::PODInterpolation(vector<dbMatrix>& rearrangeDisplacementList,
 				logFile << "Saving POMs to file" << endl;
 				savePOMsToFile_ResFormat(PODSpace->getPOMs(), PODSpace->getMeanVec(),
 						i, problemData, InputData, logFile);
+				savePOVsToFile_GrfFormat(PODSpace->getPOVs(), i, problemData,
+						InputData, logFile);
+				saveConservedPOVsToFile_GrfFormat(PODSpace->getNumPOVConserved(),
+						PODSpace->getEnergyConserved(), i, problemData,
+						InputData, logFile);
 			}
 
 			delete PODSpace;
@@ -369,8 +373,6 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 	}
 #endif
 
-	int PlotPOMs_choice = InputData->getValue("PlotPOMsAndPOVs");
-
 	resultingDisplacementMatrix.resize(rearrangeDisplacementList[0].size(),
 			dbVector());
 
@@ -403,12 +405,19 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 			}
 		}
 
+		int PlotPOMs_choice = InputData->getValue("PlotPOMsAndPOVs");
+
 		//Erase the zeroes entries
-		logFile << "Number of zero rows found = " << zeroEntriesVec.size() << endl;
-		for(int j=zeroEntriesVec.size()-1; j>-1 ; j--){
-			fullDispMat.erase(fullDispMat.begin()+zeroEntriesVec[j]);
+		if(zeroEntriesVec.size() > 0){
+
+			PlotPOMs_choice = 0;
+
+			logFile << "Number of zero rows found = " << zeroEntriesVec.size() << endl;
+			for(int j=zeroEntriesVec.size()-1; j>-1 ; j--){
+				fullDispMat.erase(fullDispMat.begin()+zeroEntriesVec[j]);
+			}
+			logFile << endl;
 		}
-		logFile << endl;
 
 		// If all entries has been deleted from the fullDispMat, the
 		// interpolation_choice is switched to 1
@@ -474,13 +483,14 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 				savePOMsToFile_ResFormat(PODSpace->getPOMs(),
 						PODSpace->getMeanVec(), i, problemData, InputData,
 						logFile);
+
+				printVector(PODSpace->getPOVs(),"Print vector, POVs: ",logFile);
 				savePOVsToFile_GrfFormat(PODSpace->getPOVs(), i, problemData,
 						InputData, logFile);
 				saveConservedPOVsToFile_GrfFormat(PODSpace->getNumPOVConserved(),
 						PODSpace->getEnergyConserved(), i, problemData,
 						InputData, logFile);
 			}
-
 		}
 		else if (interpolation_choice == 1) {
 
@@ -537,7 +547,7 @@ void PODICalc::PODInterpolationEnhanced(vector<dbMatrix>& rearrangeDisplacementL
 		}
 	}
 
-	// Info display
+	// PODI info display
 	if (interpolation_choice == 0 && InputData->getValue("printPodiInfo") == 1) {
 
 		logFile << "Average POVs conserved = "
@@ -586,7 +596,7 @@ void PODICalc::savePOMsToFile_ResFormat(dbMatrix& POMs, dbVector& meanVec,
 		fileExist = false;
 	}
 
-	ofstream writeToFile(fileName, ios::app);
+	ofstream writeToFile(fileName, ios::out | ios::app);
 
 	if (fileExist == false) {
 		writeToFile << "GiD Post Results File 1.0" << endl;
@@ -701,8 +711,8 @@ void PODICalc::savePOVsToFile_GrfFormat(dbVector& POVs, int stepValueID,
 		fileExist = false;
 	}
 
-	ofstream writeToFile(fileName, ios::app);
-	ofstream writeToFilePer(fileNamePer, ios::app);
+	ofstream writeToFile(fileName,ios::out | ios::app);
+	ofstream writeToFilePer(fileNamePer, ios::out | ios::app);
 
 	if (fileExist == false) {
 		writeToFile << "#POV_id POV_value" << endl;
@@ -750,8 +760,8 @@ void PODICalc::saveConservedPOVsToFile_GrfFormat(int& numConsrvPOV,
 	}
 
 	// Create/Open file
-	ofstream writeToFile(fileName, ios::app);
-	ofstream writeToFilePer(fileNamePer, ios::app);
+	ofstream writeToFile(fileName, ios::out | ios::app);
+	ofstream writeToFilePer(fileNamePer, ios::out | ios::app);
 
 	// Write header line if file has been created
 	if (fileExist == false) {

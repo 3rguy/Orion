@@ -58,7 +58,6 @@ public:
     void setStepValueVec(dbVector valueVec){step_value_vec=valueVec;};
     dbVector& getStepValueVec(){return step_value_vec;};
 
-
     void delMeshData(void);
     FEMGeometryExt* getMeshData(){return meshData;};
     void setMeshData(FEMGeometryExt* p){meshData = p;};
@@ -101,7 +100,7 @@ public:
 	void saveGraphResultsToFile_grf_format(std::string outputFileName,
 			dbVector& graphVecOne,dbVector& graphVecTwo,ofstream& logFile);
 
-    // Writing generated displacement matrix to files
+//    Writing generated displacement matrix to files
 //    void saveDispFile(ofstream& logFile);
 //    void saveDispFile_res_format(const char* outputFileName,ofstream& logFile);
 

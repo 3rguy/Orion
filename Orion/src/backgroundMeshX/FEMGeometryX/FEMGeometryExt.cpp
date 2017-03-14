@@ -350,6 +350,9 @@ void FEMGeometryExt::readMeshFile(InputFileData* InputData,
 			<< backGroundMeshInfo["numberOfVolumeElements"] << endl;
 #endif
 
+	// Extract surfaces
+		readSurfaceNodes(meshFileName,InputData,logFile);
+
 	/*********************************************************************/
 	// Write the FEM reference mesh.
 	int rank;

@@ -45,6 +45,25 @@ Data::Data() {
 	allResultsNameList[10][0] = "fibre stress S_nn";
 	allResultsNameList[10][1] = "Scalar";
 
+
+
+
+//	allResultsNameList.resize(5, vector<string>(2));
+//
+//	allResultsNameList[0][0] = "displacement";
+//	allResultsNameList[0][1] = "Vector";
+//
+//	allResultsNameList[1][0] = "strain";
+//	allResultsNameList[1][1] = "Matrix";
+//
+//	allResultsNameList[2][0] = "effective strain";
+//	allResultsNameList[2][1] = "Scalar";
+//
+//	allResultsNameList[3][0] = "stress";
+//	allResultsNameList[3][1] = "Matrix";
+//
+//	allResultsNameList[4][0] = "effective stress";
+//	allResultsNameList[4][1] = "Scalar";
 }
 
 Data::Data(dbVector paramVec) {
@@ -92,6 +111,23 @@ Data::Data(dbVector paramVec) {
 
 	allResultsNameList[10][0] = "fibre stress S_nn";
 	allResultsNameList[10][1] = "Scalar";
+
+//	allResultsNameList.resize(5, vector<string>(2));
+//
+//		allResultsNameList[0][0] = "displacement";
+//		allResultsNameList[0][1] = "Vector";
+//
+//		allResultsNameList[1][0] = "strain";
+//		allResultsNameList[1][1] = "Matrix";
+//
+//		allResultsNameList[2][0] = "effective strain";
+//		allResultsNameList[2][1] = "Scalar";
+//
+//		allResultsNameList[3][0] = "stress";
+//		allResultsNameList[3][1] = "Matrix";
+//
+//		allResultsNameList[4][0] = "effective stress";
+//		allResultsNameList[4][1] = "Scalar";
 }
 
 /*!****************************************************************************/

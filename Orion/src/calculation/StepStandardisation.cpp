@@ -1181,7 +1181,7 @@ void StepStandardisation::getCardiacLoopDetails(
 
 		// Find the end-ejection point
 		if(eEFound == false){
-			if((gradientPrevious < 0 && gradientNext < 0 && angle < 1.0e-5 && phaseJustFound == false) || i==(volumesList.size()-1)){
+			if((gradientPrevious < 1.0e-5 && gradientNext < 1.0e-5 && angle < 1.0e-5 && phaseJustFound == false) || i==(volumesList.size()-1)){
 
 #ifdef _StepStandardisationDebugMode_
 				logFile << "!! FOUND: End-ejection contraction point" << endl;
@@ -1269,7 +1269,7 @@ void StepStandardisation::getCardiacLoopDetails(
 	for(int i=0; i<eRi.size(); i++){
 		logFile << "[" << i << "]" << endl;
 		logFile << "eRi: " << eRi[i] << endl;
-		logFile << volumesList[eRi[i]] << endl;
+		logFile << "Pressure = " << volumesList[eRi[i]] << endl;
 		logFile << "Pressure = " << pressuresList[eRi[i]] << endl;
 		logFile << "Timestep = " << stepList[eRi[i]] << endl;
 	}

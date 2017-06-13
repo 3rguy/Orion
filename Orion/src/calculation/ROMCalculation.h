@@ -39,7 +39,7 @@ class ROMCalculation: virtual public Model{
 public:
 
 //	ROMCalculation(Data& yourData);
-	virtual ~ROMCalculation(){};
+	~ROMCalculation(){};
 
 	void setData(Data& yourData){myData = yourData;};
 	Data& getData(){return myData;};

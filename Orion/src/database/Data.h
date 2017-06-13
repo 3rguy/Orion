@@ -87,6 +87,8 @@ public:
 			map<double, map<string,dbMatrix> >& resultsData,
 			ofstream& logFile);
 
+	dbVector& readVectorFile(string fileName,ofstream& logFile);
+
 	void readGraphFile_grfFormat(std::string& fileName, dbMatrix& grfMatrix,
 			ofstream& logFile);
 

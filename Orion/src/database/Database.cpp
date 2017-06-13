@@ -8,8 +8,7 @@ Database::Database(string& databaseName, ofstream& logFile) {
 	//! Read database file (e.g myDatabase.csv)
 	dbMatrix paramMatrix;
 	vector<string> fileNameVec;
-	intVector anchorPointList;
-	readDatabase(databaseName, paramNamesVec, paramMatrix, anchorPointList, fileNameVec,
+	readDatabase(databaseName, paramNamesVec, paramMatrix, fileNameVec,
 			logFile);
 
 	//! Create Data and store them
@@ -20,7 +19,6 @@ Database::Database(string& databaseName, ofstream& logFile) {
 		a.setId(i);
 		a.setParamValuesVec(paramMatrix[i]);
 		a.setFolderName(fileNameVec[i]);
-		a.setAnchorPoint(anchorPointList[i]);
 
 		// Add Data to list
 		dataList.resize(dataList.size() + 1);
@@ -36,6 +34,8 @@ Database::Database(string& databaseName, ofstream& logFile) {
 
 }
 
+/*!***************************************************************************/
+/*!***************************************************************************/
 void Database::addEntry(Data entry) {
 	cout << "Database::addEntry" << endl;
 
@@ -62,8 +62,8 @@ void Database::deleteEntry(int id) {
 /*!***************************************************************************/
 //! Read database file
 void Database::readDatabase(string& databaseName, vector<string>& paramNameVec,
-		dbMatrix& paramMatrix, intVector& anchorPointList,
-		vector<string> &fileNameVec, ofstream& logFile) {
+		dbMatrix& paramMatrix, vector<string> &fileNameVec,
+		ofstream& logFile) {
 
 	ifstream myfile(databaseName.c_str());
 
@@ -103,7 +103,6 @@ void Database::readDatabase(string& databaseName, vector<string>& paramNameVec,
 
 			resizeArray(paramMatrix, paramMatrix.size() + 1, nParameters);
 			fileNameVec.resize(fileNameVec.size() + 1);
-			anchorPointList.resize(anchorPointList.size() + 1);
 
 			istringstream ss(line);
 			int counter = 0;
@@ -117,11 +116,7 @@ void Database::readDatabase(string& databaseName, vector<string>& paramNameVec,
 							s.c_str());
 					counter++;
 				}
-				else if(counter == nParameters){	// Record anchor points
-					anchorPointList[anchorPointList.size() - 1] = atof(s.c_str());
-					counter++;
-				}
-				else if(counter == nParameters+1){	// Record file name
+				else if(counter == nParameters){	// Record file name
 					fileNameVec[fileNameVec.size() - 1] = s;
 				}
 			}
@@ -138,7 +133,6 @@ void Database::readDatabase(string& databaseName, vector<string>& paramNameVec,
 			for(int k=0; k <paramMatrix[j].size(); k++){
 				logFile << paramMatrix[j][k] << std::setw(6);
 			}
-			logFile << anchorPointList[j] << "\t";
 
 			logFile << fileNameVec[j] << endl;
 		}

@@ -18,6 +18,7 @@
 #include "Standard.h"
 #include "Cardiac.h"
 #include "Plasticity.h"
+#include "MicroRVE.h"
 
 class ModelSet{
 public:

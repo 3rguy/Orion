@@ -136,11 +136,6 @@ void Cardiac::loadSelectedData(DataContainer* problemData,
 
 		// Extract step-values for step standardisation
 		stepHistoryList[i] = mainData.getStepValueVec();
-
-		// Standardise the degrees of Freedom
-//		if (InputData->getValue("standardiseDOF") == 1){
-//			standardiseDOF(mainData, problemData, InputData, logFile);
-//		}
 	}
 
 	cout << "-----------------------------" << endl;
@@ -155,9 +150,6 @@ void Cardiac::loadSelectedData(DataContainer* problemData,
 
 
 	if(InputData->getValue("standardiseDOF") == 1){
-
-//		cout << endl;
-//		logFile << endl;
 
 		cout << "DOF Standardisation activated" << endl;
 		logFile << "DOF Standardisation activated" << endl;

@@ -37,8 +37,8 @@ public:
     void addEntry(Data entry);
     void deleteEntry(int id);
     void readDatabase(string& databaseName, vector<string>& paramNameVec,
-    		dbMatrix& paramMatrix, intVector& anchorPointList,
-    		vector<string> &fileNameVec, ofstream& logFile);
+    		dbMatrix& paramMatrix, vector<string> &fileNameVec,
+			ofstream& logFile);
     int size(){return dataList.size();}
     int getNumOfParam(){return paramNamesVec.size();}
     vector<string> getParamNamesVec(){return paramNamesVec;}

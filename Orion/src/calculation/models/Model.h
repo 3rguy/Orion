@@ -15,7 +15,7 @@
 class Model {
 public:
 	Model();
-	virtual ~Model(){};
+	~Model(){};
 
 	Database myDatabase;
 	Data myData;

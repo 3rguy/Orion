@@ -42,7 +42,7 @@ class PostProcessing: virtual public Model{
 public:
 
 //	PostProcessing(Data& yourData,GridNodes* yourGrid);
-	virtual ~PostProcessing(){};
+	~PostProcessing(){};
 
 	void setData(Data& yourData){myData = yourData;};
 	Data& getData(){return myData;};
@@ -52,7 +52,7 @@ public:
 
 	/*!************************************************************************/
 	/*!************************************************************************/
-	virtual void defaultPostProcessing(Database& myDatabase, DataContainer* problemData,
+	void defaultPostProcessing(Database& myDatabase, DataContainer* problemData,
 				InputFileData* InputData, ofstream& logFile);
 
 	/*!************************************************************************/

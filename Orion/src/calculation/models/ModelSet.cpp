@@ -62,6 +62,21 @@ ModelSet::ModelSet(DataContainer* problemData, InputFileData* InputData,
 		break;
 	}
 
+	case 4: {
+		MicroRVE* MicroRVECalc = new MicroRVE(myDatabase, problemData,
+				InputData, logFile);
+
+		MicroRVECalc->preProcessing(problemData, InputData, logFile);
+
+		MicroRVECalc->reducedCalculation(problemData, InputData, logFile);
+
+		MicroRVECalc->postProcessing(problemData, InputData, logFile);
+
+		delete MicroRVECalc;
+
+		break;
+	}
+
 	default:
 		cout << "ERROR: In ModelSet(), modelType choice is invalid." << endl;
 		logFile << "ERROR: In ModelSet(), modelType choice is invalid." << endl;

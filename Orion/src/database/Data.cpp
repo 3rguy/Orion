@@ -893,6 +893,52 @@ void Data::readResultFile_txtFormat(ofstream& logFile) {
 
 }
 
+
+/*!****************************************************************************/
+/*!****************************************************************************/
+//! Read and Extract results from a simple text file format
+dbVector& Data::readVectorFile(string file,ofstream& logFile) {
+
+	cout << "Reading file: " << file << endl;
+	logFile << "Reading file: " << file << endl;
+
+	dbVector extractedVector;
+
+	string line;
+	string fileName = folderName + file;
+	ifstream myfile(fileName.c_str());
+	if(myfile.is_open()){
+
+		while (myfile.good()) {
+
+			getline(myfile, line); // Get rid of ghost line
+
+			double value;
+			myfile >> value;
+
+			cout << "reading:" << value << endl;
+
+			extractedVector.resize(extractedVector.size()+1);
+			extractedVector[extractedVector.size()] = value;
+		}
+
+		myfile.close();
+	} else {
+		cout << "Unable to open Data file:" << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+
+	cout << "~~~ extracted matrix ~~~" << endl;
+	for (int i = 0; i < extractedVector.size(); i++) {
+			cout << extractedVector[i] << ";" << endl;
+	}
+	cout << endl;
+
+	return extractedVector;
+
+}
+
 /*!****************************************************************************/
 /*!****************************************************************************/
 //! Read and Extract results from a simple text file format
